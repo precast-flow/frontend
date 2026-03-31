@@ -1,0 +1,248 @@
+@import 'tailwindcss';
+
+/*
+ * Tailwind v4: dark:* varsayılanı OS prefers-color-scheme kullanabilir.
+ * Bu satır: yalnızca html.dark (manuel tema) — akşam/ sistem koyu modu tek başına arka planı değiştirmez.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Tasarım token’ları — tam açıklama: ../../TASARIM-SISTEMI-SPEC.md (Prompt 15)
+ * Tailwind v4: @theme içindeki --shadow-* ve --radius-* otomatik utility üretir
+ * (örn. shadow-protrude-md, rounded-pf-card).
+ */
+
+@theme {
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+
+  /* —— Semantik gölge (canonical) —— */
+  --shadow-protrude-sm:
+    3px 3px 8px rgb(163 163 163 / 0.3), -3px -3px 8px rgb(255 255 255 / 0.92);
+  --shadow-protrude-md:
+    6px 6px 14px rgb(163 163 163 / 0.34), -5px -5px 12px rgb(255 255 255 / 0.96);
+  --shadow-protrude-lg:
+    8px 8px 18px rgb(163 163 163 / 0.38), -6px -6px 14px rgb(255 255 255 / 0.96);
+  --shadow-inset-sm:
+    inset 2px 2px 6px rgb(163 163 163 / 0.28), inset -2px -2px 6px rgb(255 255 255 / 0.92);
+  --shadow-inset-md:
+    inset 4px 4px 10px rgb(163 163 163 / 0.36), inset -4px -4px 10px rgb(255 255 255 / 0.95);
+
+  /* —— Köşe (Precast Flow isimleri) —— */
+  --radius-pf-shell: 1.5rem;
+  --radius-pf-card: 1rem;
+  --radius-pf-control: 0.75rem;
+  --radius-pf-pill: 9999px;
+
+  /* —— Geriye dönük takma adlar (prototip genelinde shadow-neo-*) —— */
+  --shadow-neo-out-sm: var(--shadow-protrude-sm);
+  --shadow-neo-out: var(--shadow-protrude-md);
+  --shadow-neo-in: var(--shadow-inset-md);
+  --shadow-neo-press:
+    inset 3px 3px 6px rgb(163 163 163 / 0.28), inset -2px -2px 6px rgb(255 255 255 / 0.85);
+  --shadow-neo-in-deep:
+    inset 6px 6px 14px rgb(163 163 163 / 0.4), inset -5px -5px 12px rgb(255 255 255 / 0.9);
+}
+
+/* Koyu tema — nötr gri neumorphism (okunaklı kontrast) */
+.dark {
+  color-scheme: dark;
+  --shadow-protrude-sm:
+    3px 3px 10px rgb(0 0 0 / 0.48), -2px -2px 8px rgb(255 255 255 / 0.06);
+  --shadow-protrude-md:
+    6px 6px 16px rgb(0 0 0 / 0.52), -4px -4px 12px rgb(255 255 255 / 0.05);
+  --shadow-protrude-lg:
+    8px 8px 20px rgb(0 0 0 / 0.58), -5px -5px 14px rgb(255 255 255 / 0.07);
+  --shadow-inset-sm:
+    inset 2px 2px 8px rgb(0 0 0 / 0.45), inset -2px -2px 6px rgb(255 255 255 / 0.05);
+  --shadow-inset-md:
+    inset 4px 4px 12px rgb(0 0 0 / 0.55), inset -3px -3px 8px rgb(255 255 255 / 0.06);
+  --shadow-neo-out-sm: var(--shadow-protrude-sm);
+  --shadow-neo-out: var(--shadow-protrude-md);
+  --shadow-neo-in: var(--shadow-inset-md);
+  --shadow-neo-press:
+    inset 3px 3px 8px rgb(0 0 0 / 0.5), inset -2px -2px 6px rgb(255 255 255 / 0.04);
+  --shadow-neo-in-deep:
+    inset 6px 6px 14px rgb(0 0 0 / 0.58), inset -5px -5px 12px rgb(255 255 255 / 0.05);
+}
+
+@layer base {
+  /*
+   * Semantik zemin — açık: beyaz sayfa + açık gri paneller; koyu: siyah sayfa + koyu gri paneller.
+   * Tema yalnızca html.dark (üst çubuktaki düğme / localStorage).
+   */
+  :root {
+    --pf-bg-page: #ffffff;
+    --pf-bg-surface: #f3f4f6;
+    --pf-bg-muted: #e5e7eb;
+    --pf-ring-offset: #ffffff;
+  }
+
+  html {
+    @apply antialiased;
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+    --pf-bg-page: #000000;
+    --pf-bg-surface: #141414;
+    --pf-bg-muted: #262626;
+    --pf-ring-offset: #000000;
+  }
+
+  body {
+    @apply m-0 min-h-dvh font-sans text-gray-800;
+    background-color: var(--pf-bg-page);
+    color-scheme: light;
+    background-image: radial-gradient(
+      ellipse 100% 45% at 50% -8%,
+      rgb(243 244 246 / 0.85),
+      transparent 52%
+    );
+  }
+
+  .dark body {
+    @apply text-gray-200;
+    color-scheme: dark;
+    background-color: var(--pf-bg-page);
+    /* Hafif derinlik (saf siyah üzerinde); paneller --pf-bg-surface ile ayrılır */
+    background-image: radial-gradient(
+      ellipse 90% 40% at 50% -5%,
+      rgb(255 255 255 / 0.04),
+      transparent 55%
+    );
+  }
+
+  #root {
+    @apply min-h-dvh;
+  }
+}
+
+@layer utilities {
+  .bg-pf-page {
+    background-color: var(--pf-bg-page);
+  }
+  .bg-pf-surface {
+    background-color: var(--pf-bg-surface);
+  }
+  .bg-pf-muted {
+    background-color: var(--pf-bg-muted);
+  }
+  .ring-offset-pf-page {
+    --tw-ring-offset-color: var(--pf-ring-offset);
+  }
+}
+
+/* —— Site spinner (12 bıçak, em ölçekli) —— */
+@layer components {
+  .spinner {
+    /* font-size: Tailwind `text-*` veya inline — em tabanlı bıçaklar */
+    position: relative;
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+  }
+
+  .spinner.center {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+  }
+
+  .spinner .spinner-blade {
+    position: absolute;
+    left: 0.4629em;
+    bottom: 0;
+    width: 0.074em;
+    height: 0.2777em;
+    border-radius: 0.0555em;
+    background-color: transparent;
+    transform-origin: center -0.2222em;
+    animation: spinner-fade 1s infinite linear;
+  }
+
+  .spinner .spinner-blade:nth-child(1) {
+    animation-delay: 0s;
+    transform: rotate(0deg);
+  }
+  .spinner .spinner-blade:nth-child(2) {
+    animation-delay: 0.083s;
+    transform: rotate(30deg);
+  }
+  .spinner .spinner-blade:nth-child(3) {
+    animation-delay: 0.166s;
+    transform: rotate(60deg);
+  }
+  .spinner .spinner-blade:nth-child(4) {
+    animation-delay: 0.249s;
+    transform: rotate(90deg);
+  }
+  .spinner .spinner-blade:nth-child(5) {
+    animation-delay: 0.332s;
+    transform: rotate(120deg);
+  }
+  .spinner .spinner-blade:nth-child(6) {
+    animation-delay: 0.415s;
+    transform: rotate(150deg);
+  }
+  .spinner .spinner-blade:nth-child(7) {
+    animation-delay: 0.498s;
+    transform: rotate(180deg);
+  }
+  .spinner .spinner-blade:nth-child(8) {
+    animation-delay: 0.581s;
+    transform: rotate(210deg);
+  }
+  .spinner .spinner-blade:nth-child(9) {
+    animation-delay: 0.664s;
+    transform: rotate(240deg);
+  }
+  .spinner .spinner-blade:nth-child(10) {
+    animation-delay: 0.747s;
+    transform: rotate(270deg);
+  }
+  .spinner .spinner-blade:nth-child(11) {
+    animation-delay: 0.83s;
+    transform: rotate(300deg);
+  }
+  .spinner .spinner-blade:nth-child(12) {
+    animation-delay: 0.913s;
+    transform: rotate(330deg);
+  }
+
+  @keyframes spinner-fade {
+    0% {
+      background-color: rgb(55 65 81); /* gray-700 */
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  @keyframes spinner-fade-dark {
+    0% {
+      background-color: rgb(209 213 219); /* gray-300 — koyu zeminde okunur */
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  .dark .spinner .spinner-blade {
+    animation-name: spinner-fade-dark;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spinner .spinner-blade {
+      animation: none;
+      background-color: rgb(55 65 81);
+      opacity: 0.35;
+    }
+    .dark .spinner .spinner-blade {
+      background-color: rgb(209 213 219);
+    }
+  }
+}

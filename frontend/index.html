@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <script>
+      ;(function () {
+        try {
+          var dark = localStorage.getItem('precast-theme') === 'dark'
+          var r = document.documentElement
+          r.dataset.uiTemplate = 'glass'
+          r.setAttribute('data-ui-template', 'glass')
+          r.classList.toggle('dark', dark)
+          r.style.colorScheme = dark ? 'dark' : 'light'
+          r.dataset.theme = dark ? 'dark' : 'light'
+        } catch (_) {}
+      })()
+    </script>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+      rel="stylesheet"
+    />
+    <title>Precast Flow — UI prototip</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

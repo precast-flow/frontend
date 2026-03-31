@@ -1,0 +1,1933 @@
+/**
+ * Glassmorphism theme layer (prod-06).
+ * Tokens and overrides apply when html[data-ui-template="glass"] (set at app boot).
+ */
+
+html[data-ui-template='glass'] {
+  --glass-bg-primary: linear-gradient(135deg, #0f172a 0%, #1e1b4b 42%, #0f172a 100%);
+  --glass-bg-panel: rgb(255 255 255 / 0.14);
+  --glass-bg-panel-strong: rgb(255 255 255 / 0.2);
+  --glass-bg-widget: rgb(255 255 255 / 0.1);
+  --glass-border-soft: rgb(255 255 255 / 0.22);
+  --glass-border-muted: rgb(255 255 255 / 0.12);
+  --glass-text-primary: rgb(248 250 252);
+  --glass-text-muted: rgb(226 232 240 / 0.82);
+  --glass-accent-primary: rgb(56 189 248);
+  --glass-accent-secondary: rgb(167 139 250);
+  --glass-shadow-elevated: 0 18px 50px rgb(0 0 0 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.12);
+  --glass-shadow-soft: 0 10px 30px rgb(0 0 0 / 0.25);
+  /* Faz 1 — blur ölçekleri (backdrop-filter: blur(...) ile kullan) */
+  --glass-blur-sm: 12px;
+  --glass-blur-md: 16px;
+  --glass-blur-lg: 22px;
+  /* Shell ile hizalı: sabit üst şerit + içerik pt-24 / md:pt-28 */
+  --gm-topbar-clear: 6rem;
+  /* GlassAppShell: mx-auto max-w-[1600px] px-3 md:px-5 — drawer/modal sağ kenarı üst çubukla aynı */
+  --gm-shell-max-w: 1600px;
+  --gm-shell-pad-x: 0.75rem;
+  --gm-shell-inset-right: calc(max(0px, (100vw - var(--gm-shell-max-w)) / 2) + var(--gm-shell-pad-x));
+
+  /* glass-02 — semantik alias’lar (canonical --glass-bg-* ile senkron) */
+  --glass-surface-page: var(--glass-bg-primary);
+  --glass-surface-panel: var(--glass-bg-panel);
+  --glass-surface-panel-strong: var(--glass-bg-panel-strong);
+  --glass-surface-widget: var(--glass-bg-widget);
+  --glass-border-default: var(--glass-border-soft);
+  --glass-border-subtle: var(--glass-border-muted);
+  --glass-text-secondary: var(--glass-text-muted);
+  --glass-text-disabled: color-mix(in srgb, var(--glass-text-muted) 52%, transparent);
+  --glass-state-hover-overlay: rgb(255 255 255 / 0.12);
+  --glass-state-active-overlay: rgb(255 255 255 / 0.06);
+  --glass-state-selected-bg: rgb(255 255 255 / 0.18);
+  --glass-shadow-raise: var(--glass-shadow-soft);
+  --glass-shadow-inset: inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 -1px 0 rgb(0 0 0 / 0.2);
+}
+
+html[data-ui-template='glass'].dark {
+  --glass-bg-primary: linear-gradient(135deg, #020617 0%, #1e1b4b 45%, #020617 100%);
+  --glass-bg-panel: rgb(255 255 255 / 0.08);
+  --glass-bg-panel-strong: rgb(255 255 255 / 0.12);
+  --glass-bg-widget: rgb(255 255 255 / 0.06);
+  --glass-border-soft: rgb(255 255 255 / 0.14);
+  --glass-border-muted: rgb(255 255 255 / 0.08);
+  --glass-state-hover-overlay: rgb(255 255 255 / 0.1);
+  --glass-state-active-overlay: rgb(255 255 255 / 0.05);
+  --glass-state-selected-bg: rgb(255 255 255 / 0.14);
+}
+
+html[data-ui-template='glass']:not(.dark) {
+  /* Açık tema: patlak #fff yerine buzlu slate cam — düşük opaklık + daha güçlü blur */
+  --glass-bg-primary: linear-gradient(135deg, #38bdf8 0%, #6366f1 38%, #a855f7 100%);
+  --glass-bg-panel: rgb(248 250 252 / 0.13);
+  --glass-bg-panel-strong: rgb(248 250 252 / 0.19);
+  --glass-bg-widget: rgb(241 245 249 / 0.11);
+  --glass-border-soft: rgb(255 255 255 / 0.22);
+  --glass-border-muted: rgb(15 23 42 / 0.09);
+  --glass-text-primary: rgb(15 23 42);
+  --glass-text-muted: rgb(51 65 85 / 0.88);
+  --glass-accent-primary: rgb(2 132 199);
+  --glass-accent-secondary: rgb(79 70 229);
+  /* Dış gölge yumuşak; inset highlight zayıf (beyaz patlaması yok) */
+  --glass-shadow-elevated:
+    0 20px 50px rgb(15 23 42 / 0.07), 0 4px 14px rgb(15 23 42 / 0.04), inset 0 1px 0 rgb(255 255 255 / 0.2);
+  --glass-shadow-soft: 0 8px 28px rgb(15 23 42 / 0.06), 0 2px 8px rgb(15 23 42 / 0.035);
+  --glass-blur-sm: 12px;
+  --glass-blur-md: 16px;
+  --glass-blur-lg: 24px;
+  --glass-state-hover-overlay: rgb(15 23 42 / 0.06);
+  --glass-state-active-overlay: rgb(15 23 42 / 0.04);
+  --glass-state-selected-bg: rgb(241 245 249 / 0.55);
+  --glass-shadow-inset: inset 0 1px 0 rgb(255 255 255 / 0.22), inset 0 -1px 0 rgb(15 23 42 / 0.05);
+
+  /* Neo gölgeler (Tailwind shadow-neo-*): açık camda beyaz 0.9x highlight kaldırıldı */
+  --shadow-protrude-sm:
+    2px 3px 10px rgb(15 23 42 / 0.065), -1px -1px 0 rgb(255 255 255 / 0.32);
+  --shadow-protrude-md:
+    4px 6px 18px rgb(15 23 42 / 0.075), -1px -1px 0 rgb(255 255 255 / 0.26);
+  --shadow-protrude-lg:
+    6px 8px 22px rgb(15 23 42 / 0.08), -1px -1px 0 rgb(255 255 255 / 0.24);
+  --shadow-inset-sm:
+    inset 1px 2px 5px rgb(15 23 42 / 0.055), inset -1px -1px 0 rgb(255 255 255 / 0.22);
+  --shadow-inset-md:
+    inset 2px 3px 8px rgb(15 23 42 / 0.06), inset -1px -2px 0 rgb(255 255 255 / 0.2);
+  --shadow-neo-out-sm: var(--shadow-protrude-sm);
+  --shadow-neo-out: var(--shadow-protrude-md);
+  --shadow-neo-in: var(--shadow-inset-md);
+  --shadow-neo-press:
+    inset 2px 3px 8px rgb(15 23 42 / 0.07), inset -1px -1px 0 rgb(255 255 255 / 0.16);
+  --shadow-neo-in-deep:
+    inset 4px 5px 12px rgb(15 23 42 / 0.08), inset -2px -2px 0 rgb(255 255 255 / 0.14);
+}
+
+@layer components {
+  .gm-glass-page {
+    background-image: var(--glass-bg-primary);
+    color: var(--glass-text-primary);
+  }
+
+  .gm-glass-blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(64px);
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  .gm-glass-panel-l1 {
+    border: 1px solid var(--glass-border-soft);
+    background-color: var(--glass-bg-panel-strong);
+    box-shadow: var(--glass-shadow-elevated);
+    backdrop-filter: blur(var(--glass-blur-lg));
+    -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+  }
+
+  .gm-glass-panel-l2 {
+    border: 1px solid var(--glass-border-soft);
+    background-color: var(--glass-bg-panel);
+    box-shadow: var(--glass-shadow-soft);
+    backdrop-filter: blur(var(--glass-blur-md));
+    -webkit-backdrop-filter: blur(var(--glass-blur-md));
+  }
+
+  .gm-glass-panel-l3 {
+    border: 1px solid var(--glass-border-muted);
+    background-color: var(--glass-bg-widget);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  }
+
+  /*
+   * glass-02 — yardımcı yüzeyler (primitive / showcase sınıfları)
+   */
+  html[data-ui-template='glass'] .gm-glass-surface-panel {
+    border: 1px solid var(--glass-border-default);
+    background-color: var(--glass-surface-panel);
+    box-shadow: var(--glass-shadow-raise);
+    backdrop-filter: blur(var(--glass-blur-md));
+    -webkit-backdrop-filter: blur(var(--glass-blur-md));
+  }
+
+  /* Form / ikincil düğme ortak cam zemin (neo gölge yok) */
+  html[data-ui-template='glass'] .gm-glass-control {
+    border-radius: 0.75rem;
+    border: 1px solid var(--glass-border-default);
+    background-color: var(--glass-surface-widget);
+    color: var(--glass-text-primary);
+    box-shadow: none;
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-control:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--glass-accent-primary);
+  }
+
+  html[data-ui-template='glass'] button.gm-glass-control:hover,
+  html[data-ui-template='glass'] a.gm-glass-control:hover {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 78%, var(--glass-state-hover-overlay));
+    border-color: var(--glass-border-default);
+  }
+
+  html[data-ui-template='glass'] button.gm-glass-control:active {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 65%, var(--glass-state-active-overlay));
+  }
+
+  html[data-ui-template='glass'] input.gm-glass-control,
+  html[data-ui-template='glass'] textarea.gm-glass-control,
+  html[data-ui-template='glass'] select.gm-glass-control {
+    min-height: 2.5rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  html[data-ui-template='glass'] textarea.gm-glass-control {
+    min-height: 5rem;
+  }
+
+  /* Yatay / dikey ayırıcı (border-gray-200/90 yerine token) */
+  html[data-ui-template='glass'] .gm-glass-divider {
+    height: 1px;
+    width: 100%;
+    border: 0;
+    margin: 0.75rem 0;
+    background-color: var(--glass-border-subtle);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-divider-vertical {
+    width: 1px;
+    min-height: 1.5rem;
+    height: auto;
+    align-self: stretch;
+    margin: 0 0.75rem;
+    background-color: var(--glass-border-subtle);
+  }
+
+  /* Yoğun ızgara / tablo satırı: blur yok */
+  html[data-ui-template='glass'] .gm-glass-solid-row {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: var(--glass-surface-widget);
+    border-color: var(--glass-border-subtle);
+  }
+
+  .gm-glass-lite .gm-glass-panel-l1,
+  .gm-glass-lite .gm-glass-panel-l2,
+  .gm-glass-lite .gm-glass-panel-l3 {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  @media (max-width: 767px) {
+    .gm-glass-panel-l1,
+    .gm-glass-panel-l2 {
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gm-motion {
+      transition: none !important;
+      animation: none !important;
+    }
+
+    html[data-ui-template='glass'] .gm-glass-outlet-scope button:hover,
+    html[data-ui-template='glass'] .gm-glass-outlet-scope button:active,
+    html[data-ui-template='glass'] .gm-glass-btn-primary:hover,
+    html[data-ui-template='glass'] .gm-glass-btn-secondary:hover,
+    html[data-ui-template='glass'] .gm-glass-btn-ghost:hover,
+    html[data-ui-template='glass'] .gm-glass-btn-danger:hover {
+      transform: none !important;
+    }
+  }
+
+  /*
+   * Modül sahnesi (MainCanvas, ModuleShellFrame, …) — glass şablonda neo panelleri
+   * yarı saydam cam yüzeye çevir (ana uygulama her zaman glass şablon).
+   */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .bg-pf-surface {
+    background-color: var(--glass-bg-panel);
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-soft);
+    backdrop-filter: blur(var(--glass-blur-md));
+    -webkit-backdrop-filter: blur(var(--glass-blur-md));
+  }
+
+  /*
+   * Modül gövdesi — neo gri / yarı opak kutular → cam yüzey (Tailwind dark: ile çakışmayı !important giderir)
+   */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .bg-gray-50 {
+    background-color: var(--glass-surface-widget) !important;
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-soft);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .bg-gray-100 {
+    background-color: color-mix(in srgb, var(--glass-surface-panel) 88%, transparent) !important;
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-soft);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .bg-white {
+    background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 88%, transparent) !important;
+    border: 1px solid var(--glass-border-muted);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  }
+
+  /* Açık tema — sık kullanılan yarı opak zeminler (beyaz eklenmez) */
+  html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .bg-gray-50\/80,
+  html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .bg-gray-50\/90,
+  html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .bg-gray-100\/80,
+  html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .bg-gray-100\/90 {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 94%, rgb(15 23 42 / 0.025)) !important;
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-inset);
+    backdrop-filter: blur(var(--glass-blur-md));
+    -webkit-backdrop-filter: blur(var(--glass-blur-md));
+  }
+
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .dark\:bg-gray-800,
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .dark\:bg-gray-800\/80,
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .dark\:bg-gray-800\/90,
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .dark\:bg-gray-900,
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .dark\:bg-gray-900\/70,
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .dark\:bg-gray-900\/80,
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .dark\:bg-gray-900\/90,
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .dark\:bg-gray-950,
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .dark\:bg-gray-950\/50,
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .dark\:bg-gray-950\/60,
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .dark\:bg-gray-950\/80,
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .dark\:bg-gray-950\/90 {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 92%, transparent) !important;
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-soft);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='hidden']):not([type='range']):not([type='button']):not([type='submit']):not([type='reset']),
+  html[data-ui-template='glass'] .gm-glass-outlet-scope textarea,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope select {
+    background-color: rgb(255 255 255 / 0.08);
+    border-color: var(--glass-border-soft);
+    color: var(--glass-text-primary);
+  }
+
+  html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='hidden']):not([type='range']):not([type='button']):not([type='submit']):not([type='reset']),
+  html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope textarea,
+  html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope select {
+    background-color: rgb(248 250 252 / 0.38);
+    border-color: var(--glass-border-muted);
+    color: var(--glass-text-primary);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope input::placeholder,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope textarea::placeholder {
+    color: var(--glass-text-muted);
+    opacity: 1;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope input:focus-visible,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope textarea:focus-visible,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope select:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--glass-accent-primary);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope input[type='checkbox'],
+  html[data-ui-template='glass'] .gm-glass-outlet-scope input[type='radio'] {
+    accent-color: var(--glass-accent-primary);
+    border-color: var(--glass-border-default);
+  }
+
+  /*
+   * glass-03 — primitives: buton varyantları (Tailwind sınıf kombinasyonlarına hedefli; genel `button` yok)
+   */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button:disabled,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button[disabled] {
+    opacity: 0.58;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: var(--glass-shadow-soft);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button:focus-visible {
+    outline: none;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button:focus-visible:not(:disabled) {
+    box-shadow: 0 0 0 2px var(--glass-accent-primary);
+  }
+
+  /* İkincil / nötr — bg-gray-100 veya koyu eşdeğer + neo-sm */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.bg-gray-100,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.dark\:bg-gray-800,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.dark\:bg-gray-800\/90,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.dark\:bg-gray-900 {
+    background-color: var(--glass-surface-widget);
+    border: 1px solid var(--glass-border-default);
+    box-shadow: var(--glass-shadow-raise);
+    color: var(--glass-text-primary);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+    transition:
+      transform 0.15s ease,
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.bg-gray-100:hover:not(:disabled),
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.dark\:bg-gray-800:hover:not(:disabled),
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.dark\:bg-gray-800\/90:hover:not(:disabled),
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.dark\:bg-gray-900:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: var(--glass-border-default);
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 72%, var(--glass-state-hover-overlay));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.bg-gray-100:active:not(:disabled),
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.dark\:bg-gray-800:active:not(:disabled),
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.dark\:bg-gray-800\/90:active:not(:disabled),
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.dark\:bg-gray-900:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: var(--glass-shadow-inset);
+  }
+
+  /* KPI / büyük kart düğmeleri — rounded-2xl + neo-sm */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.rounded-2xl.shadow-neo-out-sm.bg-gray-100,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.rounded-2xl.shadow-neo-out-sm.dark\:bg-gray-800\/90 {
+    background-color: var(--glass-surface-panel);
+    border: 1px solid var(--glass-border-default);
+    box-shadow: var(--glass-shadow-raise);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+    transition:
+      transform 0.15s ease,
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.rounded-2xl.shadow-neo-out-sm.bg-gray-100:hover:not(:disabled),
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.rounded-2xl.shadow-neo-out-sm.dark\:bg-gray-800\/90:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: var(--glass-border-default);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.rounded-2xl.shadow-neo-out-sm.bg-gray-100:active:not(:disabled),
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.rounded-2xl.shadow-neo-out-sm.dark\:bg-gray-800\/90:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: var(--glass-shadow-inset);
+  }
+
+  /* Birincil — accent gradient (koyu dolgu + text-white) */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.bg-gray-800.text-white {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--glass-accent-primary) 88%, white 12%),
+      color-mix(in srgb, var(--glass-accent-primary) 100%, black 8%)
+    );
+    border: 1px solid color-mix(in srgb, var(--glass-accent-primary) 65%, white);
+    box-shadow: var(--glass-shadow-raise);
+    color: rgb(248 250 252);
+    text-shadow: 0 1px 1px rgb(0 0 0 / 0.22);
+    transition:
+      transform 0.15s ease,
+      border-color 0.15s ease,
+      filter 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.bg-gray-800.text-white:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.bg-gray-800.text-white:active:not(:disabled) {
+    transform: translateY(0);
+    filter: brightness(0.96);
+    box-shadow: var(--glass-shadow-inset);
+  }
+
+  /* Koyu temada açık dolgulu birincil (gray-200) — gradient yok */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.dark\:bg-gray-200.dark\:text-gray-900 {
+    background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 90%, white);
+    border: 1px solid var(--glass-border-default);
+    box-shadow: var(--glass-shadow-raise);
+    color: rgb(15 23 42);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+    transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.dark\:bg-gray-200.dark\:text-gray-900:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.04);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.shadow-neo-out-sm.dark\:bg-gray-200.dark\:text-gray-900:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: var(--glass-shadow-inset);
+  }
+
+  /* Tehlike / kırmızı çerçeveli aksiyonlar */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.border-red-200\/90.shadow-neo-out-sm,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.dark\:border-red-900\/80.shadow-neo-out-sm,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.text-red-800.shadow-neo-out-sm,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.text-red-900.shadow-neo-out-sm {
+    background-color: color-mix(in srgb, rgb(239 68 68 / 0.22) 40%, var(--glass-surface-widget));
+    border-color: color-mix(in srgb, rgb(239 68 68) 55%, var(--glass-border-default));
+    box-shadow: var(--glass-shadow-raise);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+    transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.border-red-200\/90.shadow-neo-out-sm:hover:not(:disabled),
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.dark\:border-red-900\/80.shadow-neo-out-sm:hover:not(:disabled),
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.text-red-800.shadow-neo-out-sm:hover:not(:disabled),
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button.text-red-900.shadow-neo-out-sm:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background-color: color-mix(in srgb, rgb(239 68 68 / 0.3) 45%, var(--glass-surface-widget));
+  }
+
+  /* NeoSwitch — role="switch" */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button[role='switch'] {
+    background-color: var(--glass-surface-widget);
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-inset);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button[role='switch']:focus-visible {
+    box-shadow: var(--glass-shadow-inset), 0 0 0 2px var(--glass-accent-primary);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope button[role='switch'] > span {
+    background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 75%, white);
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-raise);
+  }
+
+  /* İçe gömülü kartlar — shadow-neo-in */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .rounded-xl.shadow-neo-in:not(table):not(thead):not(tbody):not(tr):not(td):not(th),
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .rounded-2xl.shadow-neo-in:not(table):not(thead):not(tbody):not(tr):not(td):not(th) {
+    box-shadow: var(--glass-shadow-inset);
+    border: 1px solid var(--glass-border-muted);
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 92%, transparent);
+  }
+
+  /* Chip / rozet — küçük yuvarlak kenarlık */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope span.rounded-full.border.px-2\.5,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope span.rounded-full.border.px-2,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope span.rounded-full.border.px-3 {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 88%, transparent);
+    border-color: var(--glass-border-default);
+  }
+
+  /*
+   * İsteğe bağlı sınıflar — yeni ekranlarda veya kademeli geçişte (showcase)
+   */
+  html[data-ui-template='glass'] .gm-glass-btn-primary {
+    border-radius: 0.75rem;
+    padding: 0.625rem 1rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    border: 1px solid color-mix(in srgb, var(--glass-accent-primary) 55%, white);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--glass-accent-primary) 90%, white),
+      color-mix(in srgb, var(--glass-accent-primary) 100%, black 6%)
+    );
+    color: rgb(15 23 42);
+    box-shadow: var(--glass-shadow-raise);
+    transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  html[data-ui-template='glass'].dark .gm-glass-btn-primary {
+    color: rgb(248 250 252);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+    filter: brightness(0.97);
+    box-shadow: var(--glass-shadow-inset);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-btn-primary:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--glass-accent-primary), var(--glass-shadow-raise);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-btn-primary:disabled {
+    opacity: 0.58;
+    cursor: not-allowed;
+    transform: none;
+    filter: none;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-btn-secondary {
+    border-radius: 0.75rem;
+    padding: 0.625rem 1rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    border: 1px solid var(--glass-border-default);
+    background-color: var(--glass-surface-widget);
+    color: var(--glass-text-primary);
+    box-shadow: var(--glass-shadow-raise);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+    transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-btn-secondary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 72%, var(--glass-state-hover-overlay));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-btn-secondary:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--glass-accent-primary), var(--glass-shadow-raise);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-btn-secondary:disabled {
+    opacity: 0.58;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-btn-ghost {
+    border-radius: 0.75rem;
+    padding: 0.625rem 1rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    border: 1px solid var(--glass-border-muted);
+    background-color: transparent;
+    color: var(--glass-text-primary);
+    box-shadow: none;
+    transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-btn-ghost:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: var(--glass-border-default);
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 55%, transparent);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-btn-ghost:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--glass-accent-primary);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-btn-ghost:disabled {
+    opacity: 0.58;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-btn-danger {
+    border-radius: 0.75rem;
+    padding: 0.625rem 1rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    border: 1px solid color-mix(in srgb, rgb(239 68 68) 50%, var(--glass-border-default));
+    background-color: color-mix(in srgb, rgb(239 68 68 / 0.2) 50%, var(--glass-surface-widget));
+    color: var(--glass-text-primary);
+    box-shadow: var(--glass-shadow-raise);
+    transition: transform 0.15s ease, background-color 0.15s ease;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-btn-danger:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background-color: color-mix(in srgb, rgb(239 68 68 / 0.32) 55%, var(--glass-surface-widget));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-btn-danger:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--glass-accent-primary), var(--glass-shadow-raise);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-btn-danger:disabled {
+    opacity: 0.58;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-card-inset {
+    border-radius: 1rem;
+    border: 1px solid var(--glass-border-muted);
+    background-color: var(--glass-surface-widget);
+    box-shadow: var(--glass-shadow-inset);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .shadow-neo-out,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .shadow-neo-out-sm {
+    box-shadow: var(--glass-shadow-soft);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .shadow-neo-in {
+    box-shadow: var(--glass-shadow-inset);
+  }
+
+  html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .border-gray-200\/90,
+  html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .border-gray-200,
+  html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .border-gray-300\/70 {
+    border-color: color-mix(in srgb, var(--glass-border-soft) 65%, white);
+  }
+
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .border-gray-200\/90,
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .border-gray-200,
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .border-gray-300\/70 {
+    border-color: var(--glass-border-muted);
+  }
+
+  /* —— Sol menü: cam yüzey + z-index ile üst üste binen ana panelin altında kalmaması —— */
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside {
+    background-color: var(--glass-bg-panel-strong) !important;
+    border: 1px solid var(--glass-border-soft);
+    box-shadow: var(--glass-shadow-elevated);
+    backdrop-filter: blur(var(--glass-blur-lg));
+    -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+    color: var(--glass-text-primary);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .text-gray-500,
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .dark\:text-gray-400 {
+    color: var(--glass-text-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .text-gray-700,
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .text-gray-600,
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .text-gray-900,
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .dark\:text-gray-200,
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .dark\:text-gray-300,
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .dark\:text-gray-50 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside nav button[type='button'] {
+    border: 1px solid transparent;
+    background-color: rgb(255 255 255 / 0.06) !important;
+    color: var(--glass-text-primary) !important;
+    box-shadow: none !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside nav button[type='button']:hover {
+    background-color: rgb(255 255 255 / 0.12) !important;
+    border-color: var(--glass-border-muted);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside nav button[type='button'].shadow-neo-in {
+    background-color: rgb(255 255 255 / 0.18) !important;
+    border-color: var(--glass-border-soft);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside > div:first-child button[type='button'] {
+    background-color: rgb(255 255 255 / 0.08) !important;
+    border: 1px solid var(--glass-border-muted);
+    color: var(--glass-text-primary) !important;
+    box-shadow: none !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside > div:first-child button[type='button']:hover {
+    background-color: rgb(255 255 255 / 0.14) !important;
+    border-color: var(--glass-border-soft);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .bg-gray-300\/70,
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .dark\:bg-gray-700\/70 {
+    background-color: var(--glass-border-muted) !important;
+    opacity: 0.85;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside nav .text-gray-700,
+  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside nav .dark\:text-gray-200 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  /* —— glass-04 — shell: TopBar (GlassHeader), footer, drawer, loading, banner, context strip —— */
+  html[data-ui-template='glass'] .gm-glass-topbar-host {
+    overflow: visible;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-topbar-host header {
+    color: var(--glass-text-primary);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-topbar-host header .text-gray-500,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header .dark\:text-gray-400,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header .text-gray-600,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header .dark\:text-gray-300 {
+    color: var(--glass-text-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-topbar-host header .text-gray-700,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header .text-gray-800,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header .text-gray-900,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header .dark\:text-gray-50,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header .dark\:text-gray-100,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header .dark\:text-gray-200 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-topbar-host header input::placeholder {
+    color: var(--glass-text-muted) !important;
+  }
+
+  /* İkincil kontroller: fabrika seçici, ikon düğmeleri, arama kuyusu, senk rozeti */
+  html[data-ui-template='glass'] .gm-glass-topbar-host header button.bg-gray-100,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header button.dark\:bg-gray-800,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header button.dark\:bg-gray-900,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header span.rounded-full.bg-gray-100,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header span.dark\:bg-gray-950,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header input.bg-gray-100,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header input.dark\:bg-gray-900,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header input.dark\:bg-gray-950 {
+    background-color: var(--glass-surface-widget) !important;
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-inset);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-topbar-host header button.rounded-full.border-0.bg-gray-100,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header button.dark\:bg-gray-950 {
+    border-color: transparent !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-topbar-host header span.rounded-full.border,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header span.dark\:border-gray-600 {
+    background-color: var(--glass-surface-widget) !important;
+    border-color: var(--glass-border-default) !important;
+    color: var(--glass-text-muted) !important;
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  }
+
+  /* Birincil menü düğmesi (mobil) — outlet birincil ile uyumlu gradient */
+  html[data-ui-template='glass'] .gm-glass-topbar-host header button.shadow-neo-out-sm.bg-gray-800.text-white {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--glass-accent-primary) 88%, white 12%),
+      color-mix(in srgb, var(--glass-accent-primary) 100%, black 8%)
+    ) !important;
+    border: 1px solid color-mix(in srgb, var(--glass-accent-primary) 65%, white);
+    box-shadow: var(--glass-shadow-raise);
+    color: rgb(248 250 252) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-topbar-host header button.shadow-neo-out-sm.dark\:bg-gray-200.dark\:text-gray-900 {
+    background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 90%, white) !important;
+    border: 1px solid var(--glass-border-default);
+    box-shadow: var(--glass-shadow-raise);
+    color: rgb(15 23 42) !important;
+  }
+
+  html[data-ui-template='glass']:not(.dark) .gm-glass-topbar-host header button.shadow-neo-out-sm.dark\:bg-gray-200.dark\:text-gray-900 {
+    background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 94%, transparent) !important;
+  }
+
+  /*
+   * Kabuk / modül açılır yüzeyleri — drawer panel (.gm-glass-drawer-panel) ile aynı token’lar.
+   * Not: Kesin uygulama dosya sonundaki katman-dışı blokta (Tailwind utility ezebilmesin diye).
+   */
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'],
+  html[data-ui-template='glass'] .gm-glass-outlet-scope [role='menu'],
+  html[data-ui-template='glass'] .gm-glass-outlet-scope [role='listbox'],
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar-popover,
+  html[data-ui-template='glass'] .gm-planning-menu-portal.gm-planning-toolbar-popover,
+  html[data-ui-template='glass'] .gm-glass-context-menu-panel {
+    background-color: var(--glass-surface-panel-strong) !important;
+    border: 1px solid var(--glass-border-default) !important;
+    box-shadow: var(--glass-shadow-elevated);
+    backdrop-filter: blur(var(--glass-blur-lg));
+    -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+    color: var(--glass-text-primary);
+    isolation: isolate;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] .text-gray-500,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] .dark\:text-gray-400 {
+    color: var(--glass-text-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] .text-gray-600,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] .text-gray-700,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] .text-gray-800,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] .text-gray-900,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] .dark\:text-gray-50,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] .dark\:text-gray-100,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] .dark\:text-gray-200,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] .dark\:text-gray-300 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] label:hover,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] button:hover,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] button:focus-visible {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 70%, var(--glass-state-hover-overlay)) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] .border-b,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] .border-t,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] .bg-gray-200\/90,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] .dark\:bg-gray-700 {
+    border-color: var(--glass-border-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] .h-px.bg-gray-200\/90,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] .dark\:bg-gray-700 {
+    background-color: var(--glass-border-muted) !important;
+  }
+
+  /* gm-glass-dropdown-panel: üst bar dışı (planlama, portal context) + ortak tipografi / ayırıcı */
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel .text-gray-500,
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel .dark\:text-gray-400 {
+    color: var(--glass-text-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel .text-gray-600,
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel .text-gray-700,
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel .text-gray-800,
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel .text-gray-900,
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel .dark\:text-gray-50,
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel .dark\:text-gray-100,
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel .dark\:text-gray-200,
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel .dark\:text-gray-300 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel label:hover,
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel button:hover,
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel button:focus-visible {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 70%, var(--glass-state-hover-overlay)) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel .border-b,
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel .border-t {
+    border-color: var(--glass-border-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel .h-px.bg-gray-200\/90,
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel .dark\:bg-gray-700 {
+    background-color: var(--glass-border-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-topbar-host header .focus-visible\:ring-offset-gray-100,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header .dark\:ring-offset-gray-900 {
+    --tw-ring-offset-color: transparent !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-topbar-host header .focus-visible\:ring-gray-400,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header .focus\:ring-gray-400 {
+    --tw-ring-color: color-mix(in srgb, var(--glass-accent-primary) 55%, white) !important;
+  }
+
+  /* Footer şeridi */
+  html[data-ui-template='glass'] .gm-glass-footer-host footer {
+    color: var(--glass-text-muted);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-footer-host footer .text-gray-500,
+  html[data-ui-template='glass'] .gm-glass-footer-host footer .dark\:text-gray-400 {
+    color: var(--glass-text-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-footer-host footer .text-gray-600,
+  html[data-ui-template='glass'] .gm-glass-footer-host footer .dark\:text-gray-300,
+  html[data-ui-template='glass'] .gm-glass-footer-host footer .text-gray-700,
+  html[data-ui-template='glass'] .gm-glass-footer-host footer .text-gray-800,
+  html[data-ui-template='glass'] .gm-glass-footer-host footer .dark\:text-gray-100 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-footer-host footer a {
+    color: color-mix(in srgb, var(--glass-text-primary) 88%, var(--glass-accent-primary) 12%);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-footer-host footer a:hover {
+    color: var(--glass-text-primary);
+  }
+
+  /* Fabrika özeti drawer */
+  html[data-ui-template='glass'] .gm-glass-drawer-backdrop {
+    background-color: rgb(15 23 42 / 0.45) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  html[data-ui-template='glass']:not(.dark) .gm-glass-drawer-backdrop {
+    background-color: rgb(15 23 42 / 0.28) !important;
+  }
+
+  html[data-ui-template='glass'].dark .gm-glass-drawer-backdrop {
+    background-color: rgb(0 0 0 / 0.5) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-drawer-panel {
+    background-color: var(--glass-surface-panel-strong) !important;
+    border-color: var(--glass-border-default) !important;
+    box-shadow: var(--glass-shadow-elevated);
+    backdrop-filter: blur(var(--glass-blur-lg));
+    -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+    color: var(--glass-text-primary);
+  }
+
+  @media (min-width: 768px) {
+    html[data-ui-template='glass'] {
+      --gm-topbar-clear: 7rem;
+      --gm-shell-pad-x: 1.25rem;
+    }
+  }
+
+  /* Sağ drawer: üst şeridin altı + sağ kenar kabuk ile hizalı (üst çubuk sağı) */
+  html[data-ui-template='glass'] .gm-glass-drawer-root.fixed.inset-0 {
+    box-sizing: border-box;
+    padding-top: var(--gm-topbar-clear);
+    padding-right: var(--gm-shell-inset-right);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-drawer-backdrop.fixed.inset-0 {
+    top: var(--gm-topbar-clear) !important;
+  }
+
+  html[data-ui-template='glass'] aside.gm-glass-drawer-panel.fixed.inset-y-0 {
+    top: var(--gm-topbar-clear) !important;
+    bottom: 0 !important;
+    right: var(--gm-shell-inset-right) !important;
+    left: auto !important;
+    min-height: 0 !important;
+  }
+
+  /* Ortalanmış modallar: üst menü altı + yatayda kabuk içi (simetrik gutter) */
+  html[data-ui-template='glass'] .gm-glass-modal-shell {
+    box-sizing: border-box;
+    padding-top: var(--gm-topbar-clear);
+    padding-right: var(--gm-shell-inset-right);
+    padding-left: var(--gm-shell-inset-right);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-drawer-root > aside.gm-glass-drawer-panel,
+  html[data-ui-template='glass'] .gm-glass-drawer-root > .gm-glass-drawer-panel {
+    max-height: calc(100dvh - var(--gm-topbar-clear) - env(safe-area-inset-bottom, 0px)) !important;
+    min-height: 0 !important;
+  }
+
+  /*
+   * Planlama ürün / gün detayı: scrim yalnızca #main-module alanı — üst çubuk + sol şerit kararmaz.
+   * Backdrop `fixed` + kabuk ölçüleri (GlassAppShell: pad + dar sidebar 4.75rem + md:gap-4).
+   */
+  html[data-ui-template='glass'] .gm-glass-drawer-root--module-scrim .gm-glass-drawer-backdrop {
+    position: fixed !important;
+    inset: auto !important;
+    top: calc(var(--gm-shell-pad-x) + var(--gm-topbar-clear)) !important;
+    right: var(--gm-shell-inset-right) !important;
+    /* alt: kabuk padding + footer şeridi + gap — tam viewport kararmasın */
+    bottom: calc(var(--gm-shell-pad-x) + 5.75rem) !important;
+    left: var(--gm-shell-inset-right) !important;
+    border-radius: 1rem;
+    backdrop-filter: blur(6px) saturate(1.05);
+    -webkit-backdrop-filter: blur(6px) saturate(1.05);
+  }
+
+  html[data-ui-template='glass'].dark .gm-glass-drawer-root--module-scrim .gm-glass-drawer-backdrop {
+    background-color: rgb(0 0 0 / 0.12) !important;
+  }
+
+  html[data-ui-template='glass']:not(.dark) .gm-glass-drawer-root--module-scrim .gm-glass-drawer-backdrop {
+    background-color: rgb(15 23 42 / 0.055) !important;
+  }
+
+  @media (min-width: 768px) {
+    html[data-ui-template='glass'] .gm-glass-drawer-root--module-scrim .gm-glass-drawer-backdrop {
+      left: calc(var(--gm-shell-inset-right) + 4.75rem + 1rem) !important;
+      border-radius: 1.5rem;
+    }
+  }
+
+  html[data-ui-template='glass'] .gm-glass-drawer-panel .text-gray-500,
+  html[data-ui-template='glass'] .gm-glass-drawer-panel .dark\:text-gray-400 {
+    color: var(--glass-text-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-drawer-panel .text-gray-600,
+  html[data-ui-template='glass'] .gm-glass-drawer-panel .text-gray-800,
+  html[data-ui-template='glass'] .gm-glass-drawer-panel .text-gray-900,
+  html[data-ui-template='glass'] .gm-glass-drawer-panel .dark\:text-gray-50,
+  html[data-ui-template='glass'] .gm-glass-drawer-panel .dark\:text-gray-100,
+  html[data-ui-template='glass'] .gm-glass-drawer-panel .dark\:text-gray-300 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-drawer-panel .rounded-2xl.bg-gray-50.shadow-neo-in,
+  html[data-ui-template='glass'] .gm-glass-drawer-panel .rounded-2xl.dark\:bg-gray-950\/80.shadow-neo-in,
+  html[data-ui-template='glass'] .gm-glass-drawer-panel .rounded-2xl.bg-gray-50.shadow-neo-out-sm,
+  html[data-ui-template='glass'] .gm-glass-drawer-panel .rounded-2xl.dark\:bg-gray-950\/80.shadow-neo-out-sm {
+    background-color: var(--glass-surface-widget) !important;
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-inset);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-drawer-panel button.shadow-neo-out-sm.bg-gray-100,
+  html[data-ui-template='glass'] .gm-glass-drawer-panel button.dark\:bg-gray-800 {
+    background-color: var(--glass-surface-panel) !important;
+    border: 1px solid var(--glass-border-default);
+    box-shadow: var(--glass-shadow-raise);
+    color: var(--glass-text-primary) !important;
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-drawer-panel .rounded-xl.bg-gray-50.shadow-neo-in,
+  html[data-ui-template='glass'] .gm-glass-drawer-panel .rounded-xl.dark\:bg-gray-950\/90\/90 {
+    background-color: var(--glass-surface-widget) !important;
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-inset);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  }
+
+  /* Modül içi ortalanmış modal (CRM yeni müşteri vb.) */
+  html[data-ui-template='glass'] .gm-glass-modal-shell[role='dialog'] {
+    background-color: var(--glass-surface-panel-strong) !important;
+    border-color: var(--glass-border-default) !important;
+    box-shadow: var(--glass-shadow-elevated);
+    backdrop-filter: blur(var(--glass-blur-lg));
+    -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+    color: var(--glass-text-primary);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-modal-shell .text-gray-500,
+  html[data-ui-template='glass'] .gm-glass-modal-shell .dark\:text-gray-400 {
+    color: var(--glass-text-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-modal-shell .text-gray-600,
+  html[data-ui-template='glass'] .gm-glass-modal-shell .text-gray-700,
+  html[data-ui-template='glass'] .gm-glass-modal-shell .text-gray-800,
+  html[data-ui-template='glass'] .gm-glass-modal-shell .text-gray-900,
+  html[data-ui-template='glass'] .gm-glass-modal-shell .dark\:text-gray-50,
+  html[data-ui-template='glass'] .gm-glass-modal-shell .dark\:text-gray-100,
+  html[data-ui-template='glass'] .gm-glass-modal-shell .dark\:text-gray-200,
+  html[data-ui-template='glass'] .gm-glass-modal-shell .dark\:text-gray-300 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-modal-shell .overflow-y-auto.rounded-2xl.bg-gray-50.shadow-neo-in {
+    background-color: var(--glass-surface-widget) !important;
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-inset);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-modal-shell button.rounded-xl.bg-gray-800 {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--glass-accent-primary) 88%, white 12%),
+      color-mix(in srgb, var(--glass-accent-primary) 100%, black 8%)
+    ) !important;
+    border: 1px solid color-mix(in srgb, var(--glass-accent-primary) 65%, white);
+    box-shadow: var(--glass-shadow-raise);
+    color: rgb(248 250 252) !important;
+  }
+
+  /* Suspense tam ekran */
+  html[data-ui-template='glass'] div.fixed.inset-0.z-\[200\][role='status'][aria-busy='true'] {
+    background-color: rgb(255 255 255 / 0.35);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  html[data-ui-template='glass'].dark div.fixed.inset-0.z-\[200\][role='status'][aria-busy='true'] {
+    background-color: rgb(15 23 42 / 0.65);
+  }
+
+  /* Rol önizleme şeridi */
+  html[data-ui-template='glass'] .gm-glass-role-preview-banner {
+    background-color: color-mix(in srgb, rgb(245 158 11 / 0.22) 50%, var(--glass-surface-widget));
+    border-color: color-mix(in srgb, rgb(245 158 11) 45%, var(--glass-border-default)) !important;
+    box-shadow: var(--glass-shadow-inset);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  }
+
+  html[data-ui-template='glass'].dark .gm-glass-role-preview-banner {
+    background-color: color-mix(in srgb, rgb(245 158 11 / 0.14) 40%, var(--glass-surface-widget));
+    border-color: color-mix(in srgb, rgb(245 158 11) 35%, var(--glass-border-default)) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-role-preview-banner button.shadow-neo-out-sm {
+    box-shadow: var(--glass-shadow-raise);
+  }
+
+  /* Ana modül üstü bağlam metni */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-glass-factory-context,
+  html[data-ui-template='glass'] #main-module .gm-glass-factory-context {
+    color: var(--glass-text-muted);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-factory-context .text-gray-500,
+  html[data-ui-template='glass'] .gm-glass-factory-context .dark\:text-gray-500,
+  html[data-ui-template='glass'] .gm-glass-factory-context .dark\:text-gray-400 {
+    color: var(--glass-text-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-factory-context .text-gray-800,
+  html[data-ui-template='glass'] .gm-glass-factory-context .dark\:text-gray-200 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  /* —— glass-06 — arşetip: dashboard / liste / detay (ortak panel dili) —— */
+  html[data-ui-template='glass'] .gm-glass-arch-dashboard > p.text-xs.text-gray-600,
+  html[data-ui-template='glass'] .gm-glass-arch-detail > p.text-xs.text-gray-600 {
+    color: var(--glass-text-muted);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-arch-dashboard h2:not(.sr-only).text-sm.font-semibold,
+  html[data-ui-template='glass'] .gm-glass-arch-list h2.text-sm.font-semibold,
+  html[data-ui-template='glass'] .gm-glass-arch-detail h2.text-sm.font-semibold {
+    color: var(--glass-text-secondary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-arch-dashboard section[aria-labelledby='kpi-heading'] .grid {
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 1280px) {
+    html[data-ui-template='glass'] .gm-glass-arch-dashboard section[aria-labelledby='kpi-heading'] .grid {
+      gap: 1.5rem;
+    }
+  }
+
+  html[data-ui-template='glass'] .gm-glass-arch-dashboard section[aria-labelledby='kpi-heading'] .text-3xl {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-arch-dashboard .grid.grid-cols-1.gap-4.lg\:grid-cols-12 {
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 1024px) {
+    html[data-ui-template='glass'] .gm-glass-arch-dashboard .grid.grid-cols-1.gap-4.lg\:grid-cols-12.lg\:gap-5 {
+      gap: 1.5rem;
+    }
+  }
+
+  html[data-ui-template='glass'] .gm-glass-arch-dashboard ul.divide-y button:hover {
+    box-shadow: none !important;
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 78%, var(--glass-state-hover-overlay)) !important;
+  }
+
+  /* Liste: L2 filtre şeridi */
+  html[data-ui-template='glass'] .gm-glass-filter-strip {
+    background-color: var(--glass-surface-panel-strong) !important;
+    border: 1px solid var(--glass-border-default);
+    box-shadow: var(--glass-shadow-inset);
+    backdrop-filter: blur(var(--glass-blur-md));
+    -webkit-backdrop-filter: blur(var(--glass-blur-md));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-filter-strip .mt-3.rounded-xl.bg-gray-50.shadow-neo-in {
+    background-color: var(--glass-surface-widget) !important;
+    border: 1px solid var(--glass-border-muted);
+  }
+
+  /* Liste + detay modüllerinde tablo satırı — blur yok, hafif dolgu */
+  html[data-ui-template='glass'] .gm-glass-arch-list tbody tr:hover,
+  html[data-ui-template='glass'] .gm-glass-arch-detail tbody tr:hover {
+    box-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 80%, var(--glass-state-hover-overlay)) !important;
+  }
+
+  /* CRM boş durum */
+  html[data-ui-template='glass'] .gm-glass-arch-list .flex.flex-1.flex-col.items-center.justify-center.rounded-2xl.bg-gray-100.p-8 {
+    background-color: var(--glass-surface-panel) !important;
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-inset);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  }
+
+  /* Ortak: liste sütunu + detay sütunu panelleri */
+  html[data-ui-template='glass'] .gm-glass-list-panel {
+    background-color: var(--glass-surface-panel) !important;
+    border: 1px solid var(--glass-border-default);
+    box-shadow: var(--glass-shadow-soft);
+    backdrop-filter: blur(var(--glass-blur-md));
+    -webkit-backdrop-filter: blur(var(--glass-blur-md));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-detail-panel {
+    background-color: var(--glass-surface-panel-strong) !important;
+    border: 1px solid var(--glass-border-default);
+    box-shadow: var(--glass-shadow-elevated);
+    backdrop-filter: blur(var(--glass-blur-lg));
+    -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-detail-hero {
+    background-color: var(--glass-surface-panel-strong) !important;
+    border: 1px solid var(--glass-border-default);
+    box-shadow: var(--glass-shadow-soft);
+    backdrop-filter: blur(var(--glass-blur-md));
+    -webkit-backdrop-filter: blur(var(--glass-blur-md));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-arch-list [role='tablist'] button[aria-selected='true'] {
+    background-color: var(--glass-state-selected-bg) !important;
+    color: var(--glass-text-primary) !important;
+    border: 1px solid var(--glass-border-default);
+    box-shadow: var(--glass-shadow-raise);
+  }
+
+  /* —— MainCanvas: tüm modül sayfalarında ortak üst krom + zemin (glass şablon) —— */
+  html[data-ui-template='glass'] .gm-glass-main-canvas {
+    border: 1px solid var(--glass-border-default);
+    box-shadow: var(--glass-shadow-elevated);
+  }
+
+  /* Planlama: iç içe kart yok — yalnız #main-module kabuğu; ekstra çerçeve/gölge yok */
+  html[data-ui-template='glass'] .gm-glass-main-canvas.gm-glass-main-canvas--full {
+    border: none !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Yalnızca üst şerit — modül gövdesindeki listeleri (ör. dashboard) boyamasın */
+  html[data-ui-template='glass'] .gm-glass-main-canvas > div.border-b {
+    border-color: var(--glass-border-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-main-canvas > div.border-b .text-gray-500,
+  html[data-ui-template='glass'] .gm-glass-main-canvas > div.border-b .dark\:text-gray-400,
+  html[data-ui-template='glass'] .gm-glass-main-canvas > div.border-b .dark\:text-gray-500 {
+    color: var(--glass-text-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-main-canvas > div.border-b nav .text-gray-600,
+  html[data-ui-template='glass'] .gm-glass-main-canvas > div.border-b nav .dark\:text-gray-300 {
+    color: var(--glass-text-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-main-canvas > div.border-b .font-medium.text-gray-800,
+  html[data-ui-template='glass'] .gm-glass-main-canvas > div.border-b .dark\:text-gray-100 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-main-canvas > div.border-b h1 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-main-canvas > div.border-b p.text-sm.text-gray-600,
+  html[data-ui-template='glass'] .gm-glass-main-canvas > div.border-b p.text-sm.dark\:text-gray-300 {
+    color: var(--glass-text-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-main-canvas > div.border-b p.text-sm .font-mono.text-gray-500,
+  html[data-ui-template='glass'] .gm-glass-main-canvas > div.border-b p.text-sm .dark\:text-gray-400 {
+    color: var(--glass-text-muted) !important;
+  }
+
+  /* —— MainCanvas gövde: modül kartları, tablolar, metin hiyerarşisi (tüm modüller) —— */
+  html[data-ui-template='glass'] .gm-glass-main-canvas .rounded-2xl.shadow-neo-out-sm,
+  html[data-ui-template='glass'] .gm-glass-main-canvas .rounded-xl.shadow-neo-out-sm {
+    box-shadow: var(--glass-shadow-soft) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-main-canvas .shadow-neo-in {
+    box-shadow: var(--glass-shadow-inset) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-main-canvas table thead tr {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 94%, transparent) !important;
+    color: var(--glass-text-muted) !important;
+    border-color: var(--glass-border-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-main-canvas table tbody tr {
+    border-color: var(--glass-border-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-main-canvas table tbody tr:hover {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 78%, var(--glass-state-hover-overlay)) !important;
+    box-shadow: none !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-main-canvas .border-gray-200\/60,
+  html[data-ui-template='glass'] .gm-glass-main-canvas .border-gray-200\/80,
+  html[data-ui-template='glass'] .gm-glass-main-canvas .border-gray-200\/90,
+  html[data-ui-template='glass'] .gm-glass-main-canvas .dark\:border-gray-700\/80,
+  html[data-ui-template='glass'] .gm-glass-main-canvas .dark\:border-gray-700\/90,
+  html[data-ui-template='glass'] .gm-glass-main-canvas .dark\:border-gray-800\/80 {
+    border-color: color-mix(in srgb, var(--glass-border-muted) 85%, transparent) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-main-canvas .text-gray-900,
+  html[data-ui-template='glass'] .gm-glass-main-canvas .dark\:text-gray-50,
+  html[data-ui-template='glass'] .gm-glass-main-canvas .text-gray-800,
+  html[data-ui-template='glass'] .gm-glass-main-canvas .dark\:text-gray-100 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-main-canvas .text-gray-500,
+  html[data-ui-template='glass'] .gm-glass-main-canvas .dark\:text-gray-400,
+  html[data-ui-template='glass'] .gm-glass-main-canvas .text-gray-600,
+  html[data-ui-template='glass'] .gm-glass-main-canvas .dark\:text-gray-300,
+  html[data-ui-template='glass'] .gm-glass-main-canvas .text-gray-700,
+  html[data-ui-template='glass'] .gm-glass-main-canvas .dark\:text-gray-200 {
+    color: var(--glass-text-muted) !important;
+  }
+
+  /* Sekme / ikincil düğme: yalnızca shadow-neo-in (glass outlet düğme listesinde yok) */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-glass-main-canvas button.rounded-xl.shadow-neo-in.bg-gray-100,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-glass-main-canvas button.rounded-xl.shadow-neo-in.dark\:bg-gray-900 {
+    background-color: var(--glass-surface-widget) !important;
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-inset);
+    color: var(--glass-text-primary);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  }
+
+  /* —— Genel bakış: grafik / özet kartları + yardımcı alanlar —— */
+  html[data-ui-template='glass'] .gm-glass-dashboard-charts-root {
+    gap: 1.35rem;
+  }
+
+  @media (min-width: 1024px) {
+    html[data-ui-template='glass'] .gm-glass-dashboard-charts-root .gap-5 {
+      gap: 1.35rem;
+    }
+  }
+
+  html[data-ui-template='glass'] .gm-glass-dashboard-card {
+    background-color: var(--glass-surface-panel) !important;
+    border: 1px solid var(--glass-border-default);
+    box-shadow: var(--glass-shadow-soft);
+    backdrop-filter: blur(var(--glass-blur-md));
+    -webkit-backdrop-filter: blur(var(--glass-blur-md));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-dashboard-card h3.text-sm.font-semibold {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .text-xs.text-gray-500,
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .dark\:text-gray-400 {
+    color: var(--glass-text-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .rounded-xl.bg-gray-50\/80,
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .dark\:bg-gray-950\/60,
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .rounded-full.bg-gray-50\/80,
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .dark\:bg-gray-950\/50 {
+    background-color: var(--glass-surface-widget) !important;
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-inset);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-dashboard-card li.rounded-xl.bg-gray-50\/90,
+  html[data-ui-template='glass'] .gm-glass-dashboard-card li.dark\:bg-gray-950\/50 {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 90%, transparent) !important;
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-inset);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .text-gray-800,
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .dark\:text-gray-200,
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .text-gray-700,
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .dark\:text-gray-300 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .text-gray-900,
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .dark\:text-gray-50,
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .dark\:text-gray-100 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-arch-dashboard > p.text-xs strong.text-gray-800,
+  html[data-ui-template='glass'] .gm-glass-arch-dashboard > p.text-xs strong.dark\:text-gray-100,
+  html[data-ui-template='glass'] .gm-glass-arch-dashboard > p.text-xs strong.text-gray-900,
+  html[data-ui-template='glass'] .gm-glass-arch-dashboard > p.text-xs strong.dark\:text-gray-50 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-arch-dashboard p[role='status'].rounded-2xl.border {
+    background-color: var(--glass-surface-widget) !important;
+    border-color: var(--glass-border-default) !important;
+    box-shadow: var(--glass-shadow-inset);
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-arch-dashboard .rounded-2xl.bg-gray-100.p-1.shadow-neo-in.dark\:bg-gray-950 {
+    background-color: var(--glass-surface-panel) !important;
+    border: 1px solid var(--glass-border-muted);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-arch-dashboard .rounded-xl.bg-gray-50\/80.dark\:bg-gray-900\/50 {
+    background-color: var(--glass-surface-widget) !important;
+    border: 1px solid transparent;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-arch-dashboard ul.divide-y.rounded-xl.bg-gray-50\/50 {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 72%, transparent) !important;
+  }
+
+  /* Genel bakış — bölüm başlıkları, giriş metni, KPI iç yazıları */
+  html[data-ui-template='glass'] .gm-glass-arch-dashboard .gm-glass-dashboard-section-title {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-arch-dashboard .gm-glass-dashboard-intro {
+    color: var(--glass-text-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-arch-dashboard .gm-glass-dashboard-intro strong {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-glass-arch-dashboard button.gm-glass-dashboard-kpi .text-sm.font-medium.text-gray-600,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-glass-arch-dashboard button.gm-glass-dashboard-kpi .dark\:text-gray-300,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-glass-arch-dashboard button.gm-glass-dashboard-kpi .mt-auto.pt-2.text-xs {
+    color: var(--glass-text-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-glass-arch-dashboard button.gm-glass-dashboard-kpi .text-3xl {
+    color: var(--glass-text-primary) !important;
+  }
+
+  /* Grafik gömülü alan + çubuklar (glass şablon) */
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .gm-glass-dashboard-chart-inset {
+    background-color: var(--glass-surface-widget) !important;
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-inset);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .gm-glass-chart-bar-track {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 88%, transparent) !important;
+    box-shadow: var(--glass-shadow-inset);
+    border: 1px solid var(--glass-border-muted);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .gm-glass-chart-bar-fill {
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--glass-accent-primary) 82%, transparent),
+      color-mix(in srgb, var(--glass-accent-secondary) 65%, transparent)
+    ) !important;
+    box-shadow: var(--glass-shadow-soft);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .gm-glass-chart-col-planned {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 88%, var(--glass-accent-primary) 12%) !important;
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-raise);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-dashboard-card .gm-glass-chart-col-actual {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--glass-accent-primary) 72%, transparent),
+      color-mix(in srgb, var(--glass-accent-secondary) 58%, transparent)
+    ) !important;
+    border: 1px solid color-mix(in srgb, var(--glass-accent-primary) 35%, transparent);
+    box-shadow: var(--glass-shadow-soft);
+  }
+
+  /* —— Planlama & tasarım: cam cetvel, kuyruk sağda, buğulu zaman şeridi —— */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside {
+    background-color: var(--glass-surface-panel) !important;
+    border-color: var(--glass-border-muted) !important;
+    box-shadow: var(--glass-shadow-soft);
+    backdrop-filter: blur(var(--glass-blur-lg));
+    -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+    color: var(--glass-text-primary);
+  }
+
+  /* Planlama toolbar açılırı: zemin yukarıdaki .gm-glass-dropdown-panel grubunda — yalnız tipografi + chip */
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar-popover .font-semibold.text-gray-900,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar-popover .dark\:text-gray-50,
+  html[data-ui-template='glass'] .gm-planning-menu-portal.gm-planning-toolbar-popover .font-semibold.text-gray-900,
+  html[data-ui-template='glass'] .gm-planning-menu-portal.gm-planning-toolbar-popover .dark\:text-gray-50 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar-popover .text-gray-800,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar-popover .dark\:text-gray-200,
+  html[data-ui-template='glass'] .gm-planning-menu-portal.gm-planning-toolbar-popover .text-gray-800,
+  html[data-ui-template='glass'] .gm-planning-menu-portal.gm-planning-toolbar-popover .dark\:text-gray-200 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  /* Filtre chip’leri — neo gri yerine hafif cam */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar-popover .rounded-full.bg-gray-50,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar-popover .rounded-full.dark\:bg-gray-800,
+  html[data-ui-template='glass'] .gm-planning-menu-portal.gm-planning-toolbar-popover .rounded-full.bg-gray-50,
+  html[data-ui-template='glass'] .gm-planning-menu-portal.gm-planning-toolbar-popover .rounded-full.dark\:bg-gray-800 {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 55%, transparent) !important;
+    border-color: var(--glass-border-subtle) !important;
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar-popover .rounded-full.bg-gray-800,
+  html[data-ui-template='glass'] .gm-planning-menu-portal.gm-planning-toolbar-popover .rounded-full.bg-gray-800 {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 78%, var(--glass-accent-primary)) !important;
+    color: var(--glass-text-primary) !important;
+  }
+
+  /* Scroll-host camı: ayrıntı dosya sonu unlayered blokta (token’ı ikinci kez seyreltme yok) */
+
+  /* Köşe + kalıp etiketleri: tipografi — zemin katman dışı glass blokta */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-corner-cell {
+    border-color: var(--glass-border-muted) !important;
+    color: var(--glass-text-muted);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-mold-label {
+    border-color: var(--glass-border-muted) !important;
+    color: var(--glass-text-muted);
+    z-index: 60 !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-mold-label .font-semibold.text-gray-900,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-mold-label .dark\:text-gray-50,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-corner-cell .font-semibold.text-gray-900,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-corner-cell .dark\:text-gray-50 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-mold-label .text-gray-600,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-mold-label .dark\:text-gray-300 {
+    color: var(--glass-text-muted) !important;
+  }
+
+  /* Yatay kaydırmalı gün / slot alanı — güçlü buğulu cam (üst-alt metin karışmasın) */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-timeline-canvas {
+    background-color: color-mix(in srgb, var(--glass-surface-panel) 36%, transparent) !important;
+    backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.1);
+    -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.1);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-timeline-canvas .col-span-3.border-r {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 58%, transparent) !important;
+    border-color: var(--glass-border-subtle) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-timeline-canvas .bg-gray-200\/50,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-timeline-canvas .dark\:bg-gray-900 {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 52%, rgb(100 116 139 / 0.14)) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-timeline-canvas .border-t.border-gray-200\/60,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-timeline-canvas .border-gray-200\/50,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-timeline-canvas .dark\:border-gray-700 {
+    border-color: var(--glass-border-subtle) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view button.gm-planning-cell {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 22%, transparent) !important;
+    border-color: var(--glass-border-subtle) !important;
+    color: var(--glass-text-muted);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view button.gm-planning-cell:hover {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 48%, var(--glass-state-hover-overlay)) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view button.gm-planning-cell.bg-gray-200\/40 {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 40%, rgb(100 116 139 / 0.12)) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view button.gm-planning-cell.bg-gray-100\/80 {
+    background-color: color-mix(in srgb, var(--glass-accent-primary) 16%, var(--glass-surface-widget)) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-summary-strip {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 72%, transparent) !important;
+    border-color: var(--glass-border-muted) !important;
+    backdrop-filter: blur(var(--glass-blur-md));
+    -webkit-backdrop-filter: blur(var(--glass-blur-md));
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-summary-strip .rounded-xl.bg-gray-100,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-summary-strip .dark\:bg-gray-900 {
+    background-color: var(--glass-surface-widget) !important;
+    border: 1px solid var(--glass-border-muted);
+    box-shadow: var(--glass-shadow-inset);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar .text-gray-600,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar .dark\:text-gray-300,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside .text-gray-600,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside .dark\:text-gray-300 {
+    color: var(--glass-text-muted) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar .text-gray-900,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar .dark\:text-gray-50,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside .text-gray-900,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside .dark\:text-gray-50 {
+    color: var(--glass-text-primary) !important;
+  }
+
+  /*
+   * Planlama — ürün sağ tık menüsü (portal → document.body).
+   * Kök: yalnızca dışarı tıklamayı yakalar; karartma / buğu yok. Cam = .gm-glass-context-menu-panel.
+   */
+  html[data-ui-template='glass'] .gm-glass-context-menu-root {
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Context menü paneli: yüzey yukarıdaki kabuk dropdown grubunda */
+
+  html[data-ui-template='glass'] .gm-glass-context-menu-item {
+    color: var(--glass-text-primary) !important;
+    background-color: transparent;
+    border: 0;
+    cursor: pointer;
+    transition: background-color 0.14s ease;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-context-menu-item:hover {
+    background-color: color-mix(in srgb, var(--glass-surface-widget) 42%, var(--glass-state-hover-overlay)) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-context-menu-item:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--glass-accent-primary) 55%, transparent);
+    outline-offset: 1px;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-context-menu-item--danger {
+    color: color-mix(in srgb, rgb(185 28 28) 82%, var(--glass-text-primary)) !important;
+  }
+
+  html[data-ui-template='glass'].dark .gm-glass-context-menu-item--danger {
+    color: color-mix(in srgb, rgb(252 165 165) 85%, var(--glass-text-primary)) !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-context-menu-item--danger:hover {
+    background-color: color-mix(in srgb, rgb(220 38 38) 22%, transparent) !important;
+  }
+
+  html[data-ui-template='glass'].dark .gm-glass-context-menu-item--danger:hover {
+    background-color: color-mix(in srgb, rgb(248 113 113) 16%, transparent) !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html[data-ui-template='glass'] .gm-glass-drawer-backdrop,
+    html[data-ui-template='glass'] div.fixed.inset-0.z-\[200\][role='status'][aria-busy='true'] {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+
+    html[data-ui-template='glass'] .gm-glass-dropdown-panel,
+    html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'],
+    html[data-ui-template='glass'] .gm-glass-outlet-scope [role='menu'],
+    html[data-ui-template='glass'] .gm-glass-outlet-scope [role='listbox'],
+    html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar-popover,
+    html[data-ui-template='glass'] .gm-planning-menu-portal,
+    html[data-ui-template='glass'] .gm-glass-context-menu-panel {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+}
+
+/*
+ * Kabuk açılır paneller — katman dışı (unlayered): Tailwind utility (bg-transparent vb.) üzerinde kazanır;
+ * drawer panel (.gm-glass-drawer-panel) ile aynı yüzey token’ları.
+ */
+html[data-ui-template='glass'] .gm-glass-dropdown-panel,
+html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'],
+html[data-ui-template='glass'] .gm-glass-outlet-scope [role='menu'],
+html[data-ui-template='glass'] .gm-glass-outlet-scope [role='listbox'],
+html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar-popover,
+html[data-ui-template='glass'] .gm-planning-menu-portal.gm-planning-toolbar-popover,
+html[data-ui-template='glass'] .gm-glass-context-menu-panel {
+  background-color: var(--glass-surface-panel-strong) !important;
+  border: 1px solid var(--glass-border-default) !important;
+  box-shadow: var(--glass-shadow-elevated) !important;
+  backdrop-filter: blur(var(--glass-blur-lg)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg)) !important;
+  color: var(--glass-text-primary) !important;
+  isolation: isolate;
+}
+
+/* Utility katmanı (hover:bg-gray-50 vb.) üzerinde kazanır — @layer components ile aynı karışım */
+html[data-ui-template='glass'] .gm-glass-dropdown-panel label:hover,
+html[data-ui-template='glass'] .gm-glass-dropdown-panel button:hover,
+html[data-ui-template='glass'] .gm-glass-dropdown-panel button:focus-visible,
+html[data-ui-template='glass'] .gm-planning-menu-portal label:hover,
+html[data-ui-template='glass'] .gm-planning-menu-portal button:hover,
+html[data-ui-template='glass'] .gm-planning-menu-portal button:focus-visible,
+html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] label:hover,
+html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] button:hover,
+html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'] button:focus-visible,
+html[data-ui-template='glass'] .gm-glass-topbar-menu-portal label:hover,
+html[data-ui-template='glass'] .gm-glass-topbar-menu-portal button:hover,
+html[data-ui-template='glass'] .gm-glass-topbar-menu-portal button:focus-visible {
+  background-color: color-mix(in srgb, var(--glass-surface-widget) 70%, var(--glass-state-hover-overlay)) !important;
+}
+
+/*
+ * Drawer / modal / mobil overlay: karartma (scrim) yok — dış alan kararmaz.
+ * (Bileşenlerdeki bg-black/20, bg-gray-900/40 vb. utility’ler bu kurallarla şeffaflanır.)
+ */
+html[data-ui-template='glass'] .gm-glass-drawer-backdrop,
+html[data-ui-template='glass'] .gm-glass-drawer-root--module-scrim .gm-glass-drawer-backdrop {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Yalnız tam ekran kabuk — iç kartlarda da .gm-glass-modal-shell kullanıldığı için .fixed.inset-0 şart */
+html[data-ui-template='glass'] .gm-glass-modal-shell.fixed.inset-0 {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-ui-template='glass'] .gm-glass-modal-shell.fixed.inset-0 > .absolute.inset-0 {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-ui-template='glass'] .gm-glass-shell-mobile-overlay {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Planlama — cetvel sol ray genişliği (TSX ile senkron) */
+html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view {
+  --gm-planning-mold-rail: 200px;
+}
+
+/*
+ * Planlama cetveli — unlayered (Tailwind üstünde kazanır).
+ * Şeffaflığı hafif düşürmek için token + opak buz/slate baz (transparent ile seyreltme değil).
+ */
+html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-scroll-host {
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--glass-surface-panel) 55%, rgb(248 250 252 / 0.9)) 0,
+    color-mix(in srgb, var(--glass-surface-panel) 55%, rgb(248 250 252 / 0.9)) var(--gm-planning-mold-rail, 200px),
+    color-mix(in srgb, var(--glass-surface-panel-strong) 62%, rgb(248 250 252 / 0.86)) var(--gm-planning-mold-rail, 200px)
+  ) !important;
+  border-color: var(--glass-border-muted) !important;
+  box-shadow: var(--glass-shadow-inset) !important;
+  backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.12) !important;
+}
+
+html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-scroll-host {
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--glass-surface-panel) 50%, rgb(15 23 42 / 0.78)) 0,
+    color-mix(in srgb, var(--glass-surface-panel) 50%, rgb(15 23 42 / 0.78)) var(--gm-planning-mold-rail, 200px),
+    color-mix(in srgb, var(--glass-surface-panel-strong) 58%, rgb(30 41 59 / 0.72)) var(--gm-planning-mold-rail, 200px)
+  ) !important;
+  border-color: var(--glass-border-muted) !important;
+  box-shadow: var(--glass-shadow-inset) !important;
+  backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.12) !important;
+}
+
+html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-corner-cell,
+html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-mold-label,
+html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside {
+  background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 68%, rgb(248 250 252 / 0.84)) !important;
+  border-color: var(--glass-border-muted) !important;
+  backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.08) !important;
+  box-shadow: var(--glass-shadow-soft) !important;
+}
+
+html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-corner-cell,
+html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-mold-label,
+html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside {
+  background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 62%, rgb(30 41 59 / 0.75)) !important;
+  border-color: var(--glass-border-muted) !important;
+  backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.08) !important;
+  box-shadow: var(--glass-shadow-soft) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-ui-template='glass'] .gm-glass-dropdown-panel,
+  html[data-ui-template='glass'] .gm-planning-menu-portal,
+  html[data-ui-template='glass'] .gm-glass-topbar-host header [role='menu'],
+  html[data-ui-template='glass'] .gm-glass-outlet-scope [role='menu'],
+  html[data-ui-template='glass'] .gm-glass-outlet-scope [role='listbox'],
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar-popover,
+  html[data-ui-template='glass'] .gm-glass-context-menu-panel,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-scroll-host,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-mold-label,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-corner-cell,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-scroll-host {
+    background-image: none !important;
+    background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 72%, rgb(248 250 252 / 0.86)) !important;
+  }
+
+  html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-mold-label,
+  html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-corner-cell,
+  html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside {
+    background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 75%, rgb(248 250 252 / 0.82)) !important;
+    box-shadow: none !important;
+  }
+
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-scroll-host {
+    background-image: none !important;
+    background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 68%, rgb(30 41 59 / 0.72)) !important;
+  }
+
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-mold-label,
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-corner-cell,
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside {
+    background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 72%, rgb(30 41 59 / 0.68)) !important;
+  }
+}
