@@ -17,6 +17,7 @@ import { ProductionFactoryOpsView } from './production/ProductionFactoryOpsView'
 import { PlanningDesignView } from './production/PlanningDesignView'
 import { ProductionSummaryDashboard } from './production/ProductionSummaryDashboard'
 import { MesModuleView } from './mes/MesModuleView'
+import { EngineeringIntegrationOkanPage } from './muhendislikOkan/EngineeringIntegrationOkanPage'
 import { EngineeringModuleView } from './muhendislik/EngineeringModuleView'
 import { Parametric3DModuleView } from './parametric3d/Parametric3DModuleView'
 import { ProjectModuleView } from './proje/ProjectModuleView'
@@ -43,6 +44,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
   const isWorkStart = activeId === 'work-start'
   const isProject = activeId === 'project'
   const isEngineering = activeId === 'engineering'
+  const isEngineeringOkan = activeId === 'engineering-okan'
   const isParametric3d = activeId === 'parametric-3d'
   const isProductionSummary = activeId === 'production-summary'
   const isMes = activeId === 'mes'
@@ -100,6 +102,8 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
         <ProjectModuleView onNavigate={onNavigate} />
       ) : isEngineering ? (
         <EngineeringModuleView onNavigate={onNavigate} />
+      ) : isEngineeringOkan ? (
+        <EngineeringIntegrationOkanPage />
       ) : isParametric3d ? (
         <Parametric3DModuleView />
       ) : isProductionSummary ? (
