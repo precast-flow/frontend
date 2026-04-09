@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import type { AppShellOutletContext } from '../../appShellOutletContext'
-import { accountNavGroup, activeModuleIdFromPathname, moduleIdToPath, navGroups, startNavItems } from '../../data/navigation'
+import { activeModuleIdFromPathname, moduleIdToPath, navGroups, startNavItems } from '../../data/navigation'
 import { useFactoryContext } from '../../context/FactoryContext'
 import { useProductionRolePreview } from '../../context/ProductionRolePreviewContext'
 import { filterNavGroupsForPreview, getRoleMatrixRow } from '../../data/productionRoleMatrixMock'
@@ -20,8 +20,9 @@ function GlassAppShellInner() {
   const { selectedFactory, factoryDrawerOpen, closeFactoryDrawer } = useFactoryContext()
   const { previewRoleId } = useProductionRolePreview()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  /** Masaüstü varsayılan: dar şerit; localStorage yok — her yüklemede dar. */
+  /** false = geniş menü (marka kutusu); true = dar şerit (yalnızca PF) */
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
+  /** Dar şeritte hover ile menü genişken üst çubuk kayması */
   const [sidebarHoverExpanded, setSidebarHoverExpanded] = useState(false)
 
   const effectiveActiveId = useMemo(() => activeModuleIdFromPathname(location.pathname), [location.pathname])
@@ -52,13 +53,13 @@ function GlassAppShellInner() {
 
   const outletContext: AppShellOutletContext = { onNavigate: select }
 
-  const toggleSidebarCollapsed = useCallback(() => {
-    setSidebarCollapsed((c) => !c)
-  }, [])
-
   const sidebarCollapsedEffective = sidebarCollapsed && !mobileNavOpen
-  const sidebarDesktopExpandedForBottomBar = !sidebarCollapsedEffective || sidebarHoverExpanded
-  const topBarLeftPadding = sidebarDesktopExpandedForBottomBar ? 'calc(280px + 1rem)' : 'calc(4.75rem + 1rem)'
+  const topBarLeftPadding =
+    sidebarCollapsedEffective && !sidebarHoverExpanded ? 'calc(4.75rem + 1rem)' : 'calc(280px + 1rem)'
+
+  const expandSidebar = useCallback(() => setSidebarCollapsed(false), [])
+  /** Masaüstü grid: banner varsa nav ile main aynı satırda (banner yalnızca içerik sütununda) */
+  const hasPreviewBanner = Boolean(previewRoleId)
 
   return (
     <GlassLayout>
@@ -71,37 +72,48 @@ function GlassAppShellInner() {
         />
       ) : null}
 
-      <div className="mx-auto flex min-h-dvh max-w-[1600px] flex-col gap-3 p-3 text-[var(--glass-text-primary)] md:flex-row md:gap-4 md:p-5">
+      <div className="mx-auto flex min-h-dvh max-w-[1600px] flex-col gap-3 p-3 text-[var(--glass-text-primary)] md:gap-4 md:p-5">
         <div
           className={[
-            /* Mobil: overlay üstü; masaüstü: ana içerikten ÜSTTE (z-auto içeriğin altında kalıyordu) */
-            /* Ana sütundan üstte boyansın; genişleyen panel tıklanabilsin (üst çubuk z-[95]) */
-            'z-50 md:z-[80]',
-            'md:relative md:block md:w-[4.75rem] md:min-w-[4.75rem] md:overflow-visible',
-            mobileNavOpen
-              ? 'fixed inset-y-3 left-3 flex md:static'
-              : 'hidden md:block',
+            'relative z-0 flex min-h-0 min-w-0 flex-1 flex-col gap-3 pt-20 md:min-h-0 md:grid md:grid-cols-[4.75rem_minmax(0,1fr)] md:gap-x-4 md:gap-y-4 md:pt-24',
+            /* Mobil: banner → main → footer; masaüstü: nav ile main aynı satır (banner üstte yalnız sağda) */
           ].join(' ')}
         >
-          <GlassSidebar>
-            <Sidebar
-              startItems={startNavItems}
-              groups={filteredNavGroups}
-              accountGroup={accountNavGroup}
-              activeId={effectiveActiveId}
-              onSelect={select}
-              collapsed={sidebarCollapsedEffective}
-              onToggleCollapsed={toggleSidebarCollapsed}
-              onDesktopHoverExpandedChange={setSidebarHoverExpanded}
-            />
-          </GlassSidebar>
-        </div>
+          <div
+            className={[
+              'z-50 md:z-[80]',
+              'md:relative md:block md:w-[4.75rem] md:min-w-[4.75rem] md:overflow-visible md:self-start',
+              hasPreviewBanner ? 'md:col-start-1 md:row-start-2' : 'md:col-start-1 md:row-start-1',
+              mobileNavOpen
+                ? 'fixed inset-y-3 left-3 flex md:static'
+                : 'hidden md:block',
+            ].join(' ')}
+          >
+            <GlassSidebar>
+              <Sidebar
+                startItems={startNavItems}
+                groups={filteredNavGroups}
+                activeId={effectiveActiveId}
+                onSelect={select}
+                collapsed={sidebarCollapsedEffective}
+                onExpandSidebar={expandSidebar}
+                onDesktopHoverExpandedChange={setSidebarHoverExpanded}
+              />
+            </GlassSidebar>
+          </div>
 
-        <div className="relative z-0 flex min-h-0 min-w-0 flex-1 flex-col gap-3 pt-20 md:gap-4 md:pt-24">
-          {previewRoleId ? <ProductionRolePreviewBanner /> : null}
+          {previewRoleId ? (
+            <div className="order-1 md:col-start-2 md:row-start-1">
+              <ProductionRolePreviewBanner />
+            </div>
+          ) : null}
+
           <main
             id="main-module"
-            className="gm-glass-panel-l1 gm-motion flex min-h-[60vh] flex-1 flex-col overflow-visible rounded-2xl p-1 md:min-h-[62vh] md:rounded-3xl"
+            className={[
+              'gm-glass-panel-l1 gm-motion relative z-0 flex min-h-[60vh] flex-1 flex-col overflow-visible rounded-2xl p-1 md:min-h-[62vh] md:rounded-3xl',
+              hasPreviewBanner ? 'order-2 md:col-start-2 md:row-start-2' : 'order-1 md:col-start-2 md:row-start-1',
+            ].join(' ')}
             aria-label="Modül içeriği"
           >
             <div
@@ -111,7 +123,15 @@ function GlassAppShellInner() {
               <Outlet context={outletContext} />
             </div>
           </main>
-          <div className="gm-glass-footer-host gm-glass-panel-l2 gm-motion rounded-2xl md:rounded-3xl">
+
+          <div
+            className={[
+              'gm-glass-footer-host gm-glass-panel-l2 gm-motion rounded-2xl md:rounded-3xl',
+              hasPreviewBanner
+                ? 'order-3 md:col-start-2 md:row-start-3'
+                : 'order-2 md:col-start-2 md:row-start-2',
+            ].join(' ')}
+          >
             <div className="[&>footer]:rounded-2xl [&>footer]:bg-transparent [&>footer]:shadow-none md:[&>footer]:rounded-3xl">
               <AppFooter />
             </div>

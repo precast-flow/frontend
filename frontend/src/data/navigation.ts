@@ -34,48 +34,47 @@ export const startNavItems: NavItem[] = [
 ]
 
 /**
- * Prompt 02 — çekirdek 4 grup + Adım 11 MVP: `system` (Onay Akışı Tasarımcısı).
- * Raporlama + Mobil, 01’deki “nereye konur?” kararıyla Lojistik & Saha altında.
+ * İki seviyeli kenar çubuğu — tek açık akordeon bölümü (Sidebar).
+ * Üretim grubu id’si `production` kalmalı (rol önizlemesi süzgeci).
  */
 export const navGroups: NavGroup[] = [
   {
-    id: 'sales',
-    titleKey: 'nav.group.sales',
-    items: [
-      { id: 'crm', labelKey: 'nav.crm', slug: 'crm' },
-      { id: 'quote', labelKey: 'nav.quote', slug: 'teklif' },
-      { id: 'work-start', labelKey: 'nav.workStart', slug: 'is-baslat' },
-    ],
-  },
-  {
-    id: 'project',
-    titleKey: 'nav.group.project',
-    items: [
-      { id: 'project', labelKey: 'nav.project', slug: 'proje' },
-      { id: 'engineering', labelKey: 'nav.engineering', slug: 'muhendislik' },
-      { id: 'parametric-3d', labelKey: 'nav.parametric3d', slug: 'parametrik-3b' },
-    ],
-  },
-  {
     id: 'production',
-    titleKey: 'nav.group.production',
+    titleKey: 'nav.sidebar.section.production',
     items: [
       { id: 'production-summary', labelKey: 'nav.productionSummary', slug: 'uretim-ozet' },
       { id: 'mes', labelKey: 'nav.mes', slug: 'mes' },
-      { id: 'planning-design', labelKey: 'nav.planningDesign', slug: 'planlama-tasarim' },
       { id: 'mold-board', labelKey: 'nav.moldBoard', slug: 'kalip-tahtasi' },
       { id: 'pending-priority', labelKey: 'nav.pendingPriority', slug: 'oncelik-raporu' },
       { id: 'concrete-recipe', labelKey: 'nav.concreteRecipe', slug: 'beton-recete' },
       { id: 'batch-plant', labelKey: 'nav.batchPlant', slug: 'beton-santrali' },
       { id: 'production-role-preview', labelKey: 'nav.productionRolePreview', slug: 'uretim-roller' },
       { id: 'production-factory-ops', labelKey: 'nav.productionFactoryOps', slug: 'fabrika-vardiya-kalip-ekip' },
-      { id: 'quality', labelKey: 'nav.quality', slug: 'kalite' },
       { id: 'yard', labelKey: 'nav.yard', slug: 'yard' },
     ],
   },
   {
+    id: 'planning',
+    titleKey: 'nav.sidebar.section.planning',
+    items: [
+      { id: 'crm', labelKey: 'nav.crm', slug: 'crm' },
+      { id: 'quote', labelKey: 'nav.quote', slug: 'teklif' },
+      { id: 'work-start', labelKey: 'nav.workStart', slug: 'is-baslat' },
+      { id: 'project', labelKey: 'nav.project', slug: 'proje' },
+      { id: 'engineering', labelKey: 'nav.engineering', slug: 'muhendislik' },
+      { id: 'engineering-okan', labelKey: 'nav.engineeringOkan', slug: 'muhendislik-okan' },
+      { id: 'parametric-3d', labelKey: 'nav.parametric3d', slug: 'parametrik-3b' },
+      { id: 'planning-design', labelKey: 'nav.planningDesign', slug: 'planlama-tasarim' },
+    ],
+  },
+  {
+    id: 'quality',
+    titleKey: 'nav.sidebar.section.quality',
+    items: [{ id: 'quality', labelKey: 'nav.quality', slug: 'kalite' }],
+  },
+  {
     id: 'logistics',
-    titleKey: 'nav.group.logistics',
+    titleKey: 'nav.sidebar.section.logistics',
     items: [
       { id: 'dispatch', labelKey: 'nav.dispatch', slug: 'sevkiyat' },
       { id: 'field', labelKey: 'nav.field', slug: 'saha' },
@@ -85,31 +84,29 @@ export const navGroups: NavGroup[] = [
   },
   {
     id: 'system',
-    titleKey: 'nav.group.system',
+    titleKey: 'nav.sidebar.section.system',
     items: [
       { id: 'approval-flow', labelKey: 'nav.approvalFlow', slug: 'onay-akisi' },
       { id: 'roles-permissions', labelKey: 'nav.roles', slug: 'roller-izinler' },
       { id: 'user-management', labelKey: 'nav.users', slug: 'kullanicilar' },
     ],
   },
+  {
+    id: 'account',
+    titleKey: 'nav.sidebar.section.account',
+    items: [
+      { id: 'profile', labelKey: 'nav.profile', slug: 'profil' },
+      { id: 'settings', labelKey: 'nav.settings', slug: 'ayarlar' },
+    ],
+  },
 ]
 
-/** Hesap — URL: `/profile`, `/settings` */
-export const accountNavGroup: NavGroup = {
-  id: 'account',
-  titleKey: 'nav.group.account',
-  items: [
-    { id: 'profile', labelKey: 'nav.profile', slug: 'profil' },
-    { id: 'settings', labelKey: 'nav.settings', slug: 'ayarlar' },
-  ],
-}
+/** Hesap — `findNavItem` / geriye dönük referanslar için son gruptan türetilir */
+export const accountNavGroup: NavGroup = navGroups.find((g) => g.id === 'account')!
 
 export function findNavItem(id: string): NavItem | undefined {
   const inStart = startNavItems.find((i) => i.id === id)
   if (inStart) return inStart
-  for (const item of accountNavGroup.items) {
-    if (item.id === id) return item
-  }
   for (const g of navGroups) {
     const hit = g.items.find((i) => i.id === id)
     if (hit) return hit
@@ -148,4 +145,12 @@ export function activeModuleIdFromPathname(pathname: string): string {
   const seg = pathname.replace(/^\//, '').split('/')[0]
   if (!seg) return 'dashboard'
   return findModuleIdBySlug(seg) ?? 'dashboard'
+}
+
+/** Aktif modülün hangi akordeon grubunda olduğu (yoksa null). */
+export function navGroupIdForModuleId(moduleId: string, groups: NavGroup[]): string | null {
+  for (const g of groups) {
+    if (g.items.some((i) => i.id === moduleId)) return g.id
+  }
+  return null
 }
