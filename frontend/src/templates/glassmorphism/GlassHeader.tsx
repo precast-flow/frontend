@@ -2,11 +2,11 @@ type Props = {
   children: React.ReactNode
 }
 
-/** Glass frame around the existing top bar (additive styling via shell). */
+/** İnce üst krom: tam geniş şerit, nav’dan ayrı “komut çubuğu” görünümü. */
 export function GlassHeader({ children }: Props) {
   return (
-    <div className="gm-glass-topbar-host gm-glass-panel-l1 gm-motion rounded-[1.35rem] py-px shadow-none md:rounded-3xl">
-      <div className="overflow-visible rounded-[1.15rem] md:rounded-[1.35rem] [&>header]:rounded-2xl [&>header]:bg-transparent [&>header]:shadow-none">
+    <div className="gm-glass-topbar-host gm-glass-topbar-okan gm-motion overflow-visible rounded-2xl border md:rounded-3xl">
+      <div className="overflow-visible rounded-[inherit] [&>header]:rounded-[inherit] [&>header]:bg-transparent [&>header]:shadow-none">
         {children}
       </div>
     </div>

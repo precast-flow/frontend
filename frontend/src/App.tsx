@@ -48,7 +48,7 @@ function App() {
             <Route path="profile" element={<ProfilePage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="glass-showcase" element={<GlassShowcasePage />} />
-            <Route path=":moduleSlug" element={<MainCanvasOutlet />} />
+            <Route path=":moduleSlug/*" element={<MainCanvasOutlet />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

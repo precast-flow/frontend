@@ -22,8 +22,8 @@ html[data-ui-template='glass'] {
   --glass-blur-lg: 22px;
   /* Shell ile hizalı: sabit üst şerit + içerik pt-24 / md:pt-28 */
   --gm-topbar-clear: 6rem;
-  /* GlassAppShell: mx-auto max-w-[1600px] px-3 md:px-5 — drawer/modal sağ kenarı üst çubukla aynı */
-  --gm-shell-max-w: 1600px;
+  /* GlassAppShell: tam genişlik + px-3 md:px-5 — drawer/modal sağ kenarı üst çubukla aynı */
+  --gm-shell-max-w: 100vw;
   --gm-shell-pad-x: 0.75rem;
   --gm-shell-inset-right: calc(max(0px, (100vw - var(--gm-shell-max-w)) / 2) + var(--gm-shell-pad-x));
 

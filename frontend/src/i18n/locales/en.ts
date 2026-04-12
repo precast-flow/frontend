@@ -1,4 +1,5 @@
 import { expandE2eKeys, type E2eTriple } from './buildE2e'
+import { mptsStudioEn } from './mptsStudioLocales'
 
 const e2eEn: E2eTriple[] = [
   {
@@ -131,6 +132,7 @@ const shell: Record<string, string> = {
   'nav.project': 'Project management',
   'nav.engineering': 'Engineering',
   'nav.engineeringOkan': 'Engineering Integration — okan',
+  'nav.manualPieceStudio': 'Manual Piece & Template Studio',
   'nav.parametric3d': 'Parametric 3D',
   'nav.productionSummary': 'Production summary',
   'nav.mes': 'MES',
@@ -1487,6 +1489,14 @@ const shell: Record<string, string> = {
 
   'topbar.openMenu': 'Open menu',
   'topbar.menu': 'Menu',
+  'topbar.openAppMenu': 'Open theme, notifications, and account menu',
+  'topbar.appBrand': 'Prefabrik OS',
+  'topbar.sectionAppearance': 'Appearance',
+  'topbar.sectionNotifications': 'Notifications',
+  'topbar.sectionAccount': 'Account',
+  'topNav.subtitle': 'Quick access · ERP',
+  'topNav.aria': 'Top shortcut navigation',
+  'topNav.badge': 'Top strip',
   'topbar.tagline': 'ERP · MES · Logistics',
   'topbar.factory': 'Factory',
   'topbar.factorySelect': 'Select factory',
@@ -1717,4 +1727,5 @@ const shell: Record<string, string> = {
 export const en: Record<string, string> = {
   ...shell,
   ...expandE2eKeys(e2eEn),
+  ...mptsStudioEn,
 }

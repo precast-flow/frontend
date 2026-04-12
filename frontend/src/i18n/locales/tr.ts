@@ -1,4 +1,5 @@
 import { expandE2eKeys, type E2eTriple } from './buildE2e'
+import { mptsStudioTr } from './mptsStudioLocales'
 
 const e2eTr: E2eTriple[] = [
   {
@@ -131,6 +132,7 @@ const shell: Record<string, string> = {
   'nav.project': 'Proje Yönetimi',
   'nav.engineering': 'Mühendislik Entegrasyonu',
   'nav.engineeringOkan': 'Mühendislik Entegrasyonu-okan',
+  'nav.manualPieceStudio': 'Manuel Parça ve Şablon Stüdyosu',
   'nav.parametric3d': 'Parametrik 3B',
   'nav.productionSummary': 'Üretim özeti',
   'nav.mes': 'Üretim (MES)',
@@ -1483,6 +1485,14 @@ const shell: Record<string, string> = {
 
   'topbar.openMenu': 'Menüyü aç',
   'topbar.menu': 'Menü',
+  'topbar.openAppMenu': 'Tema, bildirimler ve hesap menüsünü aç',
+  'topbar.appBrand': 'Prefabrik OS',
+  'topbar.sectionAppearance': 'Görünüm',
+  'topbar.sectionNotifications': 'Bildirimler',
+  'topbar.sectionAccount': 'Hesap',
+  'topNav.subtitle': 'Hızlı erişim · ERP',
+  'topNav.aria': 'Üst kısayol menüsü',
+  'topNav.badge': 'Üst şerit',
   'topbar.tagline': 'ERP · MES · Lojistik',
   'topbar.factory': 'Fabrika',
   'topbar.factorySelect': 'Fabrika seç',
@@ -1715,4 +1725,5 @@ const shell: Record<string, string> = {
 export const tr: Record<string, string> = {
   ...shell,
   ...expandE2eKeys(e2eTr),
+  ...mptsStudioTr,
 }
