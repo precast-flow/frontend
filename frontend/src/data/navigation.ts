@@ -63,6 +63,11 @@ export const navGroups: NavGroup[] = [
       { id: 'project', labelKey: 'nav.project', slug: 'proje' },
       { id: 'engineering', labelKey: 'nav.engineering', slug: 'muhendislik' },
       { id: 'engineering-okan', labelKey: 'nav.engineeringOkan', slug: 'muhendislik-okan' },
+      {
+        id: 'manual-piece-studio',
+        labelKey: 'nav.manualPieceStudio',
+        slug: 'parca-sablon-studyosu',
+      },
       { id: 'parametric-3d', labelKey: 'nav.parametric3d', slug: 'parametrik-3b' },
       { id: 'planning-design', labelKey: 'nav.planningDesign', slug: 'planlama-tasarim' },
     ],

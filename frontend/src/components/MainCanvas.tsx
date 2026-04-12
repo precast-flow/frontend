@@ -19,6 +19,7 @@ import { ProductionSummaryDashboard } from './production/ProductionSummaryDashbo
 import { MesModuleView } from './mes/MesModuleView'
 import { EngineeringIntegrationOkanPage } from './muhendislikOkan/EngineeringIntegrationOkanPage'
 import { EngineeringModuleView } from './muhendislik/EngineeringModuleView'
+import { ManualPieceTemplateStudioModule } from './manualPieceTemplateStudio/ManualPieceTemplateStudioModule'
 import { Parametric3DModuleView } from './parametric3d/Parametric3DModuleView'
 import { ProjectModuleView } from './proje/ProjectModuleView'
 import { QuoteModuleView } from './teklif/QuoteModuleView'
@@ -45,6 +46,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
   const isProject = activeId === 'project'
   const isEngineering = activeId === 'engineering'
   const isEngineeringOkan = activeId === 'engineering-okan'
+  const isManualPieceStudio = activeId === 'manual-piece-studio'
   const isParametric3d = activeId === 'parametric-3d'
   const isProductionSummary = activeId === 'production-summary'
   const isMes = activeId === 'mes'
@@ -77,7 +79,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
           ? 'gm-glass-main-canvas gm-glass-main-canvas--full flex min-h-0 flex-1 flex-col overflow-hidden'
           : [
               'gm-glass-main-canvas flex min-h-0 flex-1 flex-col rounded-3xl p-5 md:p-6',
-              isEngineeringOkan
+              isEngineeringOkan || isManualPieceStudio
                 ? 'gm-glass-main-canvas--okan-liquid min-h-[min(100%,42rem)]'
                 : 'bg-pf-surface shadow-neo-out',
             ].join(' ')
@@ -109,6 +111,8 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
         <EngineeringModuleView onNavigate={onNavigate} />
       ) : isEngineeringOkan ? (
         <EngineeringIntegrationOkanPage />
+      ) : isManualPieceStudio ? (
+        <ManualPieceTemplateStudioModule onCloseModule={() => onNavigate('dashboard')} />
       ) : isParametric3d ? (
         <Parametric3DModuleView />
       ) : isProductionSummary ? (
