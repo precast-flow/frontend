@@ -75,7 +75,12 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
       className={
         fullBleedInMainModule
           ? 'gm-glass-main-canvas gm-glass-main-canvas--full flex min-h-0 flex-1 flex-col overflow-hidden'
-          : 'gm-glass-main-canvas flex min-h-0 flex-1 flex-col rounded-3xl bg-pf-surface p-5 shadow-neo-out md:p-6'
+          : [
+              'gm-glass-main-canvas flex min-h-0 flex-1 flex-col rounded-3xl p-5 md:p-6',
+              isEngineeringOkan
+                ? 'gm-glass-main-canvas--okan-liquid min-h-[min(100%,42rem)]'
+                : 'bg-pf-surface shadow-neo-out',
+            ].join(' ')
       }
     >
       <div

@@ -15,6 +15,9 @@ type Props = {
   onConfirm: (payload: { factoryId: string; dueDate: string; prdId: string }) => void
 }
 
+const formNest =
+  'grid gap-3 rounded-xl border border-white/25 bg-white/25 p-3 shadow-[inset_0_1px_0_rgb(255_255_255/0.4)] backdrop-blur-xl dark:border-white/10 dark:bg-white/5'
+
 export function SmartProductionOrderModal({ open, job, t, nextPrd, onClose, onConfirm }: Props) {
   const [factoryId, setFactoryId] = useState<string>(MOCK_OKAN_FACTORIES[0]!.id)
   const [dueDate, setDueDate] = useState(() => new Date().toISOString().slice(0, 10))
@@ -53,24 +56,24 @@ export function SmartProductionOrderModal({ open, job, t, nextPrd, onClose, onCo
   }
 
   return (
-    <div className="gm-glass-modal-shell fixed inset-0 z-[100] flex items-end justify-center p-3 sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center p-3 sm:items-center sm:p-6">
       <button
         type="button"
         aria-label={t('okanEng.modal.close')}
-        className="absolute inset-0 bg-gray-900/25 backdrop-blur-[2px]"
+        className="okan-liquid-modal-backdrop absolute inset-0"
         onClick={onClose}
       />
       <div
         role="dialog"
         aria-modal
-        className="relative z-10 w-full max-w-lg rounded-3xl bg-gray-100 p-5 shadow-neo-out dark:bg-gray-900"
+        className="okan-liquid-modal-panel relative z-10 w-full max-w-lg p-5"
       >
         <div className="mb-3 flex items-start justify-between gap-2">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">{t('okanEng.modal.title')}</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">{t('okanEng.modal.title')}</h2>
           <button
             type="button"
             onClick={onClose}
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-600 shadow-neo-out-sm hover:text-gray-900 dark:bg-gray-800 dark:text-gray-300 dark:hover:text-white"
+            className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/30 bg-white/35 text-slate-600 shadow-[inset_0_1px_0_rgb(255_255_255/0.5)] backdrop-blur-md hover:text-slate-900 dark:border-white/12 dark:bg-white/10 dark:text-slate-200 dark:hover:text-white"
             aria-label={t('okanEng.modal.close')}
           >
             <X className="size-5" />
@@ -79,11 +82,11 @@ export function SmartProductionOrderModal({ open, job, t, nextPrd, onClose, onCo
 
         <div className="mt-2 space-y-3 text-sm">
           <div>
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t('okanEng.modal.missing')}</span>
+            <span className="font-medium text-slate-700 dark:text-slate-200">{t('okanEng.modal.missing')}</span>
             {missingLabels.length === 0 ? (
               <p className="mt-1 text-emerald-700 dark:text-emerald-300">{t('okanEng.modal.missingNone')}</p>
             ) : (
-              <ul className="mt-1 list-inside list-disc text-gray-700 dark:text-gray-200">
+              <ul className="mt-1 list-inside list-disc text-slate-700 dark:text-slate-200">
                 {missingLabels.map((m) => (
                   <li key={m}>{m}</li>
                 ))}
@@ -91,9 +94,9 @@ export function SmartProductionOrderModal({ open, job, t, nextPrd, onClose, onCo
             )}
           </div>
           <div>
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t('okanEng.modal.warnings')}</span>
+            <span className="font-medium text-slate-700 dark:text-slate-200">{t('okanEng.modal.warnings')}</span>
             {warnings.length === 0 ? (
-              <p className="mt-1 text-gray-600 dark:text-gray-300">{t('okanEng.modal.warningsNone')}</p>
+              <p className="mt-1 text-slate-600 dark:text-slate-300">{t('okanEng.modal.warningsNone')}</p>
             ) : (
               <ul className="mt-1 list-inside list-disc text-amber-900 dark:text-amber-100">
                 {warnings.map((w) => (
@@ -102,18 +105,18 @@ export function SmartProductionOrderModal({ open, job, t, nextPrd, onClose, onCo
               </ul>
             )}
           </div>
-          <p className="text-xs text-gray-600 dark:text-gray-300">
+          <p className="text-xs text-slate-600 dark:text-slate-300">
             {t('okanEng.modal.readinessLine', { score: String(score) })}
           </p>
         </div>
 
-        <div className="mt-4 grid gap-3 rounded-xl bg-gray-50 p-3 shadow-neo-in dark:bg-gray-950/80">
-          <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400">
+        <div className={`mt-4 ${formNest}`}>
+          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
             {t('okanEng.modal.factory')}
             <select
               value={factoryId}
               onChange={(e) => setFactoryId(e.target.value)}
-              className="mt-1 w-full rounded-xl border-0 bg-gray-100 px-3 py-2.5 text-sm text-gray-900 shadow-neo-in dark:bg-gray-900 dark:text-gray-100"
+              className="okan-liquid-select mt-1 w-full border-0 px-3 py-2.5 text-sm shadow-none"
             >
               {MOCK_OKAN_FACTORIES.map((f) => (
                 <option key={f.id} value={f.id}>
@@ -122,19 +125,19 @@ export function SmartProductionOrderModal({ open, job, t, nextPrd, onClose, onCo
               ))}
             </select>
           </label>
-          <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400">
+          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
             {t('okanEng.modal.due')}
             <input
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="mt-1 w-full rounded-xl border-0 bg-gray-100 px-3 py-2.5 text-sm text-gray-900 shadow-neo-in dark:bg-gray-900 dark:text-gray-100"
+              className="okan-liquid-input mt-1 w-full border-0 px-3 py-2.5 text-sm shadow-none"
             />
           </label>
         </div>
 
         {forceConfirm ? (
-          <p className="mt-3 rounded-xl border border-amber-500/40 bg-amber-50 px-3 py-2.5 text-sm text-amber-950 shadow-neo-in dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-100">
+          <p className="okan-liquid-banner-warn mt-3 px-3 py-2.5 text-sm text-amber-950 dark:text-amber-100">
             {t('okanEng.modal.forceWarn')}
           </p>
         ) : null}
@@ -143,14 +146,14 @@ export function SmartProductionOrderModal({ open, job, t, nextPrd, onClose, onCo
           <button
             type="button"
             onClick={handleFixFirst}
-            className="rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-800 shadow-neo-out-sm dark:bg-gray-950 dark:text-gray-100"
+            className="okan-liquid-btn-secondary px-4 py-2.5 text-sm font-semibold"
           >
             {t('okanEng.modal.fixFirst')}
           </button>
           <button
             type="button"
             onClick={handlePrimary}
-            className="rounded-xl bg-gray-800 px-4 py-2.5 text-sm font-semibold text-white shadow-neo-out-sm dark:bg-gray-200 dark:text-gray-900"
+            className="okan-liquid-btn-primary px-4 py-2.5 text-sm font-semibold"
           >
             {forceConfirm && (criticalGap || score < 70) ? t('okanEng.modal.confirmForce') : t('okanEng.modal.proceed')}
           </button>

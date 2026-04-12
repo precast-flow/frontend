@@ -1,7 +1,8 @@
 import { AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, LayoutGrid, List, Upload } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { startTransition, useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useI18n } from '../../i18n/I18nProvider'
+import './engineeringOkanLiquid.css'
 import {
   CHECKLIST_ITEMS_OKAN,
   type OkanEngJob,
@@ -111,13 +112,13 @@ export function EngineeringIntegrationOkanPage() {
   }, [selectedId, setSearchParams])
 
   useEffect(() => {
-    setTab('files')
+    startTransition(() => setTab('files'))
   }, [selectedId])
 
   useEffect(() => {
     if (filteredJobs.length === 0) return
     if (!filteredJobs.some((j) => j.id === selectedId)) {
-      setSelectedId(filteredJobs[0]!.id)
+      startTransition(() => setSelectedId(filteredJobs[0]!.id))
     }
   }, [filteredJobs, selectedId])
 
@@ -226,16 +227,19 @@ export function EngineeringIntegrationOkanPage() {
 
   const typeABanner =
     selected?.kind === 'A' ? (
-      <div
-        role="status"
-        className="rounded-xl border border-amber-500/40 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-neo-in dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-100"
-      >
+      <div role="status" className="okan-liquid-banner-warn px-4 py-3 text-sm text-amber-950 dark:text-amber-100">
         {t('okanEng.banner.typeA')}
       </div>
     ) : null
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
+    <div className="okan-liquid-root flex min-h-0 flex-1 flex-col gap-4 overflow-hidden rounded-[1.25rem]">
+      <div className="okan-liquid-blobs" aria-hidden>
+        <div className="okan-liquid-blob okan-liquid-blob--a" />
+        <div className="okan-liquid-blob okan-liquid-blob--b" />
+        <div className="okan-liquid-blob okan-liquid-blob--c" />
+      </div>
+      <div className="okan-liquid-content flex min-h-0 flex-1 flex-col gap-4">
       {selected ? (
         <SmartProductionOrderModal
           open={poOpen}
@@ -248,23 +252,20 @@ export function EngineeringIntegrationOkanPage() {
       ) : null}
 
       {timelineFlash ? (
-        <div
-          role="status"
-          className="rounded-2xl border border-emerald-300/80 bg-emerald-50 px-4 py-3 text-sm text-emerald-950 shadow-neo-out-sm dark:border-emerald-800/80 dark:bg-emerald-950/40 dark:text-emerald-100"
-        >
+        <div role="status" className="okan-liquid-banner-ok px-4 py-3 text-sm text-emerald-950 dark:text-emerald-100">
           <p className="font-medium">{timelineFlash}</p>
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-end gap-3 rounded-2xl bg-gray-100 p-3 shadow-neo-out-sm dark:bg-gray-900/80">
+      <div className="okan-liquid-panel flex flex-wrap items-end gap-3 p-4">
         <label className="min-w-[140px] flex-1">
-          <span className="text-[11px] font-semibold uppercase text-gray-500 dark:text-gray-400">
+          <span className="text-[11px] font-semibold uppercase text-slate-600 dark:text-slate-400">
             {t('eng.bie06.filter.kind')}
           </span>
           <select
             value={kindFilter}
             onChange={(e) => setKindFilter(e.target.value as 'all' | 'A' | 'B')}
-            className="mt-1 w-full rounded-xl border-0 bg-gray-100 px-3 py-2 text-sm shadow-neo-in dark:bg-gray-950 dark:text-gray-100"
+            className="okan-liquid-select mt-1 w-full border-0 px-3 py-2.5 text-sm shadow-none"
           >
             <option value="all">{t('eng.bie06.filter.kindAll')}</option>
             <option value="A">{t('eng.bie06.filter.kindA')}</option>
@@ -272,13 +273,13 @@ export function EngineeringIntegrationOkanPage() {
           </select>
         </label>
         <label className="min-w-[180px] flex-1">
-          <span className="text-[11px] font-semibold uppercase text-gray-500 dark:text-gray-400">
+          <span className="text-[11px] font-semibold uppercase text-slate-600 dark:text-slate-400">
             {t('eng.bie06.filter.project')}
           </span>
           <select
             value={projectFilter}
             onChange={(e) => setProjectFilter(e.target.value)}
-            className="mt-1 w-full rounded-xl border-0 bg-gray-100 px-3 py-2 text-sm shadow-neo-in dark:bg-gray-950 dark:text-gray-100"
+            className="okan-liquid-select mt-1 w-full border-0 px-3 py-2.5 text-sm shadow-none"
           >
             <option value="all">{t('eng.bie06.filter.projectAll')}</option>
             {projectOptions.map(([code, label]) => (
@@ -289,13 +290,13 @@ export function EngineeringIntegrationOkanPage() {
           </select>
         </label>
         <label className="min-w-[160px] flex-1">
-          <span className="text-[11px] font-semibold uppercase text-gray-500 dark:text-gray-400">
+          <span className="text-[11px] font-semibold uppercase text-slate-600 dark:text-slate-400">
             {t('eng.bie06.filter.status')}
           </span>
           <select
             value={workflowFilter}
             onChange={(e) => setWorkflowFilter(e.target.value as 'all' | WorkflowStateOkan)}
-            className="mt-1 w-full rounded-xl border-0 bg-gray-100 px-3 py-2 text-sm shadow-neo-in dark:bg-gray-950 dark:text-gray-100"
+            className="okan-liquid-select mt-1 w-full border-0 px-3 py-2.5 text-sm shadow-none"
           >
             <option value="all">{t('eng.bie06.filter.statusAll')}</option>
             <option value="draft">{t('okanEng.flow.draft')}</option>
@@ -308,15 +309,15 @@ export function EngineeringIntegrationOkanPage() {
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-12 lg:gap-5">
         <section
-          className="flex max-h-[min(48vh,440px)] flex-col rounded-2xl bg-gray-100 p-3 shadow-neo-out-sm lg:col-span-4 lg:max-h-none dark:bg-gray-900"
+          className="okan-liquid-panel flex max-h-[min(48vh,440px)] flex-col p-3 lg:col-span-4 lg:max-h-none"
           aria-labelledby="okan-wo-list-h"
         >
           <div className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-2 px-1">
-            <h2 id="okan-wo-list-h" className="text-sm font-semibold text-gray-900 dark:text-gray-50">
+            <h2 id="okan-wo-list-h" className="text-sm font-semibold text-slate-900 dark:text-slate-50">
               {t('okanEng.listTitle')}
             </h2>
             <div
-              className="flex shrink-0 gap-0.5 rounded-full bg-gray-100 p-0.5 shadow-neo-in dark:bg-gray-950/60"
+              className="okan-liquid-pill-track flex shrink-0 gap-0.5 rounded-full p-0.5"
               role="tablist"
               aria-label={t('okanEng.view.toggleLabel')}
             >
@@ -326,10 +327,10 @@ export function EngineeringIntegrationOkanPage() {
                 aria-selected={viewMode === 'list'}
                 onClick={() => setViewMode('list')}
                 title={t('okanEng.view.list')}
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 sm:px-2.5 sm:text-xs ${
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 sm:px-2.5 sm:text-xs ${
                   viewMode === 'list'
-                    ? 'bg-gray-100 text-gray-900 shadow-neo-out-sm dark:bg-gray-900 dark:text-gray-50'
-                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100'
+                    ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
                 }`}
               >
                 <List className="size-3.5 shrink-0" aria-hidden />
@@ -341,10 +342,10 @@ export function EngineeringIntegrationOkanPage() {
                 aria-selected={viewMode === 'cards'}
                 onClick={() => setViewMode('cards')}
                 title={t('okanEng.view.cards')}
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 sm:px-2.5 sm:text-xs ${
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 sm:px-2.5 sm:text-xs ${
                   viewMode === 'cards'
-                    ? 'bg-gray-100 text-gray-900 shadow-neo-out-sm dark:bg-gray-900 dark:text-gray-50'
-                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100'
+                    ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
                 }`}
               >
                 <LayoutGrid className="size-3.5 shrink-0" aria-hidden />
@@ -354,33 +355,33 @@ export function EngineeringIntegrationOkanPage() {
           </div>
           {viewMode === 'list' ? (
             filteredJobs.length === 0 ? (
-              <p className="px-1 text-sm text-gray-500 dark:text-gray-400">{t('okanEng.filterEmpty')}</p>
+              <p className="px-1 text-sm text-slate-600 dark:text-slate-400">{t('okanEng.filterEmpty')}</p>
             ) : (
             <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
               {filteredJobs.map((job) => {
                 const { score, level } = readinessFor(job)
                 const wfKey = workflowLabelKey(job.workflow)
                 const cardShell = [
-                  'overflow-hidden rounded-xl text-sm transition',
-                  selectedId === job.id
-                    ? 'bg-gray-100 shadow-neo-in ring-1 ring-gray-300/70 dark:bg-gray-900 dark:ring-gray-600/70'
-                    : 'bg-gray-100/80 shadow-neo-out-sm hover:shadow-neo-out dark:bg-gray-900/60',
-                ].join(' ')
+                  'okan-liquid-list-card overflow-hidden text-sm transition',
+                  selectedId === job.id ? 'okan-liquid-list-card--selected' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')
                 return (
                   <li key={job.id}>
                     <div className={cardShell}>
                       <button
                         type="button"
                         onClick={() => setSelectedId(job.id)}
-                        className="w-full px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+                        className="w-full px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <p className="truncate font-semibold text-gray-900 dark:text-gray-50">{job.projectName}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                            <p className="truncate font-semibold text-slate-900 dark:text-slate-50">{job.projectName}</p>
+                            <p className="text-xs text-slate-600 dark:text-slate-400">
                               {job.woCode} · {job.kind === 'A' ? t('okanEng.kindA') : t('okanEng.kindB')}
                             </p>
-                            <p className="mt-1 text-[11px] text-gray-500">{t(wfKey)}</p>
+                            <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{t(wfKey)}</p>
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             <ReadinessBadge level={level} label={`${score}%`} />
@@ -395,11 +396,11 @@ export function EngineeringIntegrationOkanPage() {
                           </div>
                         </div>
                       </button>
-                      <div className="flex flex-wrap gap-2 border-t border-gray-200/90 px-3 py-2.5 dark:border-gray-700/90">
+                      <div className="flex flex-wrap gap-2 border-t border-white/15 px-3 py-2.5 dark:border-white/10">
                         <button
                           type="button"
                           onClick={() => setSelectedId(job.id)}
-                          className="rounded-xl bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-800 shadow-neo-out-sm dark:bg-gray-950 dark:text-gray-100"
+                          className="okan-liquid-btn-secondary px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
                         >
                           {t('okanEng.open')}
                         </button>
@@ -407,7 +408,7 @@ export function EngineeringIntegrationOkanPage() {
                           type="button"
                           disabled={!canMarkReady(job)}
                           onClick={() => handleMarkReady(job)}
-                          className="rounded-xl bg-gray-800 px-3 py-1.5 text-xs font-semibold text-white shadow-neo-out-sm disabled:cursor-not-allowed disabled:opacity-40 dark:bg-gray-200 dark:text-gray-900"
+                          className="okan-liquid-btn-primary px-3 py-1.5 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           {t('okanEng.markReady')}
                         </button>
@@ -420,7 +421,7 @@ export function EngineeringIntegrationOkanPage() {
             )
           ) : (
             filteredJobs.length === 0 ? (
-              <p className="px-1 text-sm text-gray-500 dark:text-gray-400">{t('okanEng.filterEmpty')}</p>
+              <p className="px-1 text-sm text-slate-600 dark:text-slate-400">{t('okanEng.filterEmpty')}</p>
             ) : (
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
                 {filteredJobs.map((job) => {
@@ -431,17 +432,17 @@ export function EngineeringIntegrationOkanPage() {
                       type="button"
                       onClick={() => setSelectedId(job.id)}
                       className={[
-                        'rounded-xl p-3 text-left shadow-neo-out-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400',
-                        selectedId === job.id
-                          ? 'bg-gray-100 shadow-neo-in ring-1 ring-gray-300/70 dark:bg-gray-900 dark:ring-gray-600/70'
-                          : 'bg-gray-100/80 hover:shadow-neo-out dark:bg-gray-900/60',
-                      ].join(' ')}
+                        'okan-liquid-list-card p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50',
+                        selectedId === job.id ? 'okan-liquid-list-card--selected' : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-50">{job.projectName}</span>
+                        <span className="text-sm font-semibold text-slate-900 dark:text-slate-50">{job.projectName}</span>
                         <ReadinessBadge level={level} label={`${score}%`} />
                       </div>
-                      <p className="mt-1 text-xs text-gray-500">{job.woCode}</p>
+                      <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{job.woCode}</p>
                     </button>
                   )
                 })}
@@ -452,21 +453,21 @@ export function EngineeringIntegrationOkanPage() {
 
         {selected ? (
           <section
-            className="flex min-h-0 flex-col gap-4 rounded-2xl bg-gray-100 p-4 shadow-neo-out lg:col-span-8 dark:bg-gray-900"
+            className="okan-liquid-panel flex min-h-0 flex-col gap-4 p-4 lg:col-span-8"
             aria-label={t('okanEng.detailRegion')}
           >
             <div className="flex min-h-0 flex-col gap-4 lg:flex-row">
               <div className="min-w-0 flex-1 space-y-4">
               {typeABanner}
 
-              <div className="rounded-xl bg-gray-50 p-4 shadow-neo-in dark:bg-gray-950/80">
+              <div className="okan-liquid-panel-nested p-4">
                 <WorkflowStepper workflow={selected.workflow} kind={selected.kind} t={t} />
               </div>
 
               {(() => {
                 const { score, level } = readinessFor(selected)
                 return (
-                  <div className="rounded-xl bg-gray-50 p-4 shadow-neo-in dark:bg-gray-950/80">
+                  <div className="okan-liquid-panel-nested p-4">
                     <ReadinessBar
                       percent={score}
                       level={level}
@@ -479,67 +480,59 @@ export function EngineeringIntegrationOkanPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <ReadinessBadge level={readinessFor(selected).level} label={badgeLabel(readinessFor(selected).level)} />
                 {selected.kind === 'B' && selected.workflow === 'production_created' && selected.productionOrderId ? (
-                  <span className="text-sm font-mono text-gray-700 dark:text-gray-200">
+                  <span className="text-sm font-mono text-slate-700 dark:text-slate-200">
                     {selected.productionOrderId}
                   </span>
                 ) : null}
               </div>
 
-              <div className="rounded-xl bg-gray-50 p-4 shadow-neo-in dark:bg-gray-950/80">
-                <h2 className="text-[11px] font-semibold uppercase text-gray-500 dark:text-gray-400">
+              <div className="okan-liquid-panel-nested p-4">
+                <h2 className="text-[11px] font-semibold uppercase text-slate-600 dark:text-slate-400">
                   {t('okanEng.summaryCard')}
                 </h2>
                 <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
                   <div>
-                    <dt className="text-gray-500 dark:text-gray-400">{t('okanEng.summary.project')}</dt>
-                    <dd className="font-medium text-gray-900 dark:text-gray-50">{selected.projectName}</dd>
+                    <dt className="text-slate-600 dark:text-slate-400">{t('okanEng.summary.project')}</dt>
+                    <dd className="font-medium text-slate-900 dark:text-slate-50">{selected.projectName}</dd>
                   </div>
                   <div>
-                    <dt className="text-gray-500 dark:text-gray-400">{t('okanEng.summary.kind')}</dt>
-                    <dd className="font-medium text-gray-900 dark:text-gray-50">
+                    <dt className="text-slate-600 dark:text-slate-400">{t('okanEng.summary.kind')}</dt>
+                    <dd className="font-medium text-slate-900 dark:text-slate-50">
                       {selected.kind === 'A' ? t('okanEng.kindA') : t('okanEng.kindB')}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-gray-500 dark:text-gray-400">{t('okanEng.summary.workflow')}</dt>
-                    <dd className="font-medium text-gray-900 dark:text-gray-50">{t(workflowLabelKey(selected.workflow))}</dd>
+                    <dt className="text-slate-600 dark:text-slate-400">{t('okanEng.summary.workflow')}</dt>
+                    <dd className="font-medium text-slate-900 dark:text-slate-50">{t(workflowLabelKey(selected.workflow))}</dd>
                   </div>
                   <div>
-                    <dt className="text-gray-500 dark:text-gray-400">{t('okanEng.summary.readiness')}</dt>
-                    <dd className="font-medium tabular-nums text-gray-900 dark:text-gray-50">
+                    <dt className="text-slate-600 dark:text-slate-400">{t('okanEng.summary.readiness')}</dt>
+                    <dd className="font-medium tabular-nums text-slate-900 dark:text-slate-50">
                       {readinessFor(selected).score}%
                     </dd>
                   </div>
                   <div className="sm:col-span-2">
-                    <dt className="text-gray-500 dark:text-gray-400">{t('okanEng.summary.updated')}</dt>
-                    <dd className="font-medium text-gray-900 dark:text-gray-50">{selected.updatedAt}</dd>
+                    <dt className="text-slate-600 dark:text-slate-400">{t('okanEng.summary.updated')}</dt>
+                    <dd className="font-medium text-slate-900 dark:text-slate-50">{selected.updatedAt}</dd>
                   </div>
                 </dl>
               </div>
 
               <div className="flex flex-wrap gap-2">
                 {selected.workflow === 'draft' ? (
-                  <button
-                    type="button"
-                    onClick={sendReview}
-                    className="rounded-xl bg-gray-800 px-4 py-2.5 text-sm font-semibold text-white shadow-neo-out-sm dark:bg-gray-200 dark:text-gray-900"
-                  >
+                  <button type="button" onClick={sendReview} className="okan-liquid-btn-primary px-4 py-2.5 text-sm font-semibold">
                     {t('okanEng.cta.submitReview')}
                   </button>
                 ) : null}
                 {selected.workflow === 'in_review' ? (
                   <>
-                    <button
-                      type="button"
-                      onClick={approve}
-                      className="rounded-xl bg-gray-800 px-4 py-2.5 text-sm font-semibold text-white shadow-neo-out-sm dark:bg-gray-200 dark:text-gray-900"
-                    >
+                    <button type="button" onClick={approve} className="okan-liquid-btn-primary px-4 py-2.5 text-sm font-semibold">
                       {t('okanEng.cta.approve')}
                     </button>
                     <button
                       type="button"
                       onClick={requestRevision}
-                      className="rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-800 shadow-neo-out-sm dark:bg-gray-950 dark:text-gray-100"
+                      className="okan-liquid-btn-secondary px-4 py-2.5 text-sm font-semibold"
                     >
                       {t('okanEng.cta.requestRev')}
                     </button>
@@ -549,23 +542,20 @@ export function EngineeringIntegrationOkanPage() {
                   <button
                     type="button"
                     onClick={openPoModal}
-                    className="inline-flex items-center gap-2 rounded-xl bg-gray-800 px-4 py-2.5 text-sm font-semibold text-white shadow-neo-out-sm dark:bg-gray-200 dark:text-gray-900"
+                    className="okan-liquid-btn-primary inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold"
                   >
                     {t('okanEng.cta.createPo')}
                   </button>
                 ) : null}
                 {selected.kind === 'A' && selected.workflow === 'approved' ? (
-                  <p className="text-sm text-gray-600 dark:text-gray-300">{t('okanEng.typeA.doneHint')}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">{t('okanEng.typeA.doneHint')}</p>
                 ) : null}
                 {selected.kind === 'B' && selected.workflow === 'production_created' ? (
-                  <p className="text-sm text-gray-600 dark:text-gray-300">{t('okanEng.poLocked')}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">{t('okanEng.poLocked')}</p>
                 ) : null}
               </div>
 
-              <div
-                className="flex gap-1 overflow-x-auto rounded-full bg-gray-100 p-1 shadow-neo-in dark:bg-gray-950/60"
-                role="tablist"
-              >
+              <div className="okan-liquid-pill-track flex gap-1 overflow-x-auto rounded-full p-1" role="tablist">
                 {TABS.map((x) => (
                   <button
                     key={x.id}
@@ -573,10 +563,10 @@ export function EngineeringIntegrationOkanPage() {
                     role="tab"
                     aria-selected={tab === x.id}
                     onClick={() => setTab(x.id)}
-                    className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 md:text-sm ${
+                    className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 md:text-sm ${
                       tab === x.id
-                        ? 'bg-gray-100 text-gray-900 shadow-neo-out-sm dark:bg-gray-900 dark:text-gray-50'
-                        : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100'
+                        ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
+                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
                     }`}
                   >
                     {t(x.labelKey)}
@@ -590,16 +580,16 @@ export function EngineeringIntegrationOkanPage() {
                     <button
                       type="button"
                       onClick={handleMockUpload}
-                      className="inline-flex items-center gap-2 rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-800 shadow-neo-out-sm dark:bg-gray-950 dark:text-gray-100"
+                      className="okan-liquid-btn-secondary inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold"
                     >
                       <Upload className="size-4" aria-hidden />
                       {t('okanEng.upload')}
                     </button>
                   </div>
-                  <div className="min-h-0 overflow-auto rounded-xl bg-gray-50 shadow-neo-in dark:bg-gray-950/80">
+                  <div className="okan-liquid-table-wrap min-h-0">
                     <table className="w-full min-w-[520px] border-collapse text-left text-sm">
                       <thead>
-                        <tr className="border-b border-gray-200/90 bg-gray-100 text-xs font-semibold uppercase text-gray-600 dark:border-gray-700/90 dark:bg-gray-900/90 dark:text-gray-400">
+                        <tr className="okan-liquid-table-thead text-xs font-semibold uppercase text-slate-600 dark:text-slate-400">
                           <th className="px-3 py-2.5">{t('okanEng.table.name')}</th>
                           <th className="px-3 py-2.5">{t('okanEng.table.type')}</th>
                           <th className="px-3 py-2.5">{t('okanEng.table.lock')}</th>
@@ -608,22 +598,22 @@ export function EngineeringIntegrationOkanPage() {
                       </thead>
                       <tbody>
                         {selected.files.map((file) => (
-                          <tr key={file.id} className="border-t border-gray-200/80 dark:border-gray-700/80">
-                            <td className="px-3 py-2 font-medium text-gray-900 dark:text-gray-50">{file.name}</td>
-                            <td className="px-3 py-2 text-gray-600 dark:text-gray-300">{file.fileType}</td>
+                          <tr key={file.id} className="okan-liquid-table-row border-t">
+                            <td className="px-3 py-2 font-medium text-slate-900 dark:text-slate-50">{file.name}</td>
+                            <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{file.fileType}</td>
                             <td className="px-3 py-2">
                               {file.locked ? (
                                 <span className="text-amber-800 dark:text-amber-200">{t('okanEng.lockedYes')}</span>
                               ) : (
-                                <span className="text-gray-500">{t('okanEng.lockedNo')}</span>
+                                <span className="text-slate-500 dark:text-slate-400">{t('okanEng.lockedNo')}</span>
                               )}
                             </td>
-                            <td className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
+                            <td className="px-3 py-2 text-xs text-slate-600 dark:text-slate-300">
                               {file.fileType.toUpperCase() === 'IFC' ? (
                                 file.integrationStatus === 'hazir' ? (
                                   t('okanEng.ifc.ok')
                                 ) : (
-                                  <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-950 dark:bg-amber-950/50 dark:text-amber-100">
+                                  <span className="rounded-md border border-amber-400/40 bg-amber-100/80 px-1.5 py-0.5 text-amber-950 backdrop-blur-sm dark:border-amber-500/30 dark:bg-amber-950/50 dark:text-amber-100">
                                     {t('okanEng.ifc.pending')}
                                   </span>
                                 )
@@ -644,56 +634,56 @@ export function EngineeringIntegrationOkanPage() {
                   <button
                     type="button"
                     onClick={() => setManualOpen((o) => !o)}
-                    className="mb-3 flex w-full items-center justify-between rounded-xl bg-gray-100 px-3 py-2.5 text-left text-sm font-semibold text-gray-800 shadow-neo-out-sm dark:bg-gray-950 dark:text-gray-100"
+                    className="okan-liquid-btn-secondary mb-3 flex w-full items-center justify-between px-3 py-2.5 text-left text-sm font-semibold"
                   >
                     {t('okanEng.manual.section')}
                     {manualOpen ? <ChevronDown className="size-4" aria-hidden /> : <ChevronRight className="size-4" aria-hidden />}
                   </button>
                   {manualOpen ? (
-                    <div className="space-y-4 rounded-xl bg-gray-50 p-4 shadow-neo-in dark:bg-gray-950/80">
+                    <div className="okan-liquid-panel-nested space-y-4 p-4">
                       <div>
-                        <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                        <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
                           {t('okanEng.manual.critical')}
                         </label>
                         <div className="mt-2 space-y-2">
                           <div>
-                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400" title={t('okanEng.tooltip.concrete')}>
+                            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400" title={t('okanEng.tooltip.concrete')}>
                               {t('okanEng.field.concrete')}
                             </label>
                             <input
                               value={selected.manual.concrete}
                               onChange={(e) => setManual({ concrete: e.target.value })}
-                              className="mt-1 w-full max-w-md rounded-xl border-0 bg-gray-100 px-3 py-2.5 text-sm text-gray-900 shadow-neo-in focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:bg-gray-900 dark:text-gray-100"
+                              className="okan-liquid-input mt-1 w-full max-w-md border-0 px-3 py-2.5 text-sm shadow-none focus:outline-none"
                             />
                           </div>
                           <div>
-                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400" title={t('okanEng.tooltip.tolerance')}>
+                            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400" title={t('okanEng.tooltip.tolerance')}>
                               {t('okanEng.field.tolerance')}
                             </label>
                             <textarea
                               value={selected.manual.toleranceNote}
                               onChange={(e) => setManual({ toleranceNote: e.target.value })}
                               rows={3}
-                              className="mt-1 w-full resize-none rounded-xl border-0 bg-gray-100 px-3 py-2.5 text-sm text-gray-900 shadow-neo-in focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:bg-gray-900 dark:text-gray-100"
+                              className="okan-liquid-input mt-1 w-full resize-none border-0 px-3 py-2.5 text-sm shadow-none focus:outline-none"
                             />
                           </div>
                         </div>
                       </div>
                       <div>
-                        <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                        <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
                           {t('okanEng.manual.optional')}
                         </label>
                         <div className="mt-2 space-y-2">
-                          <div className="flex items-center justify-between gap-3 rounded-xl bg-gray-100 px-3 py-2.5 shadow-neo-in dark:bg-gray-900/80">
-                            <span className="text-sm text-gray-800 dark:text-gray-100">{t('okanEng.field.warn1')}</span>
+                          <div className="okan-liquid-panel-nested flex items-center justify-between gap-3 px-3 py-2.5">
+                            <span className="text-sm text-slate-800 dark:text-slate-100">{t('okanEng.field.warn1')}</span>
                             <ToggleSwitch
                               checked={selected.manual.warnAnchorage}
                               onChange={(next) => setManual({ warnAnchorage: next })}
                               aria-label={t('okanEng.field.warn1')}
                             />
                           </div>
-                          <div className="flex items-center justify-between gap-3 rounded-xl bg-gray-100 px-3 py-2.5 shadow-neo-in dark:bg-gray-900/80">
-                            <span className="text-sm text-gray-800 dark:text-gray-100">{t('okanEng.field.warn2')}</span>
+                          <div className="okan-liquid-panel-nested flex items-center justify-between gap-3 px-3 py-2.5">
+                            <span className="text-sm text-slate-800 dark:text-slate-100">{t('okanEng.field.warn2')}</span>
                             <ToggleSwitch
                               checked={selected.manual.warnFatigue}
                               onChange={(next) => setManual({ warnFatigue: next })}
@@ -702,45 +692,47 @@ export function EngineeringIntegrationOkanPage() {
                           </div>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('okanEng.manual.footer')}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{t('okanEng.manual.footer')}</p>
                     </div>
                   ) : null}
                 </section>
               ) : null}
 
               {tab === 'summary' ? (
-                <section className="space-y-4 rounded-xl bg-gray-50 p-4 shadow-neo-in dark:bg-gray-950/80">
+                <section className="okan-liquid-panel-nested space-y-4 p-4">
                   {(() => {
                     const { done, total } = countChecklistDone(selected.checklist)
                     return (
                       <div>
                         <div className="flex items-center justify-between gap-2">
-                          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-50">
+                          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">
                             {t('okanEng.checklist.title')}
                           </h3>
-                          <span className="text-sm tabular-nums text-gray-600 dark:text-gray-300">
+                          <span className="text-sm tabular-nums text-slate-600 dark:text-slate-300">
                             {done} / {total}
                           </span>
                         </div>
-                        <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-gray-200 shadow-neo-in dark:bg-gray-800">
+                        <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-800/80">
                           <div
-                            className="h-full rounded-full bg-emerald-500 transition-all"
+                            className="h-full rounded-full bg-emerald-500 shadow-[0_0_12px_rgb(16_185_129/0.45)] transition-all"
                             style={{ width: `${(done / total) * 100}%` }}
                           />
                         </div>
-                        <ul className="mt-4 divide-y divide-gray-200/90 dark:divide-gray-700/90">
+                        <ul className="mt-4 divide-y divide-white/20 dark:divide-white/10">
                           {CHECKLIST_ITEMS_OKAN.map((c) => (
                             <li key={c.id}>
                               <div className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
                                 <div className="min-w-0 flex-1">
-                                  <p className={`text-sm ${c.critical ? 'font-medium text-gray-900 dark:text-gray-50' : 'text-gray-700 dark:text-gray-200'}`}>
+                                  <p
+                                    className={`text-sm ${c.critical ? 'font-medium text-slate-900 dark:text-slate-50' : 'text-slate-700 dark:text-slate-200'}`}
+                                  >
                                     {t(`okanEng.chk.${c.id}`)}
                                   </p>
                                   <p className="mt-0.5 text-[10px] uppercase tracking-wide">
                                     {c.critical ? (
                                       <span className="font-semibold text-red-600 dark:text-red-400">{t('okanEng.criticalTag')}</span>
                                     ) : (
-                                      <span className="text-gray-400">{t('okanEng.optionalTag')}</span>
+                                      <span className="text-slate-400">{t('okanEng.optionalTag')}</span>
                                     )}
                                   </p>
                                 </div>
@@ -761,14 +753,14 @@ export function EngineeringIntegrationOkanPage() {
 
               {tab === 'revisions' ? (
                 <section className="min-h-0">
-                  <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+                  <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
                     {t('okanEng.rev.hint')} · {t('okanEng.rev.currentLabel')}:{' '}
-                    <span className="font-mono font-semibold text-gray-800 dark:text-gray-100">{selected.revisionLabel}</span>
+                    <span className="font-mono font-semibold text-slate-800 dark:text-slate-100">{selected.revisionLabel}</span>
                   </p>
-                  <div className="min-h-0 overflow-auto rounded-xl bg-gray-50 shadow-neo-in dark:bg-gray-950/80">
+                  <div className="okan-liquid-table-wrap min-h-0">
                     <table className="w-full min-w-[560px] border-collapse text-left text-sm">
                       <thead>
-                        <tr className="border-b border-gray-200/90 bg-gray-100 text-xs font-semibold uppercase text-gray-600 dark:border-gray-700/90 dark:bg-gray-900/90 dark:text-gray-400">
+                        <tr className="okan-liquid-table-thead text-xs font-semibold uppercase text-slate-600 dark:text-slate-400">
                           <th className="px-3 py-2.5">{t('okanEng.rev.colRev')}</th>
                           <th className="px-3 py-2.5">{t('okanEng.rev.colAt')}</th>
                           <th className="px-3 py-2.5">{t('okanEng.rev.colActor')}</th>
@@ -777,11 +769,11 @@ export function EngineeringIntegrationOkanPage() {
                       </thead>
                       <tbody>
                         {selected.revisions.map((r) => (
-                          <tr key={r.id} className="border-b border-gray-200/80 dark:border-gray-700/80">
-                            <td className="px-3 py-2.5 font-mono text-xs font-semibold text-gray-900 dark:text-gray-50">{r.rev}</td>
-                            <td className="whitespace-nowrap px-3 py-2.5 text-xs text-gray-600 dark:text-gray-400">{r.at}</td>
-                            <td className="px-3 py-2.5 text-gray-700 dark:text-gray-200">{r.actor}</td>
-                            <td className="px-3 py-2.5 text-gray-700 dark:text-gray-200">{r.note}</td>
+                          <tr key={r.id} className="okan-liquid-table-row border-b">
+                            <td className="px-3 py-2.5 font-mono text-xs font-semibold text-slate-900 dark:text-slate-50">{r.rev}</td>
+                            <td className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-600 dark:text-slate-400">{r.at}</td>
+                            <td className="px-3 py-2.5 text-slate-700 dark:text-slate-200">{r.actor}</td>
+                            <td className="px-3 py-2.5 text-slate-700 dark:text-slate-200">{r.note}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -797,10 +789,11 @@ export function EngineeringIntegrationOkanPage() {
           </div>
           </section>
         ) : (
-          <div className="flex min-h-[120px] items-center justify-center rounded-2xl bg-gray-100 p-6 shadow-neo-out-sm lg:col-span-8 dark:bg-gray-900">
-            <p className="text-sm text-gray-600 dark:text-gray-300">{t('okanEng.empty')}</p>
+          <div className="okan-liquid-panel flex min-h-[120px] items-center justify-center p-6 lg:col-span-8">
+            <p className="text-sm text-slate-600 dark:text-slate-300">{t('okanEng.empty')}</p>
           </div>
         )}
+      </div>
       </div>
     </div>
   )
