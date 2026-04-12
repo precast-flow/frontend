@@ -1,0 +1,393 @@
+/**
+ * Mühendislik Entegrasyonu — okan: sayfa-özel liquid glass.
+ * Yalnızca EngineeringIntegrationOkanPage üzerinden import edilir.
+ */
+
+/* —— Tema değişkenleri (html.dark ile koyu) —— */
+.okan-liquid-root {
+  --okan-blur-panel: 24px;
+  --okan-blur-strong: 32px;
+  --okan-panel-bg: rgb(255 255 255 / 0.38);
+  --okan-panel-bg-nested: rgb(255 255 255 / 0.22);
+  --okan-panel-border: rgb(255 255 255 / 0.52);
+  --okan-panel-border-soft: rgb(15 23 42 / 0.08);
+  --okan-panel-shadow:
+    0 4px 24px rgb(15 23 42 / 0.06), 0 12px 48px rgb(15 23 42 / 0.04),
+    inset 0 1px 0 rgb(255 255 255 / 0.65);
+  --okan-text: rgb(15 23 42);
+  --okan-text-muted: rgb(51 65 85 / 0.92);
+  --okan-blob-1: rgb(56 189 248 / 0.45);
+  --okan-blob-2: rgb(99 102 241 / 0.38);
+  --okan-blob-3: rgb(168 85 247 / 0.32);
+  --okan-mesh: linear-gradient(
+    145deg,
+    rgb(224 242 254 / 0.9) 0%,
+    rgb(238 242 255 / 0.75) 40%,
+    rgb(250 245 255 / 0.85) 100%
+  );
+}
+
+.dark .okan-liquid-root {
+  --okan-panel-bg: rgb(255 255 255 / 0.07);
+  --okan-panel-bg-nested: rgb(255 255 255 / 0.045);
+  --okan-panel-border: rgb(255 255 255 / 0.14);
+  --okan-panel-border-soft: rgb(255 255 255 / 0.06);
+  --okan-panel-shadow:
+    0 8px 32px rgb(0 0 0 / 0.45), 0 2px 12px rgb(0 0 0 / 0.25),
+    inset 0 1px 0 rgb(255 255 255 / 0.12);
+  --okan-text: rgb(248 250 252);
+  --okan-text-muted: rgb(226 232 240 / 0.78);
+  --okan-blob-1: rgb(56 189 248 / 0.22);
+  --okan-blob-2: rgb(129 140 248 / 0.18);
+  --okan-blob-3: rgb(192 132 252 / 0.14);
+  --okan-mesh: linear-gradient(160deg, rgb(15 23 42 / 0.95) 0%, rgb(30 27 75 / 0.55) 50%, rgb(15 23 42 / 0.98) 100%);
+}
+
+.okan-liquid-root {
+  position: relative;
+  isolation: isolate;
+  color: var(--okan-text);
+}
+
+/* Arka plan blob’ları */
+.okan-liquid-blobs {
+  pointer-events: none;
+  position: absolute;
+  inset: -12% -8% -8% -8%;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.okan-liquid-blobs::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--okan-mesh);
+}
+
+.okan-liquid-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(56px);
+  opacity: 0.85;
+  mix-blend-mode: multiply;
+}
+
+.dark .okan-liquid-blob {
+  mix-blend-mode: screen;
+  opacity: 0.7;
+}
+
+.okan-liquid-blob--a {
+  width: 55%;
+  height: 52%;
+  left: -12%;
+  top: -18%;
+  background: var(--okan-blob-1);
+  animation: okan-liquid-float-a 18s ease-in-out infinite;
+}
+
+.okan-liquid-blob--b {
+  width: 48%;
+  height: 48%;
+  right: -10%;
+  top: 5%;
+  background: var(--okan-blob-2);
+  animation: okan-liquid-float-b 22s ease-in-out infinite;
+}
+
+.okan-liquid-blob--c {
+  width: 42%;
+  height: 44%;
+  left: 28%;
+  bottom: -20%;
+  background: var(--okan-blob-3);
+  animation: okan-liquid-float-c 20s ease-in-out infinite;
+}
+
+@keyframes okan-liquid-float-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(4%, 3%) scale(1.05);
+  }
+}
+
+@keyframes okan-liquid-float-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-3%, 4%) scale(1.04);
+  }
+}
+
+@keyframes okan-liquid-float-c {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(2%, -3%) scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .okan-liquid-blob--a,
+  .okan-liquid-blob--b,
+  .okan-liquid-blob--c {
+    animation: none;
+  }
+}
+
+.okan-liquid-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Cam paneller */
+.okan-liquid-panel {
+  border: 1px solid var(--okan-panel-border);
+  background-color: var(--okan-panel-bg);
+  box-shadow: var(--okan-panel-shadow);
+  backdrop-filter: blur(var(--okan-blur-panel)) saturate(1.35);
+  -webkit-backdrop-filter: blur(var(--okan-blur-panel)) saturate(1.35);
+  border-radius: 1.25rem;
+}
+
+.okan-liquid-panel-nested {
+  border: 1px solid var(--okan-panel-border-soft);
+  background-color: var(--okan-panel-bg-nested);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22), 0 4px 20px rgb(15 23 42 / 0.04);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border-radius: 1rem;
+}
+
+.dark .okan-liquid-panel-nested {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08), 0 4px 24px rgb(0 0 0 / 0.2);
+}
+
+/* Pill / segmented */
+.okan-liquid-pill-track {
+  border: 1px solid var(--okan-panel-border-soft);
+  background-color: var(--okan-panel-bg-nested);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.okan-liquid-pill-active {
+  background-color: rgb(255 255 255 / 0.55);
+  box-shadow:
+    0 2px 12px rgb(15 23 42 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.8);
+  border: 1px solid rgb(255 255 255 / 0.4);
+}
+
+.dark .okan-liquid-pill-active {
+  background-color: rgb(255 255 255 / 0.12);
+  box-shadow:
+    0 2px 16px rgb(0 0 0 / 0.25), inset 0 1px 0 rgb(255 255 255 / 0.15);
+  border: 1px solid rgb(255 255 255 / 0.12);
+}
+
+/* Form kontrolleri */
+.okan-liquid-select,
+.okan-liquid-input {
+  border: 1px solid var(--okan-panel-border-soft);
+  background-color: var(--okan-panel-bg-nested);
+  color: var(--okan-text);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 0.875rem;
+}
+
+.okan-liquid-select:focus-visible,
+.okan-liquid-input:focus-visible {
+  outline: 2px solid rgb(14 165 233 / 0.45);
+  outline-offset: 2px;
+}
+
+.dark .okan-liquid-select:focus-visible,
+.dark .okan-liquid-input:focus-visible {
+  outline-color: rgb(125 211 252 / 0.4);
+}
+
+/* Butonlar */
+.okan-liquid-btn-primary {
+  border: 1px solid rgb(255 255 255 / 0.18);
+  background: linear-gradient(180deg, rgb(30 41 59 / 0.92) 0%, rgb(15 23 42 / 0.96) 100%);
+  color: rgb(248 250 252);
+  box-shadow:
+    0 4px 16px rgb(15 23 42 / 0.18), inset 0 1px 0 rgb(255 255 255 / 0.14);
+  border-radius: 0.875rem;
+}
+
+.dark .okan-liquid-btn-primary {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.16) 0%, rgb(255 255 255 / 0.08) 100%);
+  color: rgb(248 250 252);
+  border-color: rgb(255 255 255 / 0.14);
+  box-shadow:
+    0 4px 20px rgb(0 0 0 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.2);
+}
+
+.okan-liquid-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.okan-liquid-btn-secondary {
+  border: 1px solid var(--okan-panel-border);
+  background-color: var(--okan-panel-bg-nested);
+  color: var(--okan-text);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 0.875rem;
+}
+
+.okan-liquid-btn-secondary:hover:not(:disabled) {
+  background-color: rgb(255 255 255 / 0.35);
+}
+
+.dark .okan-liquid-btn-secondary:hover:not(:disabled) {
+  background-color: rgb(255 255 255 / 0.1);
+}
+
+/* Liste kartı seçili */
+.okan-liquid-list-card {
+  border: 1px solid var(--okan-panel-border-soft);
+  background-color: var(--okan-panel-bg-nested);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 0.875rem;
+  box-shadow: 0 2px 12px rgb(15 23 42 / 0.04);
+}
+
+.okan-liquid-list-card--selected {
+  border-color: rgb(14 165 233 / 0.45);
+  background-color: rgb(255 255 255 / 0.48);
+  box-shadow:
+    0 0 0 1px rgb(14 165 233 / 0.2), 0 8px 28px rgb(14 165 233 / 0.12), inset 0 1px 0 rgb(255 255 255 / 0.5);
+}
+
+.dark .okan-liquid-list-card--selected {
+  border-color: rgb(125 211 252 / 0.35);
+  background-color: rgb(255 255 255 / 0.1);
+  box-shadow:
+    0 0 0 1px rgb(125 211 252 / 0.15), 0 8px 32px rgb(0 0 0 / 0.35),
+    inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+
+/* Tablolar */
+.okan-liquid-table-wrap {
+  border: 1px solid var(--okan-panel-border-soft);
+  background-color: var(--okan-panel-bg-nested);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 1rem;
+  overflow: auto;
+}
+
+.okan-liquid-table-thead {
+  background-color: rgb(255 255 255 / 0.35);
+  border-bottom: 1px solid var(--okan-panel-border-soft);
+}
+
+.dark .okan-liquid-table-thead {
+  background-color: rgb(255 255 255 / 0.06);
+}
+
+.okan-liquid-table-row {
+  border-color: var(--okan-panel-border-soft);
+}
+
+.okan-liquid-table-row:hover {
+  background-color: rgb(255 255 255 / 0.2);
+}
+
+.dark .okan-liquid-table-row:hover {
+  background-color: rgb(255 255 255 / 0.04);
+}
+
+/* Banner / flash mesajları (Type A, timeline) */
+.okan-liquid-banner-warn {
+  border: 1px solid rgb(245 158 11 / 0.45);
+  background: linear-gradient(135deg, rgb(254 252 232 / 0.85), rgb(255 247 237 / 0.7));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 1rem;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5);
+}
+
+.dark .okan-liquid-banner-warn {
+  background: linear-gradient(135deg, rgb(120 53 15 / 0.35), rgb(69 26 3 / 0.45));
+  border-color: rgb(245 158 11 / 0.3);
+}
+
+.okan-liquid-banner-ok {
+  border: 1px solid rgb(52 211 153 / 0.45);
+  background: linear-gradient(135deg, rgb(236 253 245 / 0.9), rgb(209 250 229 / 0.65));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 1rem;
+}
+
+.dark .okan-liquid-banner-ok {
+  background: linear-gradient(135deg, rgb(6 78 59 / 0.45), rgb(4 47 46 / 0.5));
+  border-color: rgb(52 211 153 / 0.35);
+}
+
+/* Modal (okan sayfası) */
+.okan-liquid-modal-backdrop {
+  background-color: rgb(15 23 42 / 0.35);
+  backdrop-filter: blur(10px) saturate(1.1);
+  -webkit-backdrop-filter: blur(10px) saturate(1.1);
+}
+
+.dark .okan-liquid-modal-backdrop {
+  background-color: rgb(0 0 0 / 0.55);
+}
+
+.okan-liquid-modal-panel {
+  border: 1px solid var(--okan-panel-border);
+  background-color: var(--okan-panel-bg);
+  box-shadow:
+    0 24px 64px rgb(15 23 42 / 0.2), 0 8px 24px rgb(15 23 42 / 0.1),
+    inset 0 1px 0 rgb(255 255 255 / 0.55);
+  backdrop-filter: blur(var(--okan-blur-strong)) saturate(1.35);
+  -webkit-backdrop-filter: blur(var(--okan-blur-strong)) saturate(1.35);
+  border-radius: 1.5rem;
+}
+
+.dark .okan-liquid-modal-panel {
+  box-shadow:
+    0 24px 64px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+
+/* MainCanvas: yalnızca engineering-okan rotası */
+html[data-ui-template='glass'] .gm-glass-main-canvas.gm-glass-main-canvas--okan-liquid {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-ui-template='glass'] .gm-glass-main-canvas.gm-glass-main-canvas--okan-liquid > div.border-b {
+  border-color: rgb(255 255 255 / 0.12) !important;
+  background: rgb(255 255 255 / 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+html[data-ui-template='glass']:not(.dark) .gm-glass-main-canvas.gm-glass-main-canvas--okan-liquid > div.border-b {
+  border-color: rgb(15 23 42 / 0.1) !important;
+  background: rgb(255 255 255 / 0.35);
+}
