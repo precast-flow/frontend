@@ -1,0 +1,208 @@
+/**
+ * Üst şerit (AppTopNav / GlassHeader) — Mühendislik Entegrasyonu Okan (engineeringOkanLiquid) ile uyumlu
+ * açık tema: buzlu beyaz paneller, slate kenar, yumuşak gölge.
+ */
+
+/* —— Üst krom kabuğu —— */
+html[data-ui-template='glass']:not(.dark) .gm-glass-topbar-host.gm-glass-topbar-okan {
+  border-color: rgb(255 255 255 / 0.55);
+  background-color: rgb(255 255 255 / 0.42);
+  background-image: linear-gradient(
+    145deg,
+    rgb(224 242 254 / 0.65) 0%,
+    rgb(238 242 255 / 0.5) 45%,
+    rgb(250 245 255 / 0.55) 100%
+  );
+  box-shadow:
+    0 4px 24px rgb(15 23 42 / 0.06),
+    0 12px 40px rgb(15 23 42 / 0.04),
+    inset 0 1px 0 rgb(255 255 255 / 0.72);
+  backdrop-filter: blur(24px) saturate(1.35);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+}
+
+html[data-ui-template='glass'].dark .gm-glass-topbar-host.gm-glass-topbar-okan {
+  border-color: rgb(255 255 255 / 0.12);
+  background-color: rgb(255 255 255 / 0.07);
+  background-image: linear-gradient(160deg, rgb(15 23 42 / 0.88) 0%, rgb(30 27 75 / 0.5) 55%, rgb(15 23 42 / 0.92) 100%);
+  box-shadow:
+    0 8px 32px rgb(0 0 0 / 0.4),
+    inset 0 1px 0 rgb(255 255 255 / 0.1);
+  backdrop-filter: blur(24px) saturate(1.35);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+}
+
+/* —— Marka kutusu —— */
+html[data-ui-template='glass']:not(.dark) .gm-topnav-brand {
+  border-color: rgb(15 23 42 / 0.08);
+  background-color: rgb(255 255 255 / 0.38);
+  box-shadow:
+    0 2px 16px rgb(15 23 42 / 0.05),
+    inset 0 1px 0 rgb(255 255 255 / 0.65);
+}
+
+html[data-ui-template='glass'].dark .gm-topnav-brand {
+  border-color: rgb(255 255 255 / 0.1);
+  background-color: rgb(0 0 0 / 0.2);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+html[data-ui-template='glass']:not(.dark) .gm-topnav-brand-mark {
+  border-color: rgb(255 255 255 / 0.45);
+  background: linear-gradient(145deg, rgb(56 189 248 / 0.22), rgb(167 139 250 / 0.2));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5);
+  color: rgb(15 23 42);
+}
+
+html[data-ui-template='glass'].dark .gm-topnav-brand-mark {
+  border-color: rgb(255 255 255 / 0.12);
+  background: linear-gradient(145deg, rgb(56 189 248 / 0.2), rgb(99 102 241 / 0.15));
+  color: rgb(226 232 240);
+}
+
+/* —— Nav tetikleyici (dropdown başlığı) —— */
+html[data-ui-template='glass']:not(.dark) .gm-topnav-trigger {
+  border-color: rgb(15 23 42 / 0.08);
+  background-color: rgb(255 255 255 / 0.32);
+  color: rgb(15 23 42);
+  box-shadow: 0 1px 8px rgb(15 23 42 / 0.04);
+}
+
+html[data-ui-template='glass']:not(.dark) .gm-topnav-trigger:hover {
+  background-color: rgb(255 255 255 / 0.52);
+}
+
+html[data-ui-template='glass']:not(.dark) .gm-topnav-trigger--active {
+  border-color: rgb(14 165 233 / 0.35);
+  background-color: rgb(255 255 255 / 0.55);
+  box-shadow:
+    0 2px 12px rgb(14 165 233 / 0.12),
+    inset 0 1px 0 rgb(255 255 255 / 0.75);
+}
+
+html[data-ui-template='glass'].dark .gm-topnav-trigger {
+  border-color: rgb(255 255 255 / 0.1);
+  background-color: rgb(0 0 0 / 0.15);
+  color: rgb(248 250 252);
+}
+
+html[data-ui-template='glass'].dark .gm-topnav-trigger:hover {
+  background-color: rgb(255 255 255 / 0.08);
+}
+
+html[data-ui-template='glass'].dark .gm-topnav-trigger--active {
+  border-color: rgb(125 211 252 / 0.28);
+  background-color: rgb(255 255 255 / 0.1);
+}
+
+/* —— Mobil menü düğmesi —— */
+html[data-ui-template='glass']:not(.dark) .gm-topnav-icon-btn {
+  border-color: rgb(15 23 42 / 0.1);
+  background-color: rgb(255 255 255 / 0.4);
+  color: rgb(15 23 42);
+}
+
+html[data-ui-template='glass']:not(.dark) .gm-topnav-icon-btn:hover {
+  background-color: rgb(255 255 255 / 0.65);
+}
+
+html[data-ui-template='glass'].dark .gm-topnav-icon-btn {
+  border-color: rgb(255 255 255 / 0.1);
+  background-color: rgb(0 0 0 / 0.15);
+  color: rgb(248 250 252);
+}
+
+/* —— Sağ krom (tema / bildirim / kullanıcı) —— */
+html[data-ui-template='glass']:not(.dark) .gm-topnav-chrome-wrap {
+  border-left-color: rgb(15 23 42 / 0.1);
+}
+
+html[data-ui-template='glass'].dark .gm-topnav-chrome-wrap {
+  border-left-color: rgb(255 255 255 / 0.12);
+}
+
+html[data-ui-template='glass']:not(.dark) .gm-topnav-chrome-btn {
+  border-color: rgb(15 23 42 / 0.08);
+  background-color: rgb(255 255 255 / 0.35);
+  color: rgb(15 23 42);
+}
+
+html[data-ui-template='glass']:not(.dark) .gm-topnav-chrome-btn:hover {
+  background-color: rgb(255 255 255 / 0.55);
+}
+
+html[data-ui-template='glass']:not(.dark) .gm-topnav-chrome-btn--open {
+  border-color: rgb(14 165 233 / 0.4);
+  box-shadow: 0 0 0 1px rgb(14 165 233 / 0.15);
+}
+
+html[data-ui-template='glass'].dark .gm-topnav-chrome-btn {
+  border-color: rgb(255 255 255 / 0.1);
+  background-color: rgb(0 0 0 / 0.15);
+  color: rgb(248 250 252);
+}
+
+html[data-ui-template='glass'].dark .gm-topnav-chrome-btn--open {
+  border-color: rgb(125 211 252 / 0.35);
+}
+
+/* —— Açılır paneller (nav + chrome) —— */
+html[data-ui-template='glass']:not(.dark) .gm-topnav-dropdown-panel {
+  border-color: rgb(15 23 42 / 0.1);
+  background-color: rgb(255 255 255 / 0.72);
+  box-shadow:
+    0 12px 40px rgb(15 23 42 / 0.1),
+    inset 0 1px 0 rgb(255 255 255 / 0.85);
+  backdrop-filter: blur(22px) saturate(1.25);
+  -webkit-backdrop-filter: blur(22px) saturate(1.25);
+}
+
+html[data-ui-template='glass'].dark .gm-topnav-dropdown-panel {
+  border-color: rgb(255 255 255 / 0.12);
+  background-color: rgb(15 23 42 / 0.85);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+}
+
+/* glassmorphism.css [role=menu] !important üzerine — Okan açık tema paneli */
+html[data-ui-template='glass']:not(.dark) .gm-glass-topbar-host header .gm-topnav-dropdown-panel[role='menu'] {
+  background-color: rgb(255 255 255 / 0.78) !important;
+  border-color: rgb(15 23 42 / 0.1) !important;
+  box-shadow:
+    0 12px 40px rgb(15 23 42 / 0.1),
+    inset 0 1px 0 rgb(255 255 255 / 0.85) !important;
+  backdrop-filter: blur(22px) saturate(1.25) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.25) !important;
+  color: rgb(15 23 42) !important;
+}
+
+html[data-ui-template='glass'].dark .gm-glass-topbar-host header .gm-topnav-dropdown-panel[role='menu'] {
+  background-color: rgb(15 23 42 / 0.88) !important;
+  border-color: rgb(255 255 255 / 0.12) !important;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.45) !important;
+}
+
+html[data-ui-template='glass']:not(.dark) .gm-topnav-dropdown-panel .gm-topnav-dd-heading {
+  border-color: rgb(15 23 42 / 0.08);
+  color: rgb(15 23 42);
+}
+
+html[data-ui-template='glass']:not(.dark) .gm-topnav-dropdown-panel .gm-topnav-dd-muted {
+  color: rgb(51 65 85 / 0.9);
+}
+
+html[data-ui-template='glass']:not(.dark) .gm-topnav-dd-item:hover {
+  background-color: rgb(15 23 42 / 0.04);
+}
+
+/* Alt çizgi vurgusu — açık temada okunaklı */
+html[data-ui-template='glass']:not(.dark) .gm-topnav-header-accent {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(14 165 233 / 0.35) 35%,
+    rgb(99 102 241 / 0.28) 65%,
+    transparent
+  );
+}

@@ -26,7 +26,7 @@ export function FirmAdminShell() {
 
   return (
     <div className="min-h-dvh bg-pf-page">
-      <div className="mx-auto flex min-h-dvh max-w-[1600px] flex-col gap-4 p-4 md:flex-row md:gap-5 md:p-5">
+      <div className="flex min-h-dvh w-full min-w-0 flex-col gap-4 p-4 md:flex-row md:gap-5 md:p-5">
         <aside
           className="flex w-full shrink-0 flex-col rounded-3xl bg-pf-surface p-3 shadow-neo-out md:w-[min(280px,100%)] md:min-w-[260px]"
           aria-label={t('firmAdmin.sidebarAria')}

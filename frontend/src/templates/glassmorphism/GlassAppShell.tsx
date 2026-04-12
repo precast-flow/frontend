@@ -9,10 +9,13 @@ import { AppFooter } from '../../components/AppFooter'
 import { FactorySummaryDrawer } from '../../components/FactorySummaryDrawer'
 import { ProductionRolePreviewBanner } from '../../components/production/ProductionRolePreviewBanner'
 import { Sidebar } from '../../components/Sidebar'
-import { TopBar } from '../../components/TopBar'
+import { AppTopNav } from '../../components/AppTopNav'
 import { GlassHeader } from './GlassHeader'
 import { GlassLayout } from './GlassLayout'
 import { GlassSidebar } from './GlassSidebar'
+
+/** Kenar çubuğu şimdilik gizli (bileşen silinmedi); tekrar göstermek için `true` yapın. */
+const SHOW_GLASS_SIDEBAR = false
 
 function GlassAppShellInner() {
   const navigate = useNavigate()
@@ -54,8 +57,13 @@ function GlassAppShellInner() {
   const outletContext: AppShellOutletContext = { onNavigate: select }
 
   const sidebarCollapsedEffective = sidebarCollapsed && !mobileNavOpen
-  const topBarLeftPadding =
-    sidebarCollapsedEffective && !sidebarHoverExpanded ? 'calc(4.75rem + 1rem)' : 'calc(280px + 1rem)'
+  const topBarLeftPadding = SHOW_GLASS_SIDEBAR
+    ? sidebarCollapsedEffective && !sidebarHoverExpanded
+      ? 'calc(4.75rem + 1rem)'
+      : 'calc(280px + 1rem)'
+    : '0px'
+
+  const contentColStart = SHOW_GLASS_SIDEBAR ? 'md:col-start-2' : 'md:col-start-1'
 
   const expandSidebar = useCallback(() => setSidebarCollapsed(false), [])
   /** Masaüstü grid: banner varsa nav ile main aynı satırda (banner yalnızca içerik sütununda) */
@@ -63,7 +71,7 @@ function GlassAppShellInner() {
 
   return (
     <GlassLayout>
-      {mobileNavOpen ? (
+      {SHOW_GLASS_SIDEBAR && mobileNavOpen ? (
         <button
           type="button"
           className="gm-glass-shell-mobile-overlay fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[2px] md:hidden"
@@ -72,22 +80,27 @@ function GlassAppShellInner() {
         />
       ) : null}
 
-      <div className="mx-auto flex min-h-dvh max-w-[1600px] flex-col gap-3 p-3 text-[var(--glass-text-primary)] md:gap-4 md:p-5">
+      <div className="flex min-h-dvh w-full min-w-0 flex-col gap-3 p-3 text-[var(--glass-text-primary)] md:gap-4 md:p-5">
         <div
           className={[
-            'relative z-0 flex min-h-0 min-w-0 flex-1 flex-col gap-3 pt-20 md:min-h-0 md:grid md:grid-cols-[4.75rem_minmax(0,1fr)] md:gap-x-4 md:gap-y-4 md:pt-24',
+            'relative z-0 flex min-h-0 min-w-0 flex-1 flex-col gap-3 pt-20 md:min-h-0 md:gap-x-4 md:gap-y-4 md:pt-24',
+            SHOW_GLASS_SIDEBAR ? 'md:grid md:grid-cols-[4.75rem_minmax(0,1fr)]' : 'md:grid md:grid-cols-1',
             /* Mobil: banner → main → footer; masaüstü: nav ile main aynı satır (banner üstte yalnız sağda) */
           ].join(' ')}
         >
           <div
-            className={[
-              'z-50 md:z-[80]',
-              'md:relative md:block md:w-[4.75rem] md:min-w-[4.75rem] md:overflow-visible md:self-start',
-              hasPreviewBanner ? 'md:col-start-1 md:row-start-2' : 'md:col-start-1 md:row-start-1',
-              mobileNavOpen
-                ? 'fixed inset-y-3 left-3 flex md:static'
-                : 'hidden md:block',
-            ].join(' ')}
+            className={
+              SHOW_GLASS_SIDEBAR
+                ? [
+                    'z-50 md:z-[80]',
+                    'md:relative md:block md:w-[4.75rem] md:min-w-[4.75rem] md:overflow-visible md:self-start',
+                    hasPreviewBanner ? 'md:col-start-1 md:row-start-2' : 'md:col-start-1 md:row-start-1',
+                    mobileNavOpen
+                      ? 'fixed inset-y-3 left-3 flex md:static'
+                      : 'hidden md:block',
+                  ].join(' ')
+                : 'hidden'
+            }
           >
             <GlassSidebar>
               <Sidebar
@@ -103,7 +116,7 @@ function GlassAppShellInner() {
           </div>
 
           {previewRoleId ? (
-            <div className="order-1 md:col-start-2 md:row-start-1">
+            <div className={['order-1', contentColStart, 'md:row-start-1'].join(' ')}>
               <ProductionRolePreviewBanner />
             </div>
           ) : null}
@@ -112,7 +125,9 @@ function GlassAppShellInner() {
             id="main-module"
             className={[
               'gm-glass-panel-l1 gm-motion relative z-0 flex min-h-[60vh] flex-1 flex-col overflow-visible rounded-2xl p-1 md:min-h-[62vh] md:rounded-3xl',
-              hasPreviewBanner ? 'order-2 md:col-start-2 md:row-start-2' : 'order-1 md:col-start-2 md:row-start-1',
+              hasPreviewBanner
+                ? ['order-2', contentColStart, 'md:row-start-2'].join(' ')
+                : ['order-1', contentColStart, 'md:row-start-1'].join(' '),
             ].join(' ')}
             aria-label="Modül içeriği"
           >
@@ -128,8 +143,8 @@ function GlassAppShellInner() {
             className={[
               'gm-glass-footer-host gm-glass-panel-l2 gm-motion rounded-2xl md:rounded-3xl',
               hasPreviewBanner
-                ? 'order-3 md:col-start-2 md:row-start-3'
-                : 'order-2 md:col-start-2 md:row-start-2',
+                ? ['order-3', contentColStart, 'md:row-start-3'].join(' ')
+                : ['order-2', contentColStart, 'md:row-start-2'].join(' '),
             ].join(' ')}
           >
             <div className="[&>footer]:rounded-2xl [&>footer]:bg-transparent [&>footer]:shadow-none md:[&>footer]:rounded-3xl">
@@ -140,20 +155,36 @@ function GlassAppShellInner() {
       </div>
 
       <div className="pointer-events-none fixed top-3 left-0 right-0 z-[95] md:top-5">
-        <div className="mx-auto max-w-[1600px] px-3 md:px-5">
+        <div className="w-full min-w-0 px-3 md:px-5">
           <div
             className="hidden md:block motion-reduce:transition-none transition-[padding-left] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
             style={{ paddingLeft: topBarLeftPadding }}
           >
             <div className="pointer-events-auto">
               <GlassHeader>
-                <TopBar onMenuToggle={() => setMobileNavOpen((o) => !o)} onModuleNavigate={select} />
+                <AppTopNav
+                  onMenuToggle={
+                    SHOW_GLASS_SIDEBAR ? () => setMobileNavOpen((o) => !o) : undefined
+                  }
+                  onModuleNavigate={select}
+                  startItems={startNavItems}
+                  groups={filteredNavGroups}
+                  activeId={effectiveActiveId}
+                />
               </GlassHeader>
             </div>
           </div>
           <div className="pointer-events-auto md:hidden">
             <GlassHeader>
-              <TopBar onMenuToggle={() => setMobileNavOpen((o) => !o)} onModuleNavigate={select} />
+              <AppTopNav
+                onMenuToggle={
+                  SHOW_GLASS_SIDEBAR ? () => setMobileNavOpen((o) => !o) : undefined
+                }
+                onModuleNavigate={select}
+                startItems={startNavItems}
+                groups={filteredNavGroups}
+                activeId={effectiveActiveId}
+              />
             </GlassHeader>
           </div>
         </div>
