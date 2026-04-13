@@ -106,7 +106,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
       ) : isProject ? (
         <ProjectModuleView onNavigate={onNavigate} />
       ) : isEngineering ? (
-        <EngineeringIntegrationOkanPage />
+        <EngineeringIntegrationOkanPage onCloseModule={() => onNavigate('dashboard')} />
       ) : isManualPieceStudio ? (
         <ManualPieceTemplateStudioModule onCloseModule={() => onNavigate('dashboard')} />
       ) : isParametric3d ? (

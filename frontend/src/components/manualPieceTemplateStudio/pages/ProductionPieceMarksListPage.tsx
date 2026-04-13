@@ -2,8 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Download, FileBarChart, Plus, XCircle } from 'lucide-react'
 import { useI18n } from '../../../i18n/I18nProvider'
-import { MPTS_BASE_PATH } from '../constants'
-import { useMpts } from '../MptsContext'
+import { useMpts, useMptsBasePath } from '../MptsContext'
 import { useMptsBreadcrumb } from '../useMptsBreadcrumb'
 import { AddPieceFromTemplateModal } from '../modals/AddPieceFromTemplateModal'
 import { MptsActionBar } from '../components/MptsActionBar'
@@ -16,6 +15,7 @@ export function ProductionPieceMarksListPage({ onCloseModule }: { onCloseModule:
   const bc = useMptsBreadcrumb()
   const navigate = useNavigate()
   const { productionPieces, selectedJobId, setSelectedJobId, jobs, addEmptyPiece, pushToast } = useMpts()
+  const base = useMptsBasePath()
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -158,7 +158,7 @@ export function ProductionPieceMarksListPage({ onCloseModule }: { onCloseModule:
                 <tr
                   key={r.id}
                   className="cursor-pointer hover:bg-amber-50/50 dark:hover:bg-amber-950/30"
-                  onClick={() => navigate(`${MPTS_BASE_PATH}/production/pieces/${r.id}/edit`)}
+                  onClick={() => navigate(`${base}/production/pieces/${r.id}/edit`)}
                 >
                   <MptsTd className="font-mono font-semibold text-blue-800 dark:text-blue-300">{r.pieceMark}</MptsTd>
                   <MptsTd>{r.phase}</MptsTd>

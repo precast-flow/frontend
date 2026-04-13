@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Plus, Trash2 } from 'lucide-react'
 import { useI18n } from '../../../i18n/I18nProvider'
-import { MPTS_BASE_PATH } from '../constants'
-import { useMpts } from '../MptsContext'
+import { useMpts, useMptsBasePath } from '../MptsContext'
 import type { AssemblyLine, MaterialAssembly, MaterialCategory } from '../types'
 import { MptsActionBar } from '../components/MptsActionBar'
 import { MptsFormSection } from '../components/MptsFormSection'
@@ -71,6 +70,7 @@ export function MaterialAssemblyFormPage({ onCloseModule }: { onCloseModule: () 
   const { id } = useParams<{ id: string }>()
   const isNew = id === 'new'
   const { materialAssemblies, materialItems, saveMaterialAssembly, getMaterialItemById } = useMpts()
+  const base = useMptsBasePath()
   const navigate = useNavigate()
   const [form, setForm] = useState<MaterialAssembly>(() => emptyAsm())
 
@@ -106,7 +106,7 @@ export function MaterialAssemblyFormPage({ onCloseModule }: { onCloseModule: () 
       materialCost: calcCost,
       matWeight: calcWeight,
     })
-    if (close) navigate(`${MPTS_BASE_PATH}/catalog/material-assemblies`)
+    if (close) navigate(`${base}/catalog/material-assemblies`)
   }
 
   const updateLine = (lid: string, patch: Partial<AssemblyLine>) => {
@@ -166,7 +166,7 @@ export function MaterialAssemblyFormPage({ onCloseModule }: { onCloseModule: () 
             <button
               type="button"
               className="rounded border border-slate-300 px-3 py-1.5 text-xs dark:border-slate-600"
-              onClick={() => navigate(`${MPTS_BASE_PATH}/catalog/material-assemblies`)}
+              onClick={() => navigate(`${base}/catalog/material-assemblies`)}
             >
               {t('mpts.common.close')}
             </button>

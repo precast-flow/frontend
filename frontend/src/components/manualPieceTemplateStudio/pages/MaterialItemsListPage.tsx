@@ -2,8 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Download, FileBarChart, Pencil, Plus, Trash2, XCircle } from 'lucide-react'
 import { useI18n } from '../../../i18n/I18nProvider'
-import { MPTS_BASE_PATH } from '../constants'
-import { useMpts } from '../MptsContext'
+import { useMpts, useMptsBasePath } from '../MptsContext'
 import type { MaterialCategory, MaterialItem } from '../types'
 import { useMptsBreadcrumb } from '../useMptsBreadcrumb'
 import { MptsActionBar } from '../components/MptsActionBar'
@@ -24,6 +23,7 @@ export function MaterialItemsListPage({ onCloseModule }: { onCloseModule: () => 
   const { t } = useI18n()
   const bc = useMptsBreadcrumb()
   const { materialItems, deleteMaterialItem, pushToast } = useMpts()
+  const base = useMptsBasePath()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [cat, setCat] = useState<string>('all')
@@ -127,7 +127,7 @@ export function MaterialItemsListPage({ onCloseModule }: { onCloseModule: () => 
             <button
               type="button"
               className="okan-liquid-btn-primary px-3 py-1.5 text-xs font-semibold"
-              onClick={() => navigate(`${MPTS_BASE_PATH}/catalog/material-items/new`)}
+              onClick={() => navigate(`${base}/catalog/material-items/new`)}
             >
               <Plus className="mr-1 inline h-3.5 w-3.5" />
               {t('mpts.common.addNew')}
@@ -150,7 +150,7 @@ export function MaterialItemsListPage({ onCloseModule }: { onCloseModule: () => 
           <button
             type="button"
             className="mt-3 rounded bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
-            onClick={() => navigate(`${MPTS_BASE_PATH}/catalog/material-items/new`)}
+            onClick={() => navigate(`${base}/catalog/material-items/new`)}
           >
             {t('mpts.common.addNew')}
           </button>
@@ -209,7 +209,7 @@ export function MaterialItemsListPage({ onCloseModule }: { onCloseModule: () => 
                       <button
                         type="button"
                         className="mr-1 rounded p-1 text-blue-700 hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-950/50"
-                        onClick={() => navigate(`${MPTS_BASE_PATH}/catalog/material-items/${r.id}/edit`)}
+                        onClick={() => navigate(`${base}/catalog/material-items/${r.id}/edit`)}
                         aria-label={t('mpts.common.edit')}
                       >
                         <Pencil className="h-3.5 w-3.5" />

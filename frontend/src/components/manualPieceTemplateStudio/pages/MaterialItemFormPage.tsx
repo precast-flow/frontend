@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useI18n } from '../../../i18n/I18nProvider'
-import { MPTS_BASE_PATH } from '../constants'
-import { useMpts } from '../MptsContext'
+import { useMpts, useMptsBasePath } from '../MptsContext'
 import type { MaterialCategory, MaterialItem } from '../types'
 import { useMptsBreadcrumb } from '../useMptsBreadcrumb'
 import { MptsActionBar } from '../components/MptsActionBar'
@@ -54,6 +53,7 @@ export function MaterialItemFormPage({ onCloseModule }: { onCloseModule: () => v
   const { id } = useParams<{ id: string }>()
   const isNew = id === 'new'
   const { materialItems, saveMaterialItem, pushToast } = useMpts()
+  const base = useMptsBasePath()
   const navigate = useNavigate()
   const [form, setForm] = useState<MaterialItem>(() => emptyItem())
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -94,7 +94,7 @@ export function MaterialItemFormPage({ onCloseModule }: { onCloseModule: () => v
       return
     }
     saveMaterialItem({ ...form, materialNum: form.materialNum.trim() })
-    if (close) navigate(`${MPTS_BASE_PATH}/catalog/material-items`)
+    if (close) navigate(`${base}/catalog/material-items`)
   }
 
   const field = (
@@ -165,7 +165,7 @@ export function MaterialItemFormPage({ onCloseModule }: { onCloseModule: () => v
             <button
               type="button"
               className="rounded border border-slate-300 px-3 py-1.5 text-xs dark:border-slate-600"
-              onClick={() => navigate(`${MPTS_BASE_PATH}/catalog/material-items`)}
+              onClick={() => navigate(`${base}/catalog/material-items`)}
             >
               {t('mpts.common.close')}
             </button>
