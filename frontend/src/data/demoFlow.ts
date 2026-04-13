@@ -51,9 +51,9 @@ export const demoFlowSteps: DemoFlowStep[] = [
     step: 4,
     moduleId: 'engineering',
     title: 'Mühendislik — üretime hazır',
-    screen: 'Mühendislik · paket / checklist',
-    control: 'Checklist toggle; “Üretime hazır” modal onayı',
-    surfaceNote: 'Dosya kartları protrude; checklist satırları inset satır.',
+    screen: 'Mühendislik Entegrasyonu · hazırlık / checklist',
+    control: 'Hazırlık skoru; akıllı üretim emri modalı (mock)',
+    surfaceNote: 'Okan liquid paneller; checklist ve risk özeti.',
     tailwindLine:
       'Modal kabı: `shadow-neo-out rounded-2xl`; form alanları: `shadow-neo-in rounded-xl`.',
     emptyOrErrorInset: 'Kilit çakışması: inset uyarı + kırmızı metin (00b).',

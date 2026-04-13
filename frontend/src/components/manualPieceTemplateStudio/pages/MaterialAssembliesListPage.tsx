@@ -7,6 +7,7 @@ import { useMpts } from '../MptsContext'
 import type { MaterialAssembly, MaterialCategory } from '../types'
 import { useMptsBreadcrumb } from '../useMptsBreadcrumb'
 import { MptsActionBar } from '../components/MptsActionBar'
+import { MptsPaginationBar } from '../components/MptsPaginationBar'
 import { MptsBadge } from '../components/MptsBadge'
 import { MptsDenseTable, MptsTd, MptsTh } from '../components/MptsDenseTable'
 import { MptsModal } from '../components/MptsModal'
@@ -45,12 +46,24 @@ export function MaterialAssembliesListPage({ onCloseModule }: { onCloseModule: (
         badge={<MptsBadge variant="asm">{t('mpts.assemblies.badge')}</MptsBadge>}
       />
       <MptsActionBar
-        left={<span>{t('mpts.assemblies.rowCount', { count: String(filtered.length) })}</span>}
+        filters={
+          <label className="flex min-w-0 flex-wrap items-center gap-1.5 text-[11px] font-medium text-slate-700 dark:text-slate-300">
+            <span className="shrink-0 whitespace-nowrap">{t('mpts.common.search')}</span>
+            <input
+              className="okan-liquid-input min-w-[17rem] max-w-[28rem] flex-1 px-2.5 py-1.5 text-sm"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
+            />
+          </label>
+        }
         right={
           <>
             <button
               type="button"
-              className="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium dark:border-slate-600 dark:bg-slate-900"
+              className="okan-liquid-btn-secondary px-3 py-1.5 text-xs font-semibold"
               onClick={() => pushToast({ type: 'info', text: t('mpts.toast.reportQueued') })}
             >
               <FileBarChart className="mr-1 inline h-3.5 w-3.5" />
@@ -58,7 +71,7 @@ export function MaterialAssembliesListPage({ onCloseModule }: { onCloseModule: (
             </button>
             <button
               type="button"
-              className="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium dark:border-slate-600 dark:bg-slate-900"
+              className="okan-liquid-btn-secondary px-3 py-1.5 text-xs font-semibold"
               onClick={() => pushToast({ type: 'success', text: t('mpts.toast.exportQueued') })}
             >
               <Download className="mr-1 inline h-3.5 w-3.5" />
@@ -66,7 +79,7 @@ export function MaterialAssembliesListPage({ onCloseModule }: { onCloseModule: (
             </button>
             <button
               type="button"
-              className="rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+              className="okan-liquid-btn-primary px-3 py-1.5 text-xs font-semibold"
               onClick={() => navigate(`${MPTS_BASE_PATH}/catalog/material-assemblies/new`)}
             >
               <Plus className="mr-1 inline h-3.5 w-3.5" />
@@ -74,7 +87,7 @@ export function MaterialAssembliesListPage({ onCloseModule }: { onCloseModule: (
             </button>
             <button
               type="button"
-              className="rounded px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400"
+              className="okan-liquid-btn-secondary px-3 py-1.5 text-xs font-semibold"
               onClick={onCloseModule}
             >
               <XCircle className="mr-1 inline h-3.5 w-3.5" />
@@ -83,20 +96,6 @@ export function MaterialAssembliesListPage({ onCloseModule }: { onCloseModule: (
           </>
         }
       />
-
-      <div className="mb-2 flex flex-wrap gap-2 rounded border border-indigo-100 bg-indigo-50/50 p-2 dark:border-indigo-900/50 dark:bg-indigo-950/30">
-        <label className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
-          {t('mpts.common.search')}
-          <input
-            className="ml-1 mt-0.5 block w-56 rounded border border-slate-300 px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-900"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
-          />
-        </label>
-      </div>
 
       {filtered.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center rounded border border-dashed border-indigo-200 p-8 dark:border-indigo-800">
@@ -201,27 +200,7 @@ export function MaterialAssembliesListPage({ onCloseModule }: { onCloseModule: (
               </tbody>
             </MptsDenseTable>
           </div>
-          <div className="mt-2 flex justify-between text-xs text-slate-600">
-            <button
-              type="button"
-              disabled={page <= 1}
-              className="rounded border px-2 py-1 disabled:opacity-40"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              {t('mpts.common.prev')}
-            </button>
-            <span>
-              {t('mpts.common.page')} {page} / {totalPages}
-            </span>
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              className="rounded border px-2 py-1 disabled:opacity-40"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            >
-              {t('mpts.common.next')}
-            </button>
-          </div>
+          <MptsPaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
         </>
       )}
 

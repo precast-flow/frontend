@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 
 export type TabItem = { id: string; label: string }
 
-/** Mühendislik Entegrasyonu-okan ile aynı pill / segmented kontrol görünümü */
+/** Mühendislik Entegrasyonu ile aynı pill / segmented kontrol görünümü */
 export function MptsTabs({
   tabs,
   active,

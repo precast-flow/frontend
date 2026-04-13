@@ -45,12 +45,50 @@ export function PieceMarkTemplatesListPage({ onCloseModule }: { onCloseModule: (
         badge={<MptsBadge variant="template">{t('mpts.tpl.badge.template')}</MptsBadge>}
       />
       <MptsActionBar
-        left={<span>{t('mpts.templates.rowCount', { count: String(filtered.length) })}</span>}
+        filters={
+          <>
+            <label className="flex min-w-0 flex-wrap items-center gap-1.5 text-[11px] font-medium text-slate-700 dark:text-slate-300">
+              <span className="shrink-0 whitespace-nowrap">{t('mpts.common.search')}</span>
+              <input
+                className="okan-liquid-input min-w-[17rem] max-w-[28rem] flex-1 px-2.5 py-1.5 text-sm"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </label>
+            <label className="flex items-center gap-1.5 text-[11px] font-medium text-slate-700 dark:text-slate-300">
+              <span className="shrink-0 whitespace-nowrap">{t('mpts.common.location')}</span>
+              <select
+                className="okan-liquid-select min-w-[7rem] px-2.5 py-1.5 text-sm"
+                value={loc}
+                onChange={(e) => setLoc(e.target.value)}
+              >
+                <option value="all">{t('mpts.common.all')}</option>
+                {locs.map((l) => (
+                  <option key={l} value={l}>
+                    {l}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center gap-1.5 text-[11px] font-medium text-slate-700 dark:text-slate-300">
+              <span className="shrink-0 whitespace-nowrap">{t('mpts.common.active')}</span>
+              <select
+                className="okan-liquid-select min-w-[5.5rem] px-2.5 py-1.5 text-sm"
+                value={active}
+                onChange={(e) => setActive(e.target.value as typeof active)}
+              >
+                <option value="all">{t('mpts.common.all')}</option>
+                <option value="yes">{t('mpts.common.yes')}</option>
+                <option value="no">{t('mpts.common.no')}</option>
+              </select>
+            </label>
+          </>
+        }
         right={
           <>
             <button
               type="button"
-              className="rounded border border-slate-300 px-3 py-1.5 text-xs dark:border-slate-600"
+              className="okan-liquid-btn-secondary px-3 py-1.5 text-xs font-semibold"
               onClick={() => pushToast({ type: 'info', text: t('mpts.toast.reportQueued') })}
             >
               <FileBarChart className="mr-1 inline h-3.5 w-3.5" />
@@ -58,7 +96,7 @@ export function PieceMarkTemplatesListPage({ onCloseModule }: { onCloseModule: (
             </button>
             <button
               type="button"
-              className="rounded border border-slate-300 px-3 py-1.5 text-xs dark:border-slate-600"
+              className="okan-liquid-btn-secondary px-3 py-1.5 text-xs font-semibold"
               onClick={() => pushToast({ type: 'success', text: t('mpts.toast.exportQueued') })}
             >
               <Download className="mr-1 inline h-3.5 w-3.5" />
@@ -66,7 +104,7 @@ export function PieceMarkTemplatesListPage({ onCloseModule }: { onCloseModule: (
             </button>
             <button
               type="button"
-              className="rounded border border-slate-400 px-3 py-1.5 text-xs"
+              className="okan-liquid-btn-secondary px-3 py-1.5 text-xs font-semibold disabled:opacity-45"
               disabled={!sel}
               onClick={() => sel && cloneTemplate(sel)}
             >
@@ -75,57 +113,23 @@ export function PieceMarkTemplatesListPage({ onCloseModule }: { onCloseModule: (
             </button>
             <button
               type="button"
-              className="rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white"
+              className="okan-liquid-btn-primary px-3 py-1.5 text-xs font-semibold"
               onClick={() => navigate(`${MPTS_BASE_PATH}/templates/piece-mark-templates/new`)}
             >
               <Plus className="mr-1 inline h-3.5 w-3.5" />
               {t('mpts.common.addNew')}
             </button>
-            <button type="button" className="rounded px-3 py-1.5 text-xs text-slate-600" onClick={onCloseModule}>
+            <button
+              type="button"
+              className="okan-liquid-btn-secondary px-3 py-1.5 text-xs font-semibold"
+              onClick={onCloseModule}
+            >
               <XCircle className="mr-1 inline h-3.5 w-3.5" />
               {t('mpts.common.close')}
             </button>
           </>
         }
       />
-
-      <div className="mb-2 flex flex-wrap gap-2 rounded border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-900/60">
-        <label className="text-[11px] font-medium">
-          {t('mpts.common.search')}
-          <input
-            className="ml-1 mt-0.5 block w-52 rounded border border-slate-300 px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-900"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </label>
-        <label className="text-[11px] font-medium">
-          {t('mpts.common.location')}
-          <select
-            className="ml-1 mt-0.5 block rounded border border-slate-300 px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-900"
-            value={loc}
-            onChange={(e) => setLoc(e.target.value)}
-          >
-            <option value="all">{t('mpts.common.all')}</option>
-            {locs.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-[11px] font-medium">
-          {t('mpts.common.active')}
-          <select
-            className="ml-1 mt-0.5 block rounded border border-slate-300 px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-900"
-            value={active}
-            onChange={(e) => setActive(e.target.value as typeof active)}
-          >
-            <option value="all">{t('mpts.common.all')}</option>
-            <option value="yes">{t('mpts.common.yes')}</option>
-            <option value="no">{t('mpts.common.no')}</option>
-          </select>
-        </label>
-      </div>
 
       {filtered.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center rounded border border-dashed p-8">

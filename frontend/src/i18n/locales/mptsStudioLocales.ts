@@ -76,7 +76,6 @@ export const mptsStudioTr: Record<string, string> = {
   'mpts.toast.bomExportQueued': 'BOM dışa aktarma kuyruğa alındı (mock).',
 
   'mpts.materialItems.title': 'Malzeme kalemleri',
-  'mpts.materialItems.subtitle': 'Ana katalog — tek satırlık malzemeler.',
   'mpts.materialItems.rowCount': '{{count}} satır',
   'mpts.materialItems.placeholderSearch': 'Malzeme no, açıklama, gömülü…',
   'mpts.materialItems.empty': 'Filtrelere uyan malzeme kalemi yok.',
@@ -399,7 +398,6 @@ export const mptsStudioEn: Record<string, string> = {
   'mpts.toast.bomExportQueued': 'BOM export queued (mock).',
 
   'mpts.materialItems.title': 'Material Items',
-  'mpts.materialItems.subtitle': 'Master catalog — single material rows.',
   'mpts.materialItems.rowCount': '{{count}} row(s)',
   'mpts.materialItems.placeholderSearch': 'Material Num, Description, Embed…',
   'mpts.materialItems.empty': 'No material items match filters.',

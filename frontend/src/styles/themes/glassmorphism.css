@@ -704,71 +704,6 @@ html[data-ui-template='glass']:not(.dark) {
     border-color: var(--glass-border-muted);
   }
 
-  /* —— Sol menü: cam yüzey + z-index ile üst üste binen ana panelin altında kalmaması —— */
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside {
-    background-color: var(--glass-bg-panel-strong) !important;
-    border: 1px solid var(--glass-border-soft);
-    box-shadow: var(--glass-shadow-elevated);
-    backdrop-filter: blur(var(--glass-blur-lg));
-    -webkit-backdrop-filter: blur(var(--glass-blur-lg));
-    color: var(--glass-text-primary);
-  }
-
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .text-gray-500,
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .dark\:text-gray-400 {
-    color: var(--glass-text-muted) !important;
-  }
-
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .text-gray-700,
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .text-gray-600,
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .text-gray-900,
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .dark\:text-gray-200,
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .dark\:text-gray-300,
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .dark\:text-gray-50 {
-    color: var(--glass-text-primary) !important;
-  }
-
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside nav button[type='button'] {
-    border: 1px solid transparent;
-    background-color: rgb(255 255 255 / 0.06) !important;
-    color: var(--glass-text-primary) !important;
-    box-shadow: none !important;
-  }
-
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside nav button[type='button']:hover {
-    background-color: rgb(255 255 255 / 0.12) !important;
-    border-color: var(--glass-border-muted);
-  }
-
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside nav button[type='button'].shadow-neo-in {
-    background-color: rgb(255 255 255 / 0.18) !important;
-    border-color: var(--glass-border-soft);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12) !important;
-  }
-
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside > div:first-child button[type='button'] {
-    background-color: rgb(255 255 255 / 0.08) !important;
-    border: 1px solid var(--glass-border-muted);
-    color: var(--glass-text-primary) !important;
-    box-shadow: none !important;
-  }
-
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside > div:first-child button[type='button']:hover {
-    background-color: rgb(255 255 255 / 0.14) !important;
-    border-color: var(--glass-border-soft);
-  }
-
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .bg-gray-300\/70,
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside .dark\:bg-gray-700\/70 {
-    background-color: var(--glass-border-muted) !important;
-    opacity: 0.85;
-  }
-
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside nav .text-gray-700,
-  html[data-ui-template='glass'] .gm-glass-sidebar-root > aside nav .dark\:text-gray-200 {
-    color: var(--glass-text-primary) !important;
-  }
-
   /* —— glass-04 — shell: TopBar (GlassHeader), footer, drawer, loading, banner, context strip —— */
   html[data-ui-template='glass'] .gm-glass-topbar-host {
     overflow: visible;
@@ -1826,12 +1761,6 @@ html[data-ui-template='glass'] .gm-glass-modal-shell.fixed.inset-0 {
 }
 
 html[data-ui-template='glass'] .gm-glass-modal-shell.fixed.inset-0 > .absolute.inset-0 {
-  background-color: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-html[data-ui-template='glass'] .gm-glass-shell-mobile-overlay {
   background-color: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;

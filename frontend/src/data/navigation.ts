@@ -34,7 +34,7 @@ export const startNavItems: NavItem[] = [
 ]
 
 /**
- * İki seviyeli kenar çubuğu — tek açık akordeon bölümü (Sidebar).
+ * Planlama grubu modül listesi — üst yatay nav (AppTopNav) ile kullanılır.
  * Üretim grubu id’si `production` kalmalı (rol önizlemesi süzgeci).
  */
 export const navGroups: NavGroup[] = [
@@ -62,7 +62,6 @@ export const navGroups: NavGroup[] = [
       { id: 'work-start', labelKey: 'nav.workStart', slug: 'is-baslat' },
       { id: 'project', labelKey: 'nav.project', slug: 'proje' },
       { id: 'engineering', labelKey: 'nav.engineering', slug: 'muhendislik' },
-      { id: 'engineering-okan', labelKey: 'nav.engineeringOkan', slug: 'muhendislik-okan' },
       {
         id: 'manual-piece-studio',
         labelKey: 'nav.manualPieceStudio',

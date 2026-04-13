@@ -11,7 +11,7 @@ export function GlassLayout({ children, lite }: Props) {
   return (
     <div
       className={[
-        /* md+: yatay taşınır — dar sidebar hover genişlemesi kesilmesin; mobilde blob taşması için clip */
+        /* mobilde blob taşması için clip */
         'relative isolate min-h-dvh gm-glass-page max-md:overflow-x-hidden',
         lite ? 'gm-glass-lite' : '',
       ]
