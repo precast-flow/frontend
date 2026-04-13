@@ -7,6 +7,7 @@ import { useMpts } from '../MptsContext'
 import type { MaterialCategory, MaterialItem } from '../types'
 import { useMptsBreadcrumb } from '../useMptsBreadcrumb'
 import { MptsActionBar } from '../components/MptsActionBar'
+import { MptsPaginationBar } from '../components/MptsPaginationBar'
 import { MptsDenseTable, MptsTd, MptsTh } from '../components/MptsDenseTable'
 import { MptsPageHeader } from '../components/MptsPageHeader'
 
@@ -54,13 +55,57 @@ export function MaterialItemsListPage({ onCloseModule }: { onCloseModule: () => 
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <MptsPageHeader
-        breadcrumb={bc.catalogList}
-        title={t('mpts.materialItems.title')}
-        subtitle={t('mpts.materialItems.subtitle')}
-      />
+      <MptsPageHeader breadcrumb={bc.catalogList} title={t('mpts.materialItems.title')} />
       <MptsActionBar
-        left={<span>{t('mpts.materialItems.rowCount', { count: String(filtered.length) })}</span>}
+        filters={
+          <>
+            <label className="flex min-w-0 flex-wrap items-center gap-1.5 text-[11px] font-semibold uppercase text-slate-600 dark:text-slate-400">
+              <span className="shrink-0 whitespace-nowrap">{t('mpts.common.search')}</span>
+              <input
+                className="okan-liquid-input min-w-[17rem] max-w-[28rem] flex-1 px-2.5 py-1.5 text-sm"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value)
+                  setPage(1)
+                }}
+                placeholder={t('mpts.materialItems.placeholderSearch')}
+              />
+            </label>
+            <label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase text-slate-600 dark:text-slate-400">
+              <span className="shrink-0 whitespace-nowrap">{t('mpts.common.category')}</span>
+              <select
+                className="okan-liquid-select min-w-[8rem] px-2.5 py-1.5 text-sm"
+                value={cat}
+                onChange={(e) => {
+                  setCat(e.target.value)
+                  setPage(1)
+                }}
+              >
+                <option value="all">{t('mpts.common.all')}</option>
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {catLabel(c)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase text-slate-600 dark:text-slate-400">
+              <span className="shrink-0 whitespace-nowrap">{t('mpts.common.active')}</span>
+              <select
+                className="okan-liquid-select min-w-[5.5rem] px-2.5 py-1.5 text-sm"
+                value={active}
+                onChange={(e) => {
+                  setActive(e.target.value as typeof active)
+                  setPage(1)
+                }}
+              >
+                <option value="all">{t('mpts.common.all')}</option>
+                <option value="yes">{t('mpts.common.yes')}</option>
+                <option value="no">{t('mpts.common.no')}</option>
+              </select>
+            </label>
+          </>
+        }
         right={
           <>
             <button
@@ -98,54 +143,6 @@ export function MaterialItemsListPage({ onCloseModule }: { onCloseModule: () => 
           </>
         }
       />
-
-      <div className="okan-liquid-panel-nested mb-2 flex flex-wrap items-end gap-3 p-3">
-        <label className="text-[11px] font-semibold uppercase text-slate-600 dark:text-slate-400">
-          {t('mpts.common.search')}
-          <input
-            className="okan-liquid-input ml-1 mt-1 block w-56 px-3 py-2 text-sm"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
-            placeholder={t('mpts.materialItems.placeholderSearch')}
-          />
-        </label>
-        <label className="text-[11px] font-semibold uppercase text-slate-600 dark:text-slate-400">
-          {t('mpts.common.category')}
-          <select
-            className="okan-liquid-select ml-1 mt-1 block px-3 py-2 text-sm"
-            value={cat}
-            onChange={(e) => {
-              setCat(e.target.value)
-              setPage(1)
-            }}
-          >
-            <option value="all">{t('mpts.common.all')}</option>
-            {categories.map((c) => (
-              <option key={c} value={c}>
-                {catLabel(c)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-[11px] font-semibold uppercase text-slate-600 dark:text-slate-400">
-          {t('mpts.common.active')}
-          <select
-            className="okan-liquid-select ml-1 mt-1 block px-3 py-2 text-sm"
-            value={active}
-            onChange={(e) => {
-              setActive(e.target.value as typeof active)
-              setPage(1)
-            }}
-          >
-            <option value="all">{t('mpts.common.all')}</option>
-            <option value="yes">{t('mpts.common.yes')}</option>
-            <option value="no">{t('mpts.common.no')}</option>
-          </select>
-        </label>
-      </div>
 
       {filtered.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center rounded border border-dashed border-slate-300 p-8 text-center dark:border-slate-600">
@@ -231,46 +228,16 @@ export function MaterialItemsListPage({ onCloseModule }: { onCloseModule: () => 
               </tbody>
             </MptsDenseTable>
           </div>
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400">
-            <div className="flex items-center gap-2">
-              <span>{t('mpts.common.rowsPerPage')}</span>
-              <select
-                className="rounded border border-slate-300 px-2 py-1 dark:border-slate-600 dark:bg-slate-900"
-                value={perPage}
-                onChange={(e) => {
-                  setPerPage(Number(e.target.value))
-                  setPage(1)
-                }}
-              >
-                {[10, 25, 50, 100].map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                disabled={page <= 1}
-                className="rounded border border-slate-300 px-2 py-1 disabled:opacity-40 dark:border-slate-600"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                {t('mpts.common.prev')}
-              </button>
-              <span>
-                {t('mpts.common.page')} {page} / {totalPages}
-              </span>
-              <button
-                type="button"
-                disabled={page >= totalPages}
-                className="rounded border border-slate-300 px-2 py-1 disabled:opacity-40 dark:border-slate-600"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              >
-                {t('mpts.common.next')}
-              </button>
-            </div>
-          </div>
+          <MptsPaginationBar
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            perPage={perPage}
+            onPerPageChange={(n) => {
+              setPerPage(n)
+              setPage(1)
+            }}
+          />
         </>
       )}
     </div>

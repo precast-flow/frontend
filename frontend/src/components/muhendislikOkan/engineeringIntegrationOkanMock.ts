@@ -1,5 +1,5 @@
 /**
- * Mühendislik Entegrasyonu-okan — yerel mock (mevcut bie-06 verisinden bağımsız).
+ * Mühendislik Entegrasyonu — yerel mock (bie-06 verisinden bağımsız).
  */
 
 export type WorkflowStateOkan = 'draft' | 'in_review' | 'approved' | 'production_created'

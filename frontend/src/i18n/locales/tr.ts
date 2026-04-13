@@ -65,8 +65,8 @@ const e2eTr: E2eTriple[] = [
   {
     id: 11,
     screen: 'Mühendislik Entegrasyonu',
-    control: 'Dosya listesi + manuel alanlar; “üretime hazır” işaretlenir.',
-    mock: 'Paket satırları ve checklist güncellenmiş mock.',
+    control: 'Hazırlık skoru, dosya/manuel sekmeleri; akıllı üretim emri (mock).',
+    mock: 'Hazırlık kuyruğu ve checklist güncellenmiş mock.',
   },
   {
     id: 12,
@@ -131,7 +131,6 @@ const shell: Record<string, string> = {
   'nav.workStart': 'İş başlat',
   'nav.project': 'Proje Yönetimi',
   'nav.engineering': 'Mühendislik Entegrasyonu',
-  'nav.engineeringOkan': 'Mühendislik Entegrasyonu-okan',
   'nav.manualPieceStudio': 'Manuel Parça ve Şablon Stüdyosu',
   'nav.parametric3d': 'Parametrik 3B',
   'nav.productionSummary': 'Üretim özeti',
@@ -179,9 +178,7 @@ const shell: Record<string, string> = {
     'İş başlatma — kapanış fiyatı ve kararlar; mühendisliğe üretim öncesi iş emri (Tip B, bie-04 mock).',
   'main.desc.project': 'Proje panosu — sekmeler, ilerleme adımları ve eleman listesi (Prompt 06).',
   'main.desc.engineering':
-    'İş emri Tip A/B (metraj / teklif desteği vs üretim öncesi), dosya + manuel alanlar, üretim emri köprüsü PRD-#### (bie-06, mvp-08).',
-  'main.desc.engineeringOkan':
-    'Üretim hazırlık merkezi — hazırlık %, risk paneli, iş akışı ve akıllı üretim emri (mock; mevcut mühendislik ekranından ayrı).',
+    'Üretim hazırlık merkezi — hazırlık %, risk paneli, iş akışı ve akıllı üretim emri (mock).',
   'main.desc.parametric3d':
     'Prefab eleman parametreleri (kolon, kiriş, menfez, panel, L/U perde) — JSON şema, 3B önizleme ve kayıtlı tasarımlar (Adım 18).',
   'main.desc.productionSummary':

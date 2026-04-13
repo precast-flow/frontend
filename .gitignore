@@ -30,3 +30,5 @@ frontend/*.local
 
 # Optional lock/debug artifacts
 *.tsbuildinfo
+
+package-lock.json

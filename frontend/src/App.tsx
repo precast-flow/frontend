@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { FirmAdminShell } from './components/firmAdmin/FirmAdminShell'
 import { MainCanvasOutlet } from './components/MainCanvasOutlet'
 import { FirmAdminGeneralPage } from './pages/firmAdmin/FirmAdminGeneralPage'
@@ -48,6 +48,7 @@ function App() {
             <Route path="profile" element={<ProfilePage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="glass-showcase" element={<GlassShowcasePage />} />
+            <Route path="muhendislik-okan" element={<Navigate to="/muhendislik" replace />} />
             <Route path=":moduleSlug/*" element={<MainCanvasOutlet />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />

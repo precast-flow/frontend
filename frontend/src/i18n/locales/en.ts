@@ -64,9 +64,9 @@ const e2eEn: E2eTriple[] = [
   },
   {
     id: 11,
-    screen: 'Engineering',
-    control: 'File list + manual fields; mark production-ready.',
-    mock: 'Package rows and checklist updated (mock).',
+    screen: 'Engineering Integration',
+    control: 'Readiness score, file/manual tabs; smart production order (mock).',
+    mock: 'Readiness queue and checklist (mock).',
   },
   {
     id: 12,
@@ -130,8 +130,7 @@ const shell: Record<string, string> = {
   'nav.quote': 'Quote',
   'nav.workStart': 'Start work',
   'nav.project': 'Project management',
-  'nav.engineering': 'Engineering',
-  'nav.engineeringOkan': 'Engineering Integration — okan',
+  'nav.engineering': 'Engineering Integration',
   'nav.manualPieceStudio': 'Manual Piece & Template Studio',
   'nav.parametric3d': 'Parametric 3D',
   'nav.productionSummary': 'Production summary',
@@ -179,9 +178,7 @@ const shell: Record<string, string> = {
     'Start work — closing price and decisions; pre-production engineering work order to Engineering (Type B, bie-04 mock).',
   'main.desc.project': 'Project board — tabs, progress steps and element list (Prompt 06).',
   'main.desc.engineering':
-    'Work order types A/B (quantity / quote support vs pre-production execution), files + manual fields, production order bridge PRD-#### (bie-06, mvp-08).',
-  'main.desc.engineeringOkan':
-    'Production readiness hub — readiness %, risk panel, workflow, smart production order modal (mock; separate from legacy engineering screen).',
+    'Production readiness hub — readiness %, risk panel, workflow, smart production order modal (mock).',
   'main.desc.parametric3d':
     'Precast parametric elements (column, beam, culvert, panel, L/U wall) — JSON schema, 3D preview, saved designs (Step 18).',
   'main.desc.productionSummary':

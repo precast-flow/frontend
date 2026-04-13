@@ -45,10 +45,11 @@ function TopNavDropdownLink({
       onClick={onPick}
       className={() =>
         [
+          /* text-gray-* : glassmorphism.css [role=menu] ile uyumlu (!important ile okunur renk) */
           'gm-topnav-dd-item flex w-full min-w-[12rem] max-w-[min(100vw-2rem,20rem)] items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition',
           active
-            ? 'bg-sky-500/15 font-medium text-slate-900 shadow-sm ring-1 ring-sky-500/25 dark:bg-white/12 dark:text-[var(--glass-text-primary)] dark:ring-white/10'
-            : 'text-slate-800 hover:bg-slate-900/[0.06] dark:text-[var(--glass-text-primary)] dark:hover:bg-white/8',
+            ? 'bg-sky-500/15 font-medium text-gray-900 shadow-sm ring-1 ring-sky-500/25 dark:bg-white/12 dark:text-gray-50 dark:ring-white/10'
+            : 'text-gray-800 hover:bg-gray-100/90 dark:text-gray-100 dark:hover:bg-white/10',
         ].join(' ')
       }
     >
