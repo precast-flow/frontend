@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { MPTS_BASE_PATH } from './constants'
 import type {
   JobContext,
   MaterialAssembly,
@@ -75,7 +76,21 @@ type MptsContextValue = {
 
 const MptsContext = createContext<MptsContextValue | null>(null)
 
-export function MptsProvider({ children }: { children: ReactNode }) {
+const MptsBasePathContext = createContext<string | null>(null)
+
+export function useMptsBasePath(): string {
+  const v = useContext(MptsBasePathContext)
+  if (v == null) throw new Error('useMptsBasePath requires MptsProvider')
+  return v
+}
+
+type MptsProviderProps = {
+  children: ReactNode
+  /** Varsayılan: bağımsız Parça/Şablon Stüdyosu modülü */
+  basePath?: string
+}
+
+export function MptsProvider({ children, basePath = MPTS_BASE_PATH }: MptsProviderProps) {
   const { t } = useI18n()
   const [toast, setToast] = useState<ToastMessage | null>(null)
   const [selectedJobId, setSelectedJobId] = useState(initialJobs[0]!.id)
@@ -467,7 +482,11 @@ export function MptsProvider({ children }: { children: ReactNode }) {
     ],
   )
 
-  return <MptsContext.Provider value={value}>{children}</MptsContext.Provider>
+  return (
+    <MptsBasePathContext.Provider value={basePath}>
+      <MptsContext.Provider value={value}>{children}</MptsContext.Provider>
+    </MptsBasePathContext.Provider>
+  )
 }
 
 export function useMpts() {

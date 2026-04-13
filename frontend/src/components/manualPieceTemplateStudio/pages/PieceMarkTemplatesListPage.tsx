@@ -2,8 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Copy, Download, FileBarChart, Pencil, Plus, Trash2, XCircle } from 'lucide-react'
 import { useI18n } from '../../../i18n/I18nProvider'
-import { MPTS_BASE_PATH } from '../constants'
-import { useMpts } from '../MptsContext'
+import { useMpts, useMptsBasePath } from '../MptsContext'
 import { useMptsBreadcrumb } from '../useMptsBreadcrumb'
 import { MptsActionBar } from '../components/MptsActionBar'
 import { MptsBadge } from '../components/MptsBadge'
@@ -14,6 +13,7 @@ export function PieceMarkTemplatesListPage({ onCloseModule }: { onCloseModule: (
   const { t } = useI18n()
   const bc = useMptsBreadcrumb()
   const { templates, deleteTemplate, cloneTemplate, pushToast } = useMpts()
+  const base = useMptsBasePath()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [loc, setLoc] = useState('all')
@@ -114,7 +114,7 @@ export function PieceMarkTemplatesListPage({ onCloseModule }: { onCloseModule: (
             <button
               type="button"
               className="okan-liquid-btn-primary px-3 py-1.5 text-xs font-semibold"
-              onClick={() => navigate(`${MPTS_BASE_PATH}/templates/piece-mark-templates/new`)}
+              onClick={() => navigate(`${base}/templates/piece-mark-templates/new`)}
             >
               <Plus className="mr-1 inline h-3.5 w-3.5" />
               {t('mpts.common.addNew')}
@@ -137,7 +137,7 @@ export function PieceMarkTemplatesListPage({ onCloseModule }: { onCloseModule: (
           <button
             type="button"
             className="mt-2 rounded bg-blue-600 px-4 py-2 text-xs font-semibold text-white"
-            onClick={() => navigate(`${MPTS_BASE_PATH}/templates/piece-mark-templates/new`)}
+            onClick={() => navigate(`${base}/templates/piece-mark-templates/new`)}
           >
             {t('mpts.common.addNew')}
           </button>
@@ -195,7 +195,7 @@ export function PieceMarkTemplatesListPage({ onCloseModule }: { onCloseModule: (
                       className="mr-1 rounded p-1 text-blue-700 hover:bg-blue-50 dark:text-blue-300"
                       onClick={(e) => {
                         e.stopPropagation()
-                        navigate(`${MPTS_BASE_PATH}/templates/piece-mark-templates/${x.id}`)
+                        navigate(`${base}/templates/piece-mark-templates/${x.id}`)
                       }}
                     >
                       <Pencil className="h-3.5 w-3.5" />

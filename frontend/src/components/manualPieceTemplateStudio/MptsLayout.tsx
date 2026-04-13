@@ -1,7 +1,9 @@
+import type { ReactNode } from 'react'
 import { ClipboardList, Layers, LayoutGrid, Package } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useI18n } from '../../i18n/I18nProvider'
-import { MPTS_BASE_PATH } from './constants'
+import { ENGINEERING_BASE_PATH } from './constants'
+import { useMptsBasePath } from './MptsContext'
 import { MptsToast } from './components/MptsToast'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -21,61 +23,70 @@ function NavDivider() {
   )
 }
 
-export function MptsLayout() {
+type MptsLayoutProps = {
+  /** Düz (flat) rotalarda sayfa; yoksa iç içe `<Route>` için `<Outlet />` */
+  children?: ReactNode
+}
+
+export function MptsLayout({ children }: MptsLayoutProps) {
   const { t } = useI18n()
+  const basePath = useMptsBasePath()
+  const hideModuleNav = basePath === ENGINEERING_BASE_PATH
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 md:gap-4">
       <MptsToast />
 
-      <header className="okan-liquid-panel shrink-0 overflow-hidden rounded-2xl p-2 shadow-[var(--okan-panel-shadow)] sm:p-3">
-        <nav
-          className="okan-liquid-pill-track flex min-w-0 flex-col gap-2 rounded-2xl p-1.5 sm:flex-row sm:items-center sm:gap-1 sm:overflow-x-auto sm:rounded-full sm:p-1 sm:[-webkit-overflow-scrolling:touch]"
-          aria-label={t('nav.manualPieceStudio')}
-        >
-          <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-1">
-            <span className="px-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 sm:hidden">
-              {t('mpts.layout.catalog')}
-            </span>
-            <div className="flex flex-wrap gap-1 sm:flex-nowrap">
-              <NavLink to={`${MPTS_BASE_PATH}/catalog/material-items`} className={linkClass} end title={t('mpts.layout.nav.materialItems')}>
-                <Package className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
-                <span className="whitespace-nowrap">{t('mpts.layout.nav.materialItems')}</span>
-              </NavLink>
-              <NavLink to={`${MPTS_BASE_PATH}/catalog/material-assemblies`} className={linkClass} title={t('mpts.layout.nav.assemblies')}>
-                <Layers className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
-                <span className="whitespace-nowrap">{t('mpts.layout.nav.assemblies')}</span>
+      {hideModuleNav ? null : (
+        <header className="okan-liquid-panel shrink-0 overflow-hidden rounded-2xl p-2 shadow-[var(--okan-panel-shadow)] sm:p-3">
+          <nav
+            className="okan-liquid-pill-track flex min-w-0 flex-col gap-2 rounded-2xl p-1.5 sm:flex-row sm:items-center sm:gap-1 sm:overflow-x-auto sm:rounded-full sm:p-1 sm:[-webkit-overflow-scrolling:touch]"
+            aria-label={t('nav.manualPieceStudio')}
+          >
+            <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-1">
+              <span className="px-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 sm:hidden">
+                {t('mpts.layout.catalog')}
+              </span>
+              <div className="flex flex-wrap gap-1 sm:flex-nowrap">
+                <NavLink to={`${basePath}/catalog/material-items`} className={linkClass} end title={t('mpts.layout.nav.materialItems')}>
+                  <Package className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+                  <span className="whitespace-nowrap">{t('mpts.layout.nav.materialItems')}</span>
+                </NavLink>
+                <NavLink to={`${basePath}/catalog/material-assemblies`} className={linkClass} title={t('mpts.layout.nav.assemblies')}>
+                  <Layers className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+                  <span className="whitespace-nowrap">{t('mpts.layout.nav.assemblies')}</span>
+                </NavLink>
+              </div>
+            </div>
+
+            <NavDivider />
+
+            <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-1">
+              <span className="px-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 sm:hidden">
+                {t('mpts.layout.templates')}
+              </span>
+              <NavLink to={`${basePath}/templates/piece-mark-templates`} className={linkClass} title={t('mpts.layout.nav.pieceMarkTpl')}>
+                <LayoutGrid className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+                <span className="whitespace-nowrap">{t('mpts.layout.nav.pieceMarkTpl')}</span>
               </NavLink>
             </div>
-          </div>
 
-          <NavDivider />
+            <NavDivider />
 
-          <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-1">
-            <span className="px-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 sm:hidden">
-              {t('mpts.layout.templates')}
-            </span>
-            <NavLink to={`${MPTS_BASE_PATH}/templates/piece-mark-templates`} className={linkClass} title={t('mpts.layout.nav.pieceMarkTpl')}>
-              <LayoutGrid className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
-              <span className="whitespace-nowrap">{t('mpts.layout.nav.pieceMarkTpl')}</span>
-            </NavLink>
-          </div>
-
-          <NavDivider />
-
-          <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-1">
-            <span className="px-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 sm:hidden">
-              {t('mpts.layout.production')}
-            </span>
-            <NavLink to={`${MPTS_BASE_PATH}/production/piece-marks`} className={linkClass} title={t('mpts.layout.nav.pieceMarks')}>
-              <ClipboardList className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
-              <span className="whitespace-nowrap">{t('mpts.layout.nav.pieceMarks')}</span>
-            </NavLink>
-          </div>
-        </nav>
-      </header>
+            <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-1">
+              <span className="px-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 sm:hidden">
+                {t('mpts.layout.production')}
+              </span>
+              <NavLink to={`${basePath}/production/piece-marks`} className={linkClass} title={t('mpts.layout.nav.pieceMarks')}>
+                <ClipboardList className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+                <span className="whitespace-nowrap">{t('mpts.layout.nav.pieceMarks')}</span>
+              </NavLink>
+            </div>
+          </nav>
+        </header>
+      )}
 
       <div className="okan-liquid-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl p-3 shadow-[var(--okan-panel-shadow)] sm:p-4">
-        <Outlet />
+        {children ?? <Outlet />}
       </div>
     </div>
   )

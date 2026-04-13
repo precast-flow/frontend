@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Plus, Trash2 } from 'lucide-react'
 import { useI18n } from '../../../i18n/I18nProvider'
-import { MPTS_BASE_PATH } from '../constants'
-import { useMpts } from '../MptsContext'
+import { useMpts, useMptsBasePath } from '../MptsContext'
 import type { CostRow, MaterialCategory, PieceMarkTemplate } from '../types'
 import { createEmptyTemplate } from '../templateEmpty'
 import { MptsActionBar } from '../components/MptsActionBar'
@@ -49,6 +48,7 @@ export function PieceMarkTemplateDetailPage({ onCloseModule }: { onCloseModule: 
   }
 
   const { materialItems, materialAssemblies, saveTemplate, templates } = useMpts()
+  const base = useMptsBasePath()
   const [form, setForm] = useState<PieceMarkTemplate>(() => createEmptyTemplate('new-draft'))
 
   useEffect(() => {
@@ -98,9 +98,9 @@ export function PieceMarkTemplateDetailPage({ onCloseModule }: { onCloseModule: 
     }
     saveTemplate(payload)
     if (isNew) {
-      navigate(`${MPTS_BASE_PATH}/templates/piece-mark-templates/${payload.id}`, { replace: true })
+      navigate(`${base}/templates/piece-mark-templates/${payload.id}`, { replace: true })
     }
-    if (close) navigate(`${MPTS_BASE_PATH}/templates/piece-mark-templates`)
+    if (close) navigate(`${base}/templates/piece-mark-templates`)
   }
 
   const pickMaterial = (cat: MaterialCategory, materialNum: string) => {
@@ -161,7 +161,7 @@ export function PieceMarkTemplateDetailPage({ onCloseModule }: { onCloseModule: 
             <button
               type="button"
               className="okan-liquid-btn-secondary px-3 py-2 text-xs font-semibold"
-              onClick={() => navigate(`${MPTS_BASE_PATH}/templates/piece-mark-templates`)}
+              onClick={() => navigate(`${base}/templates/piece-mark-templates`)}
             >
               {t('mpts.common.close')}
             </button>

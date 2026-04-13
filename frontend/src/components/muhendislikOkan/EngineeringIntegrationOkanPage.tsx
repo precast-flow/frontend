@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, LayoutGrid, List, Upload } from 'lucide-react'
 import { startTransition, useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useI18n } from '../../i18n/I18nProvider'
 import './engineeringOkanLiquid.css'
 import {
@@ -14,6 +14,10 @@ import { ReadinessBadge } from './ReadinessBadge'
 import { ReadinessBar } from './ReadinessBar'
 import { RiskInsightPanel } from './RiskInsightPanel'
 import { SmartProductionOrderModal } from './SmartProductionOrderModal'
+import { ENGINEERING_BASE_PATH } from '../manualPieceTemplateStudio/constants'
+import { MptsProvider } from '../manualPieceTemplateStudio/MptsContext'
+import { MptsRoutes } from '../manualPieceTemplateStudio/MptsRoutes'
+import { StandardItemsAssembliesModule } from './standardItemsAssemblies/StandardItemsAssembliesModule'
 import { ToggleSwitch } from './ToggleSwitch'
 import { WorkflowStepper } from './WorkflowStepper'
 import {
@@ -22,6 +26,14 @@ import {
   deriveReadinessLevel,
   hasCriticalChecklistGap,
 } from './readinessEngine'
+
+function isEngineeringMptsPath(pathname: string): boolean {
+  return (
+    pathname.startsWith(`${ENGINEERING_BASE_PATH}/catalog/`) ||
+    pathname.startsWith(`${ENGINEERING_BASE_PATH}/templates/`) ||
+    pathname.startsWith(`${ENGINEERING_BASE_PATH}/production/`)
+  )
+}
 
 type TabId = 'files' | 'manual' | 'summary' | 'revisions'
 
@@ -51,8 +63,17 @@ function workflowLabelKey(w: OkanEngJob['workflow']): string {
   }
 }
 
-export function EngineeringIntegrationOkanPage() {
+type PageProps = {
+  /** Liste/form Close ile ana modülden çıkış (ör. pano) */
+  onCloseModule?: () => void
+}
+
+export function EngineeringIntegrationOkanPage({ onCloseModule }: PageProps) {
   const { t } = useI18n()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const isMptsSubRoute = useMemo(() => isEngineeringMptsPath(location.pathname), [location.pathname])
+  const [engSurface, setEngSurface] = useState<'jobs' | 'standardItems'>('jobs')
   const [searchParams, setSearchParams] = useSearchParams()
   const [jobs, setJobs] = useState<OkanEngJob[]>(() =>
     initialOkanEngJobs.map((j) => ({
@@ -112,8 +133,9 @@ export function EngineeringIntegrationOkanPage() {
   }, [selectedId, setSearchParams])
 
   useEffect(() => {
+    if (engSurface !== 'jobs' || isMptsSubRoute) return
     startTransition(() => setTab('files'))
-  }, [selectedId])
+  }, [selectedId, engSurface, isMptsSubRoute])
 
   useEffect(() => {
     if (filteredJobs.length === 0) return
@@ -240,6 +262,117 @@ export function EngineeringIntegrationOkanPage() {
         <div className="okan-liquid-blob okan-liquid-blob--c" />
       </div>
       <div className="okan-liquid-content flex min-h-0 flex-1 flex-col gap-4">
+      <div
+        className="okan-liquid-pill-track flex w-full max-w-full shrink-0 gap-1 overflow-x-auto rounded-full p-1"
+        role="tablist"
+        aria-label={t('sia.mainTab.aria')}
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={!isMptsSubRoute && engSurface === 'jobs'}
+          onClick={() => {
+            setEngSurface('jobs')
+            navigate({ pathname: ENGINEERING_BASE_PATH, search: location.search })
+          }}
+          className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 md:text-sm ${
+            !isMptsSubRoute && engSurface === 'jobs'
+              ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
+          }`}
+        >
+          {t('sia.mainTab.jobs')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={!isMptsSubRoute && engSurface === 'standardItems'}
+          onClick={() => {
+            setEngSurface('standardItems')
+            navigate({ pathname: ENGINEERING_BASE_PATH, search: location.search })
+          }}
+          className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 md:text-sm ${
+            !isMptsSubRoute && engSurface === 'standardItems'
+              ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
+          }`}
+        >
+          {t('sia.mainTab.standardItems')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={location.pathname.startsWith(`${ENGINEERING_BASE_PATH}/catalog/material-items`)}
+          onClick={() =>
+            navigate({ pathname: `${ENGINEERING_BASE_PATH}/catalog/material-items`, search: location.search })
+          }
+          className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 md:text-sm ${
+            location.pathname.startsWith(`${ENGINEERING_BASE_PATH}/catalog/material-items`)
+              ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
+          }`}
+        >
+          {t('mpts.layout.nav.materialItems')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={location.pathname.startsWith(`${ENGINEERING_BASE_PATH}/catalog/material-assemblies`)}
+          onClick={() =>
+            navigate({ pathname: `${ENGINEERING_BASE_PATH}/catalog/material-assemblies`, search: location.search })
+          }
+          className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 md:text-sm ${
+            location.pathname.startsWith(`${ENGINEERING_BASE_PATH}/catalog/material-assemblies`)
+              ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
+          }`}
+        >
+          {t('mpts.layout.nav.assemblies')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={location.pathname.startsWith(`${ENGINEERING_BASE_PATH}/templates/piece-mark-templates`)}
+          onClick={() =>
+            navigate({ pathname: `${ENGINEERING_BASE_PATH}/templates/piece-mark-templates`, search: location.search })
+          }
+          className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 md:text-sm ${
+            location.pathname.startsWith(`${ENGINEERING_BASE_PATH}/templates/piece-mark-templates`)
+              ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
+          }`}
+        >
+          {t('mpts.layout.nav.pieceMarkTpl')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={location.pathname.startsWith(`${ENGINEERING_BASE_PATH}/production/`)}
+          onClick={() =>
+            navigate({ pathname: `${ENGINEERING_BASE_PATH}/production/piece-marks`, search: location.search })
+          }
+          className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 md:text-sm ${
+            location.pathname.startsWith(`${ENGINEERING_BASE_PATH}/production/`)
+              ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
+          }`}
+        >
+          {t('mpts.layout.nav.pieceMarks')}
+        </button>
+      </div>
+
+      {isMptsSubRoute ? (
+        <MptsProvider basePath={ENGINEERING_BASE_PATH}>
+          <div className="flex min-h-0 min-h-[28rem] flex-1 flex-col overflow-hidden">
+            <MptsRoutes onCloseModule={onCloseModule ?? (() => undefined)} />
+          </div>
+        </MptsProvider>
+      ) : engSurface === 'standardItems' ? (
+        <StandardItemsAssembliesModule onCloseModule={onCloseModule ?? (() => undefined)} />
+      ) : null}
+
+      {!isMptsSubRoute && engSurface === 'jobs' ? (
+      <>
       {selected ? (
         <SmartProductionOrderModal
           open={poOpen}
@@ -794,6 +927,8 @@ export function EngineeringIntegrationOkanPage() {
           </div>
         )}
       </div>
+      </>
+      ) : null}
       </div>
     </div>
   )

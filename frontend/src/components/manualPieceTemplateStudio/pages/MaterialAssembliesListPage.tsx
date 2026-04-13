@@ -2,8 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Download, FileBarChart, Layers, Pencil, Plus, Trash2, XCircle } from 'lucide-react'
 import { useI18n } from '../../../i18n/I18nProvider'
-import { MPTS_BASE_PATH } from '../constants'
-import { useMpts } from '../MptsContext'
+import { useMpts, useMptsBasePath } from '../MptsContext'
 import type { MaterialAssembly, MaterialCategory } from '../types'
 import { useMptsBreadcrumb } from '../useMptsBreadcrumb'
 import { MptsActionBar } from '../components/MptsActionBar'
@@ -17,6 +16,7 @@ export function MaterialAssembliesListPage({ onCloseModule }: { onCloseModule: (
   const { t } = useI18n()
   const bc = useMptsBreadcrumb()
   const { materialAssemblies, deleteMaterialAssembly, pushToast } = useMpts()
+  const base = useMptsBasePath()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [drawerAsm, setDrawerAsm] = useState<MaterialAssembly | null>(null)
@@ -80,7 +80,7 @@ export function MaterialAssembliesListPage({ onCloseModule }: { onCloseModule: (
             <button
               type="button"
               className="okan-liquid-btn-primary px-3 py-1.5 text-xs font-semibold"
-              onClick={() => navigate(`${MPTS_BASE_PATH}/catalog/material-assemblies/new`)}
+              onClick={() => navigate(`${base}/catalog/material-assemblies/new`)}
             >
               <Plus className="mr-1 inline h-3.5 w-3.5" />
               {t('mpts.common.addNew')}
@@ -104,7 +104,7 @@ export function MaterialAssembliesListPage({ onCloseModule }: { onCloseModule: (
           <button
             type="button"
             className="mt-3 rounded bg-blue-600 px-4 py-2 text-xs font-semibold text-white"
-            onClick={() => navigate(`${MPTS_BASE_PATH}/catalog/material-assemblies/new`)}
+            onClick={() => navigate(`${base}/catalog/material-assemblies/new`)}
           >
             {t('mpts.common.addNew')}
           </button>
@@ -180,7 +180,7 @@ export function MaterialAssembliesListPage({ onCloseModule }: { onCloseModule: (
                       <button
                         type="button"
                         className="mr-1 rounded p-1 text-blue-700 hover:bg-blue-50 dark:text-blue-300"
-                        onClick={() => navigate(`${MPTS_BASE_PATH}/catalog/material-assemblies/${r.id}/edit`)}
+                        onClick={() => navigate(`${base}/catalog/material-assemblies/${r.id}/edit`)}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>

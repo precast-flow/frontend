@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Plus, Trash2 } from 'lucide-react'
 import { useI18n } from '../../../i18n/I18nProvider'
-import { MPTS_BASE_PATH } from '../constants'
-import { useMpts } from '../MptsContext'
+import { useMpts, useMptsBasePath } from '../MptsContext'
 import type { JobSpecificMaterialRow, ProductionInstanceRow, ProductionPiece } from '../types'
 import { MptsActionBar } from '../components/MptsActionBar'
 import { MptsBadge } from '../components/MptsBadge'
@@ -35,6 +34,7 @@ export function EditProductionPiecePage({ onCloseModule }: { onCloseModule: () =
   const setTab = (id: string) => setSearchParams({ tab: id }, { replace: true })
 
   const { productionPieces, saveProductionPiece, getTemplateById, pushToast } = useMpts()
+  const base = useMptsBasePath()
   const [form, setForm] = useState<ProductionPiece | null>(null)
 
   useEffect(() => {
@@ -58,7 +58,7 @@ export function EditProductionPiecePage({ onCloseModule }: { onCloseModule: () =
   const save = (close: boolean) => {
     if (!form) return
     saveProductionPiece(form)
-    if (close) navigate(`${MPTS_BASE_PATH}/production/piece-marks`)
+    if (close) navigate(`${base}/production/piece-marks`)
   }
 
   if (!form) {
@@ -116,7 +116,7 @@ export function EditProductionPiecePage({ onCloseModule }: { onCloseModule: () =
             <button
               type="button"
               className="okan-liquid-btn-secondary px-3 py-2 text-xs font-semibold"
-              onClick={() => navigate(`${MPTS_BASE_PATH}/production/piece-marks`)}
+              onClick={() => navigate(`${base}/production/piece-marks`)}
             >
               {t('mpts.common.close')}
             </button>
