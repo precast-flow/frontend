@@ -1,6 +1,6 @@
 /**
- * Mühendislik Entegrasyonu: sayfa-özel liquid glass.
- * Yalnızca EngineeringIntegrationOkanPage üzerinden import edilir.
+ * Mühendislik liquid glass — varsayılan mesh (gökyüzü / indigo / hafif mor blob).
+ * Mühendislik Entegrasyonu, Parametrik 3B, Planlama — Tasarım ve diğer `okan-liquid-root` sayfaları.
  */
 
 /* —— Tema değişkenleri (html.dark ile koyu) —— */
@@ -390,4 +390,19 @@ html[data-ui-template='glass'] .gm-glass-main-canvas.gm-glass-main-canvas--okan-
 html[data-ui-template='glass']:not(.dark) .gm-glass-main-canvas.gm-glass-main-canvas--okan-liquid > div.border-b {
   border-color: rgb(15 23 42 / 0.1) !important;
   background: rgb(255 255 255 / 0.35);
+}
+
+/* Planlama cetveli: yapışkan köşe / kalıp sütunu — nötr cam (mor ağırlık yok) */
+.okan-liquid-root .gm-planning-corner-cell,
+.okan-liquid-root .gm-planning-sticky-mold-label {
+  background-color: rgb(255 255 255 / 0.62);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+}
+
+.dark .okan-liquid-root .gm-planning-corner-cell,
+.dark .okan-liquid-root .gm-planning-sticky-mold-label {
+  background-color: rgb(15 23 42 / 0.48);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
 }

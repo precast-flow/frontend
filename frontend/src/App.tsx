@@ -21,6 +21,7 @@ import { I18nProvider } from './i18n/I18nProvider'
 import { GlassShowcasePage } from './pages/GlassShowcasePage'
 import { ShellResolver } from './templates/glassmorphism/ShellResolver'
 import { ProjectManagementDetailPage } from './components/proje/ProjectManagementDetailPage'
+import { CrmCustomerDetailPage } from './components/crm/CrmCustomerDetailPage'
 import { QuoteDetailPage } from './components/teklif/QuoteDetailPage'
 
 function App() {
@@ -52,6 +53,7 @@ function App() {
             <Route path="glass-showcase" element={<GlassShowcasePage />} />
             <Route path="proje-detay/:projectId" element={<ProjectManagementDetailPage />} />
             <Route path="teklif-detay/:quoteId" element={<QuoteDetailPage />} />
+            <Route path="musteri-detay/:customerId" element={<CrmCustomerDetailPage />} />
             <Route path="muhendislik-okan" element={<Navigate to="/muhendislik" replace />} />
             <Route path=":moduleSlug/*" element={<MainCanvasOutlet />} />
           </Route>

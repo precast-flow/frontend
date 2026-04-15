@@ -18,6 +18,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { useFixedMenuPosition } from '../useFixedMenuPosition'
+import '../muhendislikOkan/engineeringOkanLiquid.css'
 import { useFactoryContext } from '../../context/FactoryContext'
 import { useProductionRolePreviewOptional } from '../../context/ProductionRolePreviewContext'
 import { getRoleMatrixRow } from '../../data/productionRoleMatrixMock'
@@ -569,14 +570,21 @@ export function PlanningDesignView({ onNavigate }: Props) {
 
   return (
     <>
+    <div className="okan-liquid-root flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.25rem]">
+      <div className="okan-liquid-blobs" aria-hidden>
+        <div className="okan-liquid-blob okan-liquid-blob--a" />
+        <div className="okan-liquid-blob okan-liquid-blob--b" />
+        <div className="okan-liquid-blob okan-liquid-blob--c" />
+      </div>
+      <div className="okan-liquid-content flex min-h-0 flex-1 flex-col gap-3">
     <div
       className="gm-planning-design-view flex min-h-0 flex-1 flex-col gap-3"
       style={{ ['--gm-planning-mold-rail' as string]: `${MOLD_COL_PX}px` }}
     >
-      <div className="gm-planning-toolbar relative z-[75] flex min-h-11 flex-nowrap items-center justify-between gap-2 overflow-visible rounded-2xl border border-gray-200/70 bg-gray-100 px-3 py-2 shadow-neo-out-sm dark:border-gray-700/80 dark:bg-gray-900/80 md:gap-3">
+      <div className="gm-planning-toolbar okan-liquid-panel relative z-[75] flex min-h-11 flex-nowrap items-center justify-between gap-2 overflow-visible px-3 py-2 md:gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <span
-            className="hidden max-w-[10rem] shrink-0 truncate rounded-xl bg-gray-50 px-2 py-1 text-xs font-medium text-gray-900 shadow-neo-in sm:inline dark:bg-gray-950 dark:text-gray-100"
+            className="okan-liquid-panel-nested hidden max-w-[10rem] shrink-0 truncate px-2 py-1 text-xs font-medium text-slate-900 sm:inline dark:text-slate-50"
             title={selectedCodes.length > 1 ? selectedCodes.join(', ') : selectedFactory.name}
           >
             {selectedCodes.length > 1 ? selectedCodes.join(', ') : selectedFactory.name}
@@ -596,13 +604,13 @@ export function PlanningDesignView({ onNavigate }: Props) {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Ara…"
             title="Ürün / emir / proje"
-            className="min-w-[6rem] max-w-[14rem] flex-1 rounded-xl border border-gray-200/80 bg-gray-50 px-2.5 py-1.5 text-sm text-gray-900 shadow-neo-in placeholder:text-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 md:max-w-[18rem] md:px-3 md:py-2"
+            className="okan-liquid-input min-w-[6rem] max-w-[14rem] flex-1 border-0 px-2.5 py-1.5 text-sm shadow-none placeholder:text-slate-500 focus:outline-none dark:placeholder:text-slate-400 md:max-w-[18rem] md:px-3 md:py-2"
           />
           <div className="relative shrink-0" ref={filterToolbarRef}>
             <button
               type="button"
               onClick={() => setFilterOpen((v) => !v)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gray-100 px-2.5 py-1.5 text-sm font-medium text-gray-800 shadow-neo-out-sm dark:bg-gray-800 dark:text-gray-100 md:px-3 md:py-2"
+              className="okan-liquid-btn-secondary inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-semibold md:px-3 md:py-2"
             >
               <Filter className="h-4 w-4" />
               <span className="hidden sm:inline">Filtreler</span>
@@ -612,7 +620,7 @@ export function PlanningDesignView({ onNavigate }: Props) {
             <button
               type="button"
               onClick={() => setLegendOpen((v) => !v)}
-              className="rounded-xl bg-gray-100 px-2.5 py-1.5 text-sm font-medium text-gray-800 shadow-neo-out-sm dark:bg-gray-800 dark:text-gray-100 md:px-3 md:py-2"
+              className="okan-liquid-btn-secondary rounded-xl px-2.5 py-1.5 text-sm font-semibold md:px-3 md:py-2"
             >
               <span className="hidden sm:inline">Durum</span>
               <span className="sm:hidden">Renk</span>
@@ -635,14 +643,14 @@ export function PlanningDesignView({ onNavigate }: Props) {
           <button
             type="button"
             onClick={() => goToday()}
-            className="rounded-xl bg-gray-100 px-2 py-1.5 text-sm font-medium text-gray-800 shadow-neo-out-sm dark:bg-gray-800 dark:text-gray-100 md:px-3 md:py-2"
+            className="okan-liquid-btn-secondary px-2 py-1.5 text-sm font-semibold md:px-3 md:py-2"
           >
             Bugün
           </button>
           <button
             type="button"
             onClick={goPrev}
-            className="rounded-xl bg-gray-100 p-1.5 text-gray-800 shadow-neo-out-sm dark:bg-gray-800 dark:text-gray-100 md:p-2"
+            className="okan-liquid-btn-secondary p-1.5 md:p-2"
             aria-label="Önceki hafta"
           >
             <ChevronLeft className="h-5 w-5" />
@@ -650,7 +658,7 @@ export function PlanningDesignView({ onNavigate }: Props) {
           <button
             type="button"
             onClick={goNext}
-            className="rounded-xl bg-gray-100 p-1.5 text-gray-800 shadow-neo-out-sm dark:bg-gray-800 dark:text-gray-100 md:p-2"
+            className="okan-liquid-btn-secondary p-1.5 md:p-2"
             aria-label="Sonraki hafta"
           >
             <ChevronRight className="h-5 w-5" />
@@ -674,7 +682,7 @@ export function PlanningDesignView({ onNavigate }: Props) {
               if (!canEdit) return
               setDraftState('draft')
             }}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-gray-800 px-3 py-2 text-sm font-semibold text-white shadow-neo-out-sm disabled:opacity-50 dark:bg-gray-200 dark:text-gray-900"
+            className="okan-liquid-btn-primary inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
             Kaydet
@@ -686,7 +694,7 @@ export function PlanningDesignView({ onNavigate }: Props) {
               if (!canEdit) return
               setDraftState('published')
             }}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-gray-100 px-3 py-2 text-sm font-medium text-gray-800 shadow-neo-out-sm disabled:opacity-50 dark:bg-gray-800 dark:text-gray-100"
+            className="okan-liquid-btn-secondary inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold disabled:opacity-50"
           >
             <Send className="h-4 w-4" />
             Yayınla
@@ -694,7 +702,7 @@ export function PlanningDesignView({ onNavigate }: Props) {
           <button
             type="button"
             onClick={() => onNavigate('mes')}
-            className="rounded-xl bg-gray-100 px-3 py-2 text-sm font-medium text-gray-800 shadow-neo-out-sm dark:bg-gray-800 dark:text-gray-100"
+            className="okan-liquid-btn-secondary px-3 py-2 text-sm font-semibold"
           >
             MES’e git
           </button>
@@ -702,7 +710,7 @@ export function PlanningDesignView({ onNavigate }: Props) {
       </div>
 
       {!canEdit ? (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
+        <div className="okan-liquid-banner-warn px-3 py-2 text-sm text-amber-950 dark:text-amber-100">
           Salt okunur: sürükle-bırak ve yeniden boyutlandırma kapalı.
         </div>
       ) : null}
@@ -710,20 +718,20 @@ export function PlanningDesignView({ onNavigate }: Props) {
       <div className="relative z-0 grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[1fr_280px]">
         <div
           ref={gridScrollRef}
-          className="gm-planning-scroll-host min-h-0 min-w-0 overflow-auto rounded-2xl border border-gray-200/70 bg-transparent dark:border-gray-700/80"
+          className="gm-planning-scroll-host okan-liquid-panel min-h-0 min-w-0 overflow-auto !rounded-2xl !p-0"
           title="Ctrl/⌘ + fare tekerleği: yakınlaştır / uzaklaştır"
         >
           <div className="flex min-h-0 min-w-full w-max flex-col">
             {/* Üst: tarih başlığı — sol kalıp köşesi yatayda sabit + opak */}
             <div className="flex w-max min-w-full">
               <div
-                className="gm-planning-corner-cell sticky left-0 top-0 z-[60] flex shrink-0 flex-col justify-center border-b border-r border-gray-200/80 px-2 py-2 text-xs font-medium text-gray-500 dark:border-gray-700 dark:text-gray-400"
+                className="gm-planning-corner-cell sticky left-0 top-0 z-[60] flex shrink-0 flex-col justify-center border-b border-r border-slate-200/70 px-2 py-2 text-xs font-medium text-slate-600 dark:border-slate-600/50 dark:text-slate-400"
                 style={{ width: MOLD_COL_PX, minWidth: MOLD_COL_PX }}
               >
                 Kalıp
               </div>
               <div
-                className="gm-planning-timeline-canvas sticky top-0 z-40 grid shrink-0 border-b border-gray-200/80 bg-transparent dark:border-gray-700"
+                className="gm-planning-timeline-canvas sticky top-0 z-40 grid shrink-0 border-b border-slate-200/70 bg-transparent dark:border-slate-600/45"
                 style={{
                   width: totalSlots * colW,
                   minWidth: totalSlots * colW,
@@ -735,9 +743,11 @@ export function PlanningDesignView({ onNavigate }: Props) {
                   return (
                     <div
                       key={d.id}
-                      className={`col-span-3 border-r border-gray-200/80 text-center dark:border-gray-700 ${
-                        d.isNonProduction ? 'bg-gray-200/50 dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-950'
-                      } ${isToday ? 'ring-2 ring-gray-500 ring-inset' : ''}`}
+                      className={`col-span-3 border-r border-slate-200/75 text-center dark:border-slate-600/50 ${
+                        d.isNonProduction
+                          ? 'bg-slate-200/50 dark:bg-slate-900/55'
+                          : 'bg-slate-50/80 dark:bg-slate-950/35'
+                      } ${isToday ? 'ring-2 ring-sky-500/40 ring-inset dark:ring-sky-400/35' : ''}`}
                     >
                       <div
                         className={`px-1 py-2 font-semibold text-gray-900 dark:text-gray-50 ${headerFontClass}`}
@@ -745,13 +755,13 @@ export function PlanningDesignView({ onNavigate }: Props) {
                         {d.date} · {d.weekdayShort}
                       </div>
                       <div
-                        className="grid grid-cols-3 border-t border-gray-200/60 px-0.5 py-1 text-gray-600 dark:border-gray-700 dark:text-gray-300"
+                        className="grid grid-cols-3 border-t border-slate-200/70 px-0.5 py-1 text-slate-600 dark:border-slate-600/50 dark:text-slate-300"
                         style={{ fontSize: zoom < 40 ? '9px' : '11px' }}
                       >
                         {PLANNING_SHIFTS.map((s, si) => (
                           <div
                             key={s.id}
-                            className="min-w-0 border-r border-gray-200/50 px-0.5 dark:border-gray-700"
+                            className="min-w-0 border-r border-slate-200/55 px-0.5 dark:border-slate-600/45"
                             title={s.label}
                           >
                             {shiftCompact ? SHIFT_SHORT[si] : s.label}
@@ -759,7 +769,7 @@ export function PlanningDesignView({ onNavigate }: Props) {
                         ))}
                       </div>
                       {d.isNonProduction ? (
-                        <div className="border-t border-gray-200/60 bg-gray-100 px-1 py-0.5 text-[9px] text-gray-600 dark:text-gray-400">
+                        <div className="border-t border-slate-200/70 bg-slate-100/60 px-1 py-0.5 text-[9px] text-slate-600 dark:border-slate-600/50 dark:bg-slate-900/45 dark:text-slate-400">
                           Üretim yok
                         </div>
                       ) : null}
@@ -778,12 +788,12 @@ export function PlanningDesignView({ onNavigate }: Props) {
               return (
                 <div
                   key={mold.moldId}
-                  className={`flex w-max min-w-full border-b border-gray-200/70 dark:border-gray-700 ${
-                    isHatStart ? 'border-t border-gray-200/70 dark:border-gray-700' : ''
+                  className={`flex w-max min-w-full border-b border-slate-200/65 dark:border-slate-600/45 ${
+                    isHatStart ? 'border-t border-slate-200/65 dark:border-slate-600/45' : ''
                   }`}
                 >
                   <div
-                    className="gm-planning-sticky-mold-label sticky left-0 z-[60] flex shrink-0 flex-col justify-start border-r border-gray-200/80 px-2 py-2 text-xs dark:border-gray-700"
+                    className="gm-planning-sticky-mold-label sticky left-0 z-[60] flex shrink-0 flex-col justify-start border-r border-slate-200/70 px-2 py-2 text-xs dark:border-slate-600/50"
                     style={{ width: MOLD_COL_PX, minWidth: MOLD_COL_PX, minHeight: rowMinH }}
                   >
                     {isHatStart ? (
@@ -891,9 +901,11 @@ export function PlanningDesignView({ onNavigate }: Props) {
                               }
                               handleDropPlanItem(mold.moldId, slot, e)
                             }}
-                        className={`gm-planning-cell h-full min-h-[44px] border-r border-gray-200/50 text-left dark:border-gray-700 ${
-                          non ? 'bg-gray-200/40 text-gray-700' : 'bg-gray-50/40 hover:bg-gray-100/50'
-                        } ${hl ? 'ring-2 ring-inset ring-gray-500 bg-gray-100/80' : ''}`}
+                        className={`gm-planning-cell h-full min-h-[44px] border-r border-slate-200/50 text-left dark:border-slate-600/45 ${
+                          non
+                            ? 'bg-slate-200/40 text-slate-700 dark:bg-slate-900/50 dark:text-slate-300'
+                            : 'bg-slate-50/45 hover:bg-slate-100/60 dark:bg-slate-950/20 dark:hover:bg-slate-900/30'
+                        } ${hl ? 'bg-slate-200/55 ring-2 ring-inset ring-sky-500/45 dark:bg-slate-800/40 dark:ring-sky-400/30' : ''}`}
                         aria-label={`Hücre ${mold.moldId} slot ${slot}`}
                       />
                     )
@@ -917,7 +929,7 @@ export function PlanningDesignView({ onNavigate }: Props) {
                       return (
                         <div
                           key={it.id}
-                          className={`relative z-20 flex h-full min-h-0 flex-col rounded-xl border border-gray-200/80 ${st.borderClass} border-l-4 ${st.bgClass} shadow-neo-out-sm ${
+                          className={`relative z-20 flex h-full min-h-0 flex-col rounded-xl border border-slate-200/70 ${st.borderClass} border-l-4 ${st.bgClass} shadow-neo-out-sm dark:border-slate-600/45 ${
                             cap ? 'ring-2 ring-red-500/70' : ''
                           } ${passThroughDrag ? 'pointer-events-none' : 'pointer-events-auto'}`}
                           style={{
@@ -981,7 +993,7 @@ export function PlanningDesignView({ onNavigate }: Props) {
                                 aria-label="Süreyi uzat"
                                 title="Sağa sürükleyerek uzat"
                                 onMouseDown={(e) => beginResize(e, it.id, p.slotStart, p.span)}
-                                className="relative z-30 w-1.5 shrink-0 cursor-ew-resize self-stretch border-l border-gray-200/70 bg-gray-200/40 hover:bg-gray-300/60 dark:border-gray-600 dark:bg-gray-700/50 dark:hover:bg-gray-600/60"
+                                className="relative z-30 w-1.5 shrink-0 cursor-ew-resize self-stretch border-l border-slate-200/70 bg-slate-200/40 hover:bg-slate-300/55 dark:border-slate-600 dark:bg-slate-700/45 dark:hover:bg-slate-600/55"
                               />
                             ) : null}
                           </div>
@@ -994,15 +1006,15 @@ export function PlanningDesignView({ onNavigate }: Props) {
               )
             })}
 
-            <div className="gm-planning-summary-strip sticky bottom-0 z-30 flex w-max min-w-full border-t border-gray-200/80 bg-transparent dark:border-gray-700">
+            <div className="gm-planning-summary-strip sticky bottom-0 z-30 flex w-max min-w-full border-t border-slate-200/70 bg-transparent dark:border-slate-600/45">
               <div
-                className="gm-planning-corner-cell sticky left-0 z-[45] flex shrink-0 flex-col justify-center border-r border-gray-200/80 px-2 py-2 text-[10px] font-medium text-gray-500 dark:border-gray-700 dark:text-gray-400"
+                className="gm-planning-corner-cell sticky left-0 z-[45] flex shrink-0 flex-col justify-center border-r border-slate-200/70 px-2 py-2 text-[10px] font-medium text-slate-600 dark:border-slate-600/50 dark:text-slate-400"
                 style={{ width: MOLD_COL_PX, minWidth: MOLD_COL_PX }}
               >
                 Gün özeti
               </div>
               <div
-                className="gm-planning-timeline-canvas grid shrink-0 border-gray-200/80 dark:border-gray-700"
+                className="gm-planning-timeline-canvas grid shrink-0 border-slate-200/70 dark:border-slate-600/45"
                 style={{
                   width: totalSlots * colW,
                   minWidth: totalSlots * colW,
@@ -1016,16 +1028,16 @@ export function PlanningDesignView({ onNavigate }: Props) {
                     key={`sum-${d.id}`}
                     type="button"
                     onClick={() => setDayDetailDate(d.date)}
-                    className="col-span-3 border-r border-gray-200/80 px-1 py-2 text-left text-[10px] transition hover:bg-gray-100/80 dark:border-gray-700 dark:hover:bg-gray-800/80"
+                    className="col-span-3 border-r border-slate-200/65 px-1 py-2 text-left text-[10px] transition hover:bg-slate-100/75 dark:border-slate-600/45 dark:hover:bg-slate-900/35"
                   >
-                    <div className="rounded-xl bg-gray-100 px-2 py-1.5 shadow-neo-in dark:bg-gray-900">
-                      <div className="font-semibold leading-snug text-gray-900 dark:text-gray-50">
+                    <div className="okan-liquid-panel-nested px-2 py-1.5">
+                      <div className="font-semibold leading-snug text-slate-900 dark:text-slate-50">
                         {t.pieces} iş · {t.activeMolds} kalıp
                       </div>
-                      <div className="mt-0.5 text-gray-700 dark:text-gray-300">
+                      <div className="mt-0.5 text-slate-700 dark:text-slate-300">
                         {t.volumeM3.toFixed(1)} m³ · {(t.steelKg / 1000).toFixed(1)} t çelik
                       </div>
-                      <div className="mt-0.5 text-[9px] text-gray-500">
+                      <div className="mt-0.5 text-[9px] text-slate-500 dark:text-slate-400">
                         Risk/öncelik: {t.riskyJobs} · Uyarı: {t.warningsCount}
                       </div>
                     </div>
@@ -1037,9 +1049,9 @@ export function PlanningDesignView({ onNavigate }: Props) {
         </div>
         </div>
 
-        <aside className="gm-planning-queue-aside flex min-h-0 flex-col rounded-2xl border border-gray-200/70 bg-transparent p-3 dark:border-gray-700/80 lg:max-h-none">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-50">Bekleyen iş (mock)</h2>
-          <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">
+        <aside className="gm-planning-queue-aside okan-liquid-panel flex min-h-0 flex-col p-3 lg:max-h-none">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Bekleyen iş (mock)</h2>
+          <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
             Tıklayın veya sürükleyip hücreye bırakın. Esc iptal.
           </p>
           <ul className="mt-3 max-h-[420px] space-y-2 overflow-auto pr-1 lg:max-h-[min(420px,calc(100vh-16rem))]">
@@ -1057,14 +1069,16 @@ export function PlanningDesignView({ onNavigate }: Props) {
                   setDragId(null)
                   setDropTarget(null)
                 }}
-                className="cursor-grab rounded-xl bg-gray-50 p-2 text-xs shadow-neo-out-sm active:cursor-grabbing dark:bg-gray-800"
+                className="okan-liquid-list-card cursor-grab p-2 text-xs active:cursor-grabbing"
               >
-                <div className="font-medium text-gray-900 dark:text-gray-50">{q.title}</div>
-                <div className="mt-1 text-gray-500">Öncelik {q.priority} · risk {q.risk}</div>
+                <div className="font-medium text-slate-900 dark:text-slate-50">{q.title}</div>
+                <div className="mt-1 text-slate-500 dark:text-slate-400">Öncelik {q.priority} · risk {q.risk}</div>
               </li>
             ))}
           </ul>
         </aside>
+      </div>
+    </div>
       </div>
     </div>
 
@@ -1089,7 +1103,9 @@ export function PlanningDesignView({ onNavigate }: Props) {
                         )
                       }
                       className={`rounded-full px-2 py-0.5 text-xs ${
-                        on ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-700 ring-1 ring-gray-300 dark:bg-gray-800 dark:text-gray-200'
+                        on
+                          ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900'
+                          : 'bg-white/55 text-slate-700 ring-1 ring-slate-300/70 dark:bg-white/5 dark:text-slate-200 dark:ring-white/12'
                       }`}
                     >
                       {m.moldId}
@@ -1109,7 +1125,9 @@ export function PlanningDesignView({ onNavigate }: Props) {
                         setStatusFilter((prev) => (on ? prev.filter((x) => x !== k) : [...prev, k]))
                       }
                       className={`rounded-full px-2 py-0.5 text-xs ${
-                        on ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-700 ring-1 ring-gray-300 dark:bg-gray-800 dark:text-gray-200'
+                        on
+                          ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900'
+                          : 'bg-white/55 text-slate-700 ring-1 ring-slate-300/70 dark:bg-white/5 dark:text-slate-200 dark:ring-white/12'
                       }`}
                     >
                       {STATUS_META[k].label}
@@ -1160,99 +1178,99 @@ export function PlanningDesignView({ onNavigate }: Props) {
             onClick={() => setSelectedId(null)}
           />
           <div
-            className="gm-glass-drawer-panel pointer-events-auto relative z-10 flex h-full min-h-0 w-full max-w-md flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-gray-100 shadow-neo-out dark:border-gray-700 dark:bg-gray-900"
+            className="gm-glass-drawer-panel pointer-events-auto relative z-10 flex h-full min-h-0 w-full max-w-md flex-col overflow-hidden rounded-3xl border border-white/45 bg-white/75 shadow-[0_12px_40px_rgb(15_23_42/0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:shadow-[0_12px_48px_rgb(0_0_0/0.45)]"
             role="dialog"
             aria-label="Plan öğesi detayı"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex shrink-0 items-start justify-between gap-2 p-4 pb-0">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">{selected.title}</h2>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">{selected.title}</h2>
               <button
                 type="button"
                 onClick={() => setSelectedId(null)}
-                className="rounded-xl bg-gray-100 p-2 text-gray-700 shadow-neo-out-sm dark:bg-gray-800 dark:text-gray-200"
+                className="rounded-xl border border-slate-200/70 bg-white/70 p-2 text-slate-700 shadow-sm hover:bg-white/90 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-4 pt-4">
               <div className="space-y-3 text-sm">
-              <div className="rounded-2xl bg-gray-50 p-3 shadow-neo-in dark:bg-gray-950/50">
-                <h3 className="text-xs font-semibold text-gray-500">Ürün örnekleri</h3>
+              <div className="okan-liquid-panel-nested p-3">
+                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Ürün örnekleri</h3>
                 <div className="mt-2 flex gap-2 overflow-auto pb-1">
                   {PRODUCT_SAMPLE_THUMBS.map((src, idx) => (
                     <img
                       key={src}
                       src={src}
                       alt={`Ürün örneği ${idx + 1}`}
-                      className="h-24 w-32 shrink-0 rounded-xl border border-gray-200/80 bg-gray-50 object-cover shadow-neo-in dark:border-gray-700/70"
+                      className="h-24 w-32 shrink-0 rounded-xl border border-slate-200/65 bg-slate-50/60 object-cover dark:border-slate-600/50 dark:bg-slate-900/40"
                       draggable={false}
                     />
                   ))}
                 </div>
               </div>
-              <div className="rounded-2xl bg-gray-50 p-3 shadow-neo-in dark:bg-gray-950/50">
-                <h3 className="text-xs font-semibold text-gray-500">Genel</h3>
-                <dl className="mt-2 space-y-1 text-gray-800 dark:text-gray-200">
+              <div className="okan-liquid-panel-nested p-3">
+                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Genel</h3>
+                <dl className="mt-2 space-y-1 text-slate-800 dark:text-slate-200">
                   <div className="flex justify-between gap-2">
-                    <dt className="text-gray-500">id</dt>
+                    <dt className="text-slate-500 dark:text-slate-400">id</dt>
                     <dd className="font-mono text-xs">{selected.id}</dd>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <dt className="text-gray-500">Ürün</dt>
+                    <dt className="text-slate-500 dark:text-slate-400">Ürün</dt>
                     <dd>{selected.productId}</dd>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <dt className="text-gray-500">Durum</dt>
+                    <dt className="text-slate-500 dark:text-slate-400">Durum</dt>
                     <dd>{STATUS_META[selected.status].label}</dd>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <dt className="text-gray-500">Öncelik</dt>
+                    <dt className="text-slate-500 dark:text-slate-400">Öncelik</dt>
                     <dd>{selected.priority}</dd>
                   </div>
                 </dl>
               </div>
-              <div className="rounded-2xl bg-gray-50 p-3 shadow-neo-in dark:bg-gray-950/50">
-                <h3 className="text-xs font-semibold text-gray-500">Zaman</h3>
-                <dl className="mt-2 space-y-1 text-gray-800 dark:text-gray-200">
+              <div className="okan-liquid-panel-nested p-3">
+                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Zaman</h3>
+                <dl className="mt-2 space-y-1 text-slate-800 dark:text-slate-200">
                   <div className="flex justify-between gap-2">
-                    <dt className="text-gray-500">Başlangıç</dt>
+                    <dt className="text-slate-500 dark:text-slate-400">Başlangıç</dt>
                     <dd className="font-mono text-xs">{selected.startAt}</dd>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <dt className="text-gray-500">Bitiş</dt>
+                    <dt className="text-slate-500 dark:text-slate-400">Bitiş</dt>
                     <dd className="font-mono text-xs">{selected.endAt}</dd>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <dt className="text-gray-500">Süre</dt>
+                    <dt className="text-slate-500 dark:text-slate-400">Süre</dt>
                     <dd>{selected.durationHours} saat</dd>
                   </div>
                 </dl>
               </div>
-              <div className="rounded-2xl bg-gray-50 p-3 shadow-neo-in dark:bg-gray-950/50">
-                <h3 className="text-xs font-semibold text-gray-500">Kalıp & beton</h3>
-                <dl className="mt-2 space-y-1 text-gray-800 dark:text-gray-200">
+              <div className="okan-liquid-panel-nested p-3">
+                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Kalıp & beton</h3>
+                <dl className="mt-2 space-y-1 text-slate-800 dark:text-slate-200">
                   <div className="flex justify-between gap-2">
-                    <dt className="text-gray-500">Kalıp</dt>
+                    <dt className="text-slate-500 dark:text-slate-400">Kalıp</dt>
                     <dd>{selected.moldId}</dd>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <dt className="text-gray-500">Reçete</dt>
+                    <dt className="text-slate-500 dark:text-slate-400">Reçete</dt>
                     <dd className="font-mono text-xs">{selected.concreteRecipeId}</dd>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <dt className="text-gray-500">Hacim</dt>
+                    <dt className="text-slate-500 dark:text-slate-400">Hacim</dt>
                     <dd>{selected.estimatedVolumeM3} m³</dd>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <dt className="text-gray-500">Çelik</dt>
+                    <dt className="text-slate-500 dark:text-slate-400">Çelik</dt>
                     <dd>{selected.estimatedSteelKg} kg</dd>
                   </div>
                 </dl>
               </div>
-              <div className="rounded-2xl bg-gray-50 p-3 shadow-neo-in dark:bg-gray-950/50">
-                <h3 className="text-xs font-semibold text-gray-500">Reçete havuzu (mock)</h3>
-                <ul className="mt-2 space-y-1 text-xs text-gray-700 dark:text-gray-300">
+              <div className="okan-liquid-panel-nested p-3">
+                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Reçete havuzu (mock)</h3>
+                <ul className="mt-2 space-y-1 text-xs text-slate-700 dark:text-slate-300">
                   {CONCRETE_RECIPES_MOCK.map((r) => (
                     <li key={r.recipeId}>
                       {r.recipeId} — {r.label} ({r.strengthClass})
@@ -1370,7 +1388,7 @@ export function PlanningDesignView({ onNavigate }: Props) {
             onClick={() => setDayDetailDate(null)}
           />
           <div
-            className="gm-glass-drawer-panel pointer-events-auto relative z-10 flex h-full min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-gray-100 shadow-neo-out dark:border-gray-700 dark:bg-gray-900"
+            className="gm-glass-drawer-panel pointer-events-auto relative z-10 flex h-full min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-white/45 bg-white/75 shadow-[0_12px_40px_rgb(15_23_42/0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:shadow-[0_12px_48px_rgb(0_0_0/0.45)]"
             role="dialog"
             aria-label="Gün özeti detayı"
             onClick={(e) => e.stopPropagation()}
@@ -1449,7 +1467,7 @@ export function PlanningDesignView({ onNavigate }: Props) {
                     ))}
                   </ul>
                 </section>
-                <section className="mt-4 rounded-2xl bg-gray-50 p-3 shadow-neo-in dark:bg-gray-950/50">
+                <section className="okan-liquid-panel-nested mt-4 p-3">
                   <h3 className="text-xs font-semibold text-gray-500">Toplamlar</h3>
                   <p className="mt-2 text-sm text-gray-800 dark:text-gray-200">
                     {dailyTotals.find((x) => x.date === dayDetailDate)?.pieces ?? 0} iş ·{' '}
