@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, LayoutGrid, List, Upload } from 'lucide-react'
+import { ChevronDown, ChevronRight, Filter, Upload } from 'lucide-react'
 import { startTransition, useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useI18n } from '../../i18n/I18nProvider'
@@ -12,7 +12,6 @@ import {
 } from './engineeringIntegrationOkanMock'
 import { ReadinessBadge } from './ReadinessBadge'
 import { ReadinessBar } from './ReadinessBar'
-import { RiskInsightPanel } from './RiskInsightPanel'
 import { SmartProductionOrderModal } from './SmartProductionOrderModal'
 import { ENGINEERING_BASE_PATH } from '../manualPieceTemplateStudio/constants'
 import { MptsProvider } from '../manualPieceTemplateStudio/MptsContext'
@@ -20,12 +19,7 @@ import { MptsRoutes } from '../manualPieceTemplateStudio/MptsRoutes'
 import { StandardItemsAssembliesModule } from './standardItemsAssemblies/StandardItemsAssembliesModule'
 import { ToggleSwitch } from './ToggleSwitch'
 import { WorkflowStepper } from './WorkflowStepper'
-import {
-  computeReadinessPercent,
-  countChecklistDone,
-  deriveReadinessLevel,
-  hasCriticalChecklistGap,
-} from './readinessEngine'
+import { computeReadinessPercent, countChecklistDone, deriveReadinessLevel } from './readinessEngine'
 
 function isEngineeringMptsPath(pathname: string): boolean {
   return (
@@ -86,7 +80,6 @@ export function EngineeringIntegrationOkanPage({ onCloseModule }: PageProps) {
   )
   const [selectedId, setSelectedId] = useState(() => searchParams.get('job') ?? initialOkanEngJobs[0]!.id)
   const [tab, setTab] = useState<TabId>('files')
-  const [viewMode, setViewMode] = useState<'list' | 'cards'>('list')
   const [manualOpen, setManualOpen] = useState(true)
   const [poOpen, setPoOpen] = useState(false)
   const [timelineFlash, setTimelineFlash] = useState<string | null>(null)
@@ -95,6 +88,7 @@ export function EngineeringIntegrationOkanPage({ onCloseModule }: PageProps) {
   const [kindFilter, setKindFilter] = useState<'all' | 'A' | 'B'>('all')
   const [projectFilter, setProjectFilter] = useState<string>('all')
   const [workflowFilter, setWorkflowFilter] = useState<'all' | WorkflowStateOkan>('all')
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false)
 
   const selected = useMemo(() => jobs.find((j) => j.id === selectedId) ?? null, [jobs, selectedId])
 
@@ -158,20 +152,6 @@ export function EngineeringIntegrationOkanPage({ onCloseModule }: PageProps) {
     if (level === 'red') return t('okanEng.badge.notReady')
     if (level === 'yellow') return t('okanEng.badge.risky')
     return t('okanEng.badge.ready')
-  }
-
-  const canMarkReady = (job: OkanEngJob) => {
-    const { score } = readinessFor(job)
-    return score >= 72 && !hasCriticalChecklistGap(job.checklist) && job.workflow !== 'production_created'
-  }
-
-  const handleMarkReady = (job: OkanEngJob) => {
-    if (!canMarkReady(job)) return
-    patchJob(job.id, (j) => ({
-      ...j,
-      workflow: j.kind === 'A' ? 'approved' : 'approved',
-      updatedAt: nowTs(),
-    }))
   }
 
   const handleMockUpload = () => {
@@ -246,13 +226,6 @@ export function EngineeringIntegrationOkanPage({ onCloseModule }: PageProps) {
     )
     window.setTimeout(() => setTimelineFlash(null), 12000)
   }
-
-  const typeABanner =
-    selected?.kind === 'A' ? (
-      <div role="status" className="okan-liquid-banner-warn px-4 py-3 text-sm text-amber-950 dark:text-amber-100">
-        {t('okanEng.banner.typeA')}
-      </div>
-    ) : null
 
   return (
     <div className="okan-liquid-root flex min-h-0 flex-1 flex-col gap-4 overflow-hidden rounded-[1.25rem]">
@@ -390,197 +363,122 @@ export function EngineeringIntegrationOkanPage({ onCloseModule }: PageProps) {
         </div>
       ) : null}
 
-      <div className="okan-liquid-panel flex flex-wrap items-end gap-3 p-4">
-        <label className="min-w-[140px] flex-1">
-          <span className="text-[11px] font-semibold uppercase text-slate-600 dark:text-slate-400">
-            {t('eng.bie06.filter.kind')}
-          </span>
-          <select
-            value={kindFilter}
-            onChange={(e) => setKindFilter(e.target.value as 'all' | 'A' | 'B')}
-            className="okan-liquid-select mt-1 w-full border-0 px-3 py-2.5 text-sm shadow-none"
-          >
-            <option value="all">{t('eng.bie06.filter.kindAll')}</option>
-            <option value="A">{t('eng.bie06.filter.kindA')}</option>
-            <option value="B">{t('eng.bie06.filter.kindB')}</option>
-          </select>
-        </label>
-        <label className="min-w-[180px] flex-1">
-          <span className="text-[11px] font-semibold uppercase text-slate-600 dark:text-slate-400">
-            {t('eng.bie06.filter.project')}
-          </span>
-          <select
-            value={projectFilter}
-            onChange={(e) => setProjectFilter(e.target.value)}
-            className="okan-liquid-select mt-1 w-full border-0 px-3 py-2.5 text-sm shadow-none"
-          >
-            <option value="all">{t('eng.bie06.filter.projectAll')}</option>
-            {projectOptions.map(([code, label]) => (
-              <option key={code} value={code}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="min-w-[160px] flex-1">
-          <span className="text-[11px] font-semibold uppercase text-slate-600 dark:text-slate-400">
-            {t('eng.bie06.filter.status')}
-          </span>
-          <select
-            value={workflowFilter}
-            onChange={(e) => setWorkflowFilter(e.target.value as 'all' | WorkflowStateOkan)}
-            className="okan-liquid-select mt-1 w-full border-0 px-3 py-2.5 text-sm shadow-none"
-          >
-            <option value="all">{t('eng.bie06.filter.statusAll')}</option>
-            <option value="draft">{t('okanEng.flow.draft')}</option>
-            <option value="in_review">{t('okanEng.flow.inReview')}</option>
-            <option value="approved">{t('okanEng.flow.approved')}</option>
-            <option value="production_created">{t('okanEng.flow.productionCreated')}</option>
-          </select>
-        </label>
-      </div>
-
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-12 lg:gap-5">
         <section
           className="okan-liquid-panel flex max-h-[min(48vh,440px)] flex-col p-3 lg:col-span-4 lg:max-h-none"
           aria-labelledby="okan-wo-list-h"
         >
-          <div className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-2 px-1">
-            <h2 id="okan-wo-list-h" className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-              {t('okanEng.listTitle')}
-            </h2>
-            <div
-              className="okan-liquid-pill-track flex shrink-0 gap-0.5 rounded-full p-0.5"
-              role="tablist"
-              aria-label={t('okanEng.view.toggleLabel')}
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={viewMode === 'list'}
-                onClick={() => setViewMode('list')}
-                title={t('okanEng.view.list')}
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 sm:px-2.5 sm:text-xs ${
-                  viewMode === 'list'
-                    ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
-                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
-                }`}
+          <div className="mb-2 space-y-2 px-1">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <h2
+                id="okan-wo-list-h"
+                className="min-w-0 flex-1 text-sm font-semibold leading-tight text-slate-900 dark:text-slate-50"
               >
-                <List className="size-3.5 shrink-0" aria-hidden />
-                <span className="hidden sm:inline">{t('okanEng.view.list')}</span>
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={viewMode === 'cards'}
-                onClick={() => setViewMode('cards')}
-                title={t('okanEng.view.cards')}
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 sm:px-2.5 sm:text-xs ${
-                  viewMode === 'cards'
-                    ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
-                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
-                }`}
-              >
-                <LayoutGrid className="size-3.5 shrink-0" aria-hidden />
-                <span className="hidden sm:inline">{t('okanEng.view.cards')}</span>
-              </button>
+                {t('okanEng.listTitle')}
+              </h2>
+              <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFilterPanelOpen((o) => !o)}
+                  aria-expanded={filterPanelOpen}
+                  title={
+                    filterPanelOpen
+                      ? t('eng.bie06.filter.toggleClose')
+                      : t('eng.bie06.filter.toggleOpen')
+                  }
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 sm:gap-1.5 sm:px-2.5 sm:text-xs ${
+                    filterPanelOpen
+                      ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
+                      : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
+                  }`}
+                >
+                  <Filter className="size-3.5 shrink-0" aria-hidden />
+                  <span className="hidden sm:inline">
+                    {filterPanelOpen ? t('eng.bie06.filter.toggleClose') : t('eng.bie06.filter.toggleOpen')}
+                  </span>
+                </button>
+              </div>
             </div>
+
+            {filterPanelOpen ? (
+              <div className="okan-liquid-panel-nested flex flex-col gap-2.5 p-2.5">
+                <label className="block w-full min-w-0">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                    {t('eng.bie06.filter.kind')}
+                  </span>
+                  <select
+                    value={kindFilter}
+                    onChange={(e) => setKindFilter(e.target.value as 'all' | 'A' | 'B')}
+                    className="okan-liquid-select mt-1 w-full border-0 px-3 py-2 text-sm shadow-none"
+                  >
+                    <option value="all">{t('eng.bie06.filter.kindAll')}</option>
+                    <option value="A">{t('eng.bie06.filter.kindA')}</option>
+                    <option value="B">{t('eng.bie06.filter.kindB')}</option>
+                  </select>
+                </label>
+                <label className="block w-full min-w-0">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                    {t('eng.bie06.filter.project')}
+                  </span>
+                  <select
+                    value={projectFilter}
+                    onChange={(e) => setProjectFilter(e.target.value)}
+                    className="okan-liquid-select mt-1 w-full border-0 px-3 py-2 text-sm shadow-none"
+                  >
+                    <option value="all">{t('eng.bie06.filter.projectAll')}</option>
+                    {projectOptions.map(([code, label]) => (
+                      <option key={code} value={code}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block w-full min-w-0">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                    {t('eng.bie06.filter.status')}
+                  </span>
+                  <select
+                    value={workflowFilter}
+                    onChange={(e) => setWorkflowFilter(e.target.value as 'all' | WorkflowStateOkan)}
+                    className="okan-liquid-select mt-1 w-full border-0 px-3 py-2 text-sm shadow-none"
+                  >
+                    <option value="all">{t('eng.bie06.filter.statusAll')}</option>
+                    <option value="draft">{t('okanEng.flow.draft')}</option>
+                    <option value="in_review">{t('okanEng.flow.inReview')}</option>
+                    <option value="approved">{t('okanEng.flow.approved')}</option>
+                    <option value="production_created">{t('okanEng.flow.productionCreated')}</option>
+                  </select>
+                </label>
+              </div>
+            ) : null}
           </div>
-          {viewMode === 'list' ? (
-            filteredJobs.length === 0 ? (
-              <p className="px-1 text-sm text-slate-600 dark:text-slate-400">{t('okanEng.filterEmpty')}</p>
-            ) : (
-            <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+          {filteredJobs.length === 0 ? (
+            <p className="px-1 text-sm text-slate-600 dark:text-slate-400">{t('okanEng.filterEmpty')}</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
               {filteredJobs.map((job) => {
                 const { score, level } = readinessFor(job)
-                const wfKey = workflowLabelKey(job.workflow)
-                const cardShell = [
-                  'okan-liquid-list-card overflow-hidden text-sm transition',
-                  selectedId === job.id ? 'okan-liquid-list-card--selected' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')
                 return (
-                  <li key={job.id}>
-                    <div className={cardShell}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedId(job.id)}
-                        className="w-full px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="truncate font-semibold text-slate-900 dark:text-slate-50">{job.projectName}</p>
-                            <p className="text-xs text-slate-600 dark:text-slate-400">
-                              {job.woCode} · {job.kind === 'A' ? t('okanEng.kindA') : t('okanEng.kindB')}
-                            </p>
-                            <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{t(wfKey)}</p>
-                          </div>
-                          <div className="flex flex-col items-end gap-1">
-                            <ReadinessBadge level={level} label={`${score}%`} />
-                            {level !== 'green' ? (
-                              <AlertTriangle
-                                className={`size-4 ${level === 'red' ? 'text-red-600' : 'text-amber-500'}`}
-                                aria-hidden
-                              />
-                            ) : (
-                              <CheckCircle2 className="size-4 text-emerald-600" aria-hidden />
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                      <div className="flex flex-wrap gap-2 border-t border-white/15 px-3 py-2.5 dark:border-white/10">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedId(job.id)}
-                          className="okan-liquid-btn-secondary px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
-                        >
-                          {t('okanEng.open')}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={!canMarkReady(job)}
-                          onClick={() => handleMarkReady(job)}
-                          className="okan-liquid-btn-primary px-3 py-1.5 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          {t('okanEng.markReady')}
-                        </button>
-                      </div>
+                  <button
+                    key={job.id}
+                    type="button"
+                    onClick={() => setSelectedId(job.id)}
+                    className={[
+                      'okan-liquid-list-card p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50',
+                      selectedId === job.id ? 'okan-liquid-list-card--selected' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-slate-900 dark:text-slate-50">{job.projectName}</span>
+                      <ReadinessBadge level={level} label={`${score}%`} />
                     </div>
-                  </li>
+                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{job.woCode}</p>
+                  </button>
                 )
               })}
-            </ul>
-            )
-          ) : (
-            filteredJobs.length === 0 ? (
-              <p className="px-1 text-sm text-slate-600 dark:text-slate-400">{t('okanEng.filterEmpty')}</p>
-            ) : (
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
-                {filteredJobs.map((job) => {
-                  const { score, level } = readinessFor(job)
-                  return (
-                    <button
-                      key={job.id}
-                      type="button"
-                      onClick={() => setSelectedId(job.id)}
-                      className={[
-                        'okan-liquid-list-card p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50',
-                        selectedId === job.id ? 'okan-liquid-list-card--selected' : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-semibold text-slate-900 dark:text-slate-50">{job.projectName}</span>
-                        <ReadinessBadge level={level} label={`${score}%`} />
-                      </div>
-                      <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{job.woCode}</p>
-                    </button>
-                  )
-                })}
-              </div>
-            )
+            </div>
           )}
         </section>
 
@@ -589,11 +487,8 @@ export function EngineeringIntegrationOkanPage({ onCloseModule }: PageProps) {
             className="okan-liquid-panel flex min-h-0 flex-col gap-4 p-4 lg:col-span-8"
             aria-label={t('okanEng.detailRegion')}
           >
-            <div className="flex min-h-0 flex-col gap-4 lg:flex-row">
-              <div className="min-w-0 flex-1 space-y-4">
-              {typeABanner}
-
-              <div className="okan-liquid-panel-nested p-4">
+            <div className="min-w-0 flex-1 space-y-4">
+              <div className="okan-liquid-panel-nested w-full min-w-0 p-4">
                 <WorkflowStepper workflow={selected.workflow} kind={selected.kind} t={t} />
               </div>
 
@@ -915,11 +810,6 @@ export function EngineeringIntegrationOkanPage({ onCloseModule }: PageProps) {
                 </section>
               ) : null}
             </div>
-
-            <div className="w-full shrink-0 lg:w-[min(100%,300px)]">
-              <RiskInsightPanel job={selected} t={t} />
-            </div>
-          </div>
           </section>
         ) : (
           <div className="okan-liquid-panel flex min-h-[120px] items-center justify-center p-6 lg:col-span-8">

@@ -140,6 +140,7 @@ export function activeModuleIdFromPathname(pathname: string): string {
   if (pathname === '/profile') return 'profile'
   if (pathname === '/settings') return 'settings'
   if (pathname === '/') return 'dashboard'
+  if (pathname.startsWith('/musteri-detay/')) return 'crm'
   const seg = pathname.replace(/^\//, '').split('/')[0]
   if (!seg) return 'dashboard'
   return findModuleIdBySlug(seg) ?? 'dashboard'

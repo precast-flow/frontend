@@ -4,6 +4,27 @@ export type CrmProjectRow = { id: string; name: string; phase: string }
 export type CrmQuoteRow = { id: string; no: string; date: string; amount: string; status: string }
 export type CrmDocRow = { id: string; name: string; size: string; date: string }
 
+/** Müşteri detay — İletişim sekmesi (mock) */
+export type CrmIletisimKisi = {
+  id: string
+  adSoyad: string
+  gorev: string
+  cep: string
+  email: string
+  /** Birincil ilgili kişi */
+  birincil?: boolean
+}
+
+export type CrmIletisim = {
+  sabitHat: string
+  infoEmail: string
+  web?: string
+  faks?: string
+  /** Şehir dışında kısa adres notu */
+  adresNotu?: string
+  kisiler: CrmIletisimKisi[]
+}
+
 export type CrmCustomer = {
   id: string
   /** Ünvan */
@@ -22,6 +43,8 @@ export type CrmCustomer = {
   contactPerson: string
   /** Son teklif tarihi (liste kolonu) */
   lastQuoteDate: string
+  /** İletişim sekmesi */
+  iletisim: CrmIletisim
   /** P1 — etiketler */
   tags: string[]
   /** P1 — hangi fabrika bağlamında görünür (üst seçici ile filtre) */
@@ -47,6 +70,30 @@ export const crmCustomers: CrmCustomer[] = [
     notes: 'Prefab köprü projesi ilgisi.',
     contactPerson: 'Ahmet Yurtsever',
     lastQuoteDate: '20.03.2025',
+    iletisim: {
+      sabitHat: '+90 212 555 01 01',
+      infoEmail: 'info@yapitas.example',
+      web: 'www.yapitas.example',
+      faks: '+90 212 555 01 02',
+      adresNotu: 'Hadımköy OSB, No: 12 · İstanbul',
+      kisiler: [
+        {
+          id: 'ik1',
+          adSoyad: 'Ahmet Yurtsever',
+          gorev: 'Satın alma müdürü',
+          cep: '+90 532 100 42 42',
+          email: 'a.yurtsever@yapitas.example',
+          birincil: true,
+        },
+        {
+          id: 'ik2',
+          adSoyad: 'Nilüfer Koç',
+          gorev: 'Muhasebe',
+          cep: '+90 533 200 33 11',
+          email: 'n.koc@yapitas.example',
+        },
+      ],
+    },
     tags: ['VIP', 'Uzun vadeli'],
     factories: ['IST-HAD', 'KOC-01'],
     projeler: [
@@ -78,6 +125,29 @@ export const crmCustomers: CrmCustomer[] = [
     notes: '',
     contactPerson: 'Selin Erden',
     lastQuoteDate: '14.02.2025',
+    iletisim: {
+      sabitHat: '+90 312 444 90 00',
+      infoEmail: 'iletisim@metrobeton.example',
+      web: 'www.metrobeton.example',
+      adresNotu: 'Ostim OSB 1272. Sk. · Ankara',
+      kisiler: [
+        {
+          id: 'ik3',
+          adSoyad: 'Selin Erden',
+          gorev: 'Proje koordinatörü',
+          cep: '+90 505 330 12 12',
+          email: 's.erden@metrobeton.example',
+          birincil: true,
+        },
+        {
+          id: 'ik4',
+          adSoyad: 'Umut Şahin',
+          gorev: 'Saha şefi',
+          cep: '+90 506 441 09 87',
+          email: 'u.sahin@metrobeton.example',
+        },
+      ],
+    },
     tags: ['Kamu'],
     factories: ['ANK-01'],
     projeler: [
@@ -106,6 +176,22 @@ export const crmCustomers: CrmCustomer[] = [
     notes: 'Teklif revizyonu bekleniyor.',
     contactPerson: 'Oğuz Karaca',
     lastQuoteDate: '18.03.2025',
+    iletisim: {
+      sabitHat: '+90 232 778 44 10',
+      infoEmail: 'fabrika@vadiprefab.example',
+      web: 'www.vadiprefab.example',
+      adresNotu: 'Çiğli Atatürk OSB · İzmir',
+      kisiler: [
+        {
+          id: 'ik5',
+          adSoyad: 'Oğuz Karaca',
+          gorev: 'Genel müdür yardımcısı',
+          cep: '+90 542 901 22 33',
+          email: 'o.karaca@vadiprefab.example',
+          birincil: true,
+        },
+      ],
+    },
     tags: ['Hızlı karar'],
     factories: ['IST-HAD'],
     projeler: [
@@ -137,6 +223,21 @@ export const crmCustomers: CrmCustomer[] = [
     notes: 'Son görüşme olumsuz.',
     contactPerson: 'Deniz Aksoy',
     lastQuoteDate: '02.12.2024',
+    iletisim: {
+      sabitHat: '+90 242 333 11 00',
+      infoEmail: 'yonetim@kiyiyapi.example',
+      adresNotu: 'Lara, Fener Mah. · Antalya',
+      kisiler: [
+        {
+          id: 'ik6',
+          adSoyad: 'Deniz Aksoy',
+          gorev: 'Yönetim kurulu üyesi',
+          cep: '+90 533 778 90 01',
+          email: 'd.aksoy@kiyiyapi.example',
+          birincil: true,
+        },
+      ],
+    },
     tags: [],
     factories: ['IST-HAD'],
     projeler: [
@@ -165,6 +266,29 @@ export const crmCustomers: CrmCustomer[] = [
     notes: 'İlk görüşme planlanıyor.',
     contactPerson: 'Cem Öztürk',
     lastQuoteDate: '—',
+    iletisim: {
+      sabitHat: '+90 262 660 12 34',
+      infoEmail: 'info@anadoluenerji.example',
+      web: 'www.anadoluenerji.example',
+      adresNotu: 'Gebze Teknopark · Kocaeli',
+      kisiler: [
+        {
+          id: 'ik7',
+          adSoyad: 'Cem Öztürk',
+          gorev: 'Yatırımlar müdürü',
+          cep: '+90 530 112 45 67',
+          email: 'c.ozturk@anadoluenerji.example',
+          birincil: true,
+        },
+        {
+          id: 'ik8',
+          adSoyad: 'Pelin Arı',
+          gorev: 'Satın alma uzmanı',
+          cep: '+90 531 998 00 21',
+          email: 'p.ari@anadoluenerji.example',
+        },
+      ],
+    },
     tags: ['Yeni', 'Sıcak'],
     factories: ['KOC-01'],
     projeler: [
@@ -193,6 +317,28 @@ export const crmCustomers: CrmCustomer[] = [
     notes: 'Kıyı koruma projesi.',
     contactPerson: 'Burcu Işık',
     lastQuoteDate: '19.03.2025',
+    iletisim: {
+      sabitHat: '+90 232 555 77 88',
+      infoEmail: 'santiye@egekopru.example',
+      adresNotu: 'Aliağa üretim tesisi · İzmir',
+      kisiler: [
+        {
+          id: 'ik9',
+          adSoyad: 'Burcu Işık',
+          gorev: 'Teknik ofis şefi',
+          cep: '+90 544 200 11 44',
+          email: 'b.isik@egekopru.example',
+          birincil: true,
+        },
+        {
+          id: 'ik10',
+          adSoyad: 'Kaan Yılmaz',
+          gorev: 'İş güvenliği',
+          cep: '+90 545 300 55 66',
+          email: 'k.yilmaz@egekopru.example',
+        },
+      ],
+    },
     tags: ['Teknik zor'],
     factories: ['IST-HAD', 'ANK-01'],
     projeler: [
@@ -221,6 +367,30 @@ export const crmCustomers: CrmCustomer[] = [
     notes: 'Çok projeli hesap.',
     contactPerson: 'Ebru Tan',
     lastQuoteDate: '21.03.2025',
+    iletisim: {
+      sabitHat: '+90 216 888 22 11',
+      infoEmail: 'merkez@kentseldonusum.example',
+      web: 'www.kentseldonusum.example',
+      faks: '+90 216 888 22 12',
+      adresNotu: 'Ataşehir Finans Merkezi · İstanbul',
+      kisiler: [
+        {
+          id: 'ik11',
+          adSoyad: 'Ebru Tan',
+          gorev: 'Operasyon direktörü',
+          cep: '+90 532 600 77 88',
+          email: 'e.tan@kentseldonusum.example',
+          birincil: true,
+        },
+        {
+          id: 'ik12',
+          adSoyad: 'Serkan Polat',
+          gorev: 'Sözleşme ve hukuk',
+          cep: '+90 533 400 12 90',
+          email: 's.polat@kentseldonusum.example',
+        },
+      ],
+    },
     tags: ['Çok proje', 'VIP'],
     factories: ['IST-HAD'],
     projeler: [
@@ -252,6 +422,22 @@ export const crmCustomers: CrmCustomer[] = [
     notes: 'Liman revizyonu.',
     contactPerson: 'Hakan Bilgin',
     lastQuoteDate: '10.03.2025',
+    iletisim: {
+      sabitHat: '+90 362 220 45 60',
+      infoEmail: 'liman@karadenizliman.example',
+      web: 'www.karadenizliman.example',
+      adresNotu: 'Liman içi idari bina · Samsun',
+      kisiler: [
+        {
+          id: 'ik13',
+          adSoyad: 'Hakan Bilgin',
+          gorev: 'Liman operasyonları',
+          cep: '+90 505 777 33 22',
+          email: 'h.bilgin@karadenizliman.example',
+          birincil: true,
+        },
+      ],
+    },
     tags: ['Uzak saha'],
     factories: ['ANK-01'],
     projeler: [

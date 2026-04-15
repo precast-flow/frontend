@@ -1,3 +1,4 @@
+import { Check } from 'lucide-react'
 import type { WorkflowStateOkan } from './engineeringIntegrationOkanMock'
 
 type StepDef = { wf: WorkflowStateOkan; labelKey: string }
@@ -38,36 +39,76 @@ export function WorkflowStepper({ workflow, kind, t }: Props) {
   const active = activeIndex(steps, workflow, kind)
 
   return (
-    <div className="overflow-x-auto pb-1">
-      <ol className="flex min-w-[min(100%,480px)] items-center gap-1">
+    <div className="w-full min-w-0" role="group" aria-label={t('okanEng.flowProgressAria')}>
+      <ol className="flex w-full min-w-0 list-none">
         {steps.map((step, i) => {
           const isLast = i === steps.length - 1
-          const isPast = i < active
+          const isDone = i < active
           const isCurrent = i === active
+          const leftComplete = i > 0 && active >= i
+          const rightComplete = !isLast && active > i
+
           return (
-            <li key={step.wf} className="flex flex-1 items-center gap-1">
-              <span
+            <li
+              key={step.wf}
+              className="flex min-w-0 flex-1 flex-col items-stretch"
+              aria-current={isCurrent ? 'step' : undefined}
+            >
+              <div className="flex w-full min-w-0 items-center">
+                {i > 0 ? (
+                  <div
+                    className={[
+                      'h-[3px] min-h-[3px] min-w-[0.5rem] flex-1 rounded-full transition-colors duration-300',
+                      leftComplete
+                        ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 shadow-[0_0_12px_rgb(16_185_129/0.35)]'
+                        : 'bg-slate-200/90 dark:bg-white/[0.08]',
+                    ].join(' ')}
+                    aria-hidden
+                  />
+                ) : (
+                  <div className="min-w-0 flex-1" aria-hidden />
+                )}
+
+                <div
+                  className={[
+                    'relative z-[1] flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums transition-all duration-300',
+                    isDone
+                      ? 'bg-emerald-500 text-white shadow-[0_2px_12px_rgb(16_185_129/0.45)] ring-2 ring-emerald-400/30 ring-offset-2 ring-offset-white/80 dark:ring-offset-slate-900/80'
+                      : isCurrent
+                        ? 'bg-gradient-to-br from-sky-500 to-sky-600 text-white shadow-[0_4px_20px_rgb(14_165_233/0.4)] ring-[3px] ring-sky-300/50 ring-offset-2 ring-offset-white/90 dark:from-sky-400 dark:to-sky-600 dark:ring-sky-400/40 dark:ring-offset-slate-900/90'
+                        : 'border border-slate-200/90 bg-white/70 text-slate-400 shadow-sm dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-500',
+                  ].join(' ')}
+                >
+                  {isDone ? <Check className="size-4 stroke-[3]" aria-hidden /> : <span>{i + 1}</span>}
+                </div>
+
+                {!isLast ? (
+                  <div
+                    className={[
+                      'h-[3px] min-h-[3px] min-w-[0.5rem] flex-1 rounded-full transition-colors duration-300',
+                      rightComplete
+                        ? 'bg-gradient-to-r from-emerald-400 to-emerald-500/90 shadow-[0_0_12px_rgb(16_185_129/0.35)]'
+                        : 'bg-slate-200/90 dark:bg-white/[0.08]',
+                    ].join(' ')}
+                    aria-hidden
+                  />
+                ) : (
+                  <div className="min-w-0 flex-1" aria-hidden />
+                )}
+              </div>
+
+              <p
                 className={[
-                  'flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold backdrop-blur-md transition',
+                  'mt-2.5 px-0.5 text-center text-[11px] font-medium leading-snug tracking-tight sm:text-xs',
                   isCurrent
-                    ? 'border border-sky-400/40 bg-gradient-to-b from-slate-800/95 to-slate-900/95 text-white shadow-[0_4px_16px_rgb(14_165_233/0.25),inset_0_1px_0_rgb(255_255_255/0.2)] dark:from-white/20 dark:to-white/10 dark:text-slate-50 dark:shadow-[0_4px_20px_rgb(0_0_0/0.35),inset_0_1px_0_rgb(255_255_255/0.25)]'
-                    : isPast
-                      ? 'border border-emerald-400/35 bg-emerald-500/85 text-white shadow-[0_0_12px_rgb(16_185_129/0.35),inset_0_1px_0_rgb(255_255_255/0.25)] dark:bg-emerald-500/70'
-                      : 'border border-white/35 bg-white/25 text-slate-600 shadow-[inset_0_1px_0_rgb(255_255_255/0.6)] dark:border-white/12 dark:bg-white/6 dark:text-slate-400',
+                    ? 'text-slate-900 dark:text-slate-50'
+                    : isDone
+                      ? 'text-emerald-800 dark:text-emerald-200/90'
+                      : 'text-slate-500 dark:text-slate-500',
                 ].join(' ')}
               >
-                {i + 1}
-              </span>
-              <span
-                className={`min-w-0 truncate text-[11px] font-medium sm:max-w-[7rem] ${isCurrent ? 'text-slate-900 dark:text-slate-50' : 'text-slate-500 dark:text-slate-400'}`}
-              >
                 {t(step.labelKey)}
-              </span>
-              {!isLast ? (
-                <span
-                  className={`h-0.5 flex-1 rounded-full ${i < active ? 'bg-gradient-to-r from-emerald-400/90 to-emerald-500/70 shadow-[0_0_8px_rgb(16_185_129/0.35)]' : 'bg-slate-300/60 dark:bg-white/10'}`}
-                />
-              ) : null}
+              </p>
             </li>
           )
         })}

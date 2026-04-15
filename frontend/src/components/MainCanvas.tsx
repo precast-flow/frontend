@@ -74,10 +74,10 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
     <div
       className={
         fullBleedInMainModule
-          ? 'gm-glass-main-canvas gm-glass-main-canvas--full flex min-h-0 flex-1 flex-col overflow-hidden'
+          ? 'gm-glass-main-canvas gm-glass-main-canvas--full gm-glass-main-canvas--okan-liquid flex min-h-0 flex-1 flex-col overflow-hidden'
           : [
               'gm-glass-main-canvas flex min-h-0 flex-1 flex-col rounded-3xl p-5 md:p-6',
-              isEngineering || isManualPieceStudio || isProject || isCrm || isQuote
+              isEngineering || isManualPieceStudio || isProject || isCrm || isQuote || isParametric3d
                 ? 'gm-glass-main-canvas--okan-liquid min-h-[min(100%,42rem)]'
                 : 'bg-pf-surface shadow-neo-out',
             ].join(' ')

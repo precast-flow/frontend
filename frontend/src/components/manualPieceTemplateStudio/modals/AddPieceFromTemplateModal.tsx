@@ -19,7 +19,8 @@ export function AddPieceFromTemplateModal({ open, onClose, jobId }: Props) {
   const [product, setProduct] = useState(job?.products[0] ?? '')
   const [templateId, setTemplateId] = useState('')
   const [pieceMark, setPieceMark] = useState('')
-  const [qty, setQty] = useState(1)
+  /** Sayı input’u state’i string: boşken yazılabilir; `Number('')`→0 hatası olmaz */
+  const [qtyStr, setQtyStr] = useState('1')
 
   const tplOptions = useMemo(() => {
     return templates.filter((x) => {
@@ -30,6 +31,12 @@ export function AddPieceFromTemplateModal({ open, onClose, jobId }: Props) {
   }, [templates, plant, product])
 
   const selectedTpl = templates.find((x) => x.id === templateId)
+
+  const qty = useMemo(() => {
+    if (qtyStr.trim() === '') return 0
+    const n = parseInt(qtyStr, 10)
+    return Number.isFinite(n) && n >= 0 ? n : 0
+  }, [qtyStr])
 
   const valid = phase && plant && product && templateId && pieceMark.trim() && qty > 0
 
@@ -54,14 +61,14 @@ export function AddPieceFromTemplateModal({ open, onClose, jobId }: Props) {
       onClose={onClose}
       widthClass="max-w-4xl"
       footer={
-        <div className="flex w-full justify-end gap-2">
-          <button type="button" className="rounded border border-slate-300 px-4 py-2 text-xs dark:border-slate-600" onClick={onClose}>
+        <div className="flex w-full flex-wrap justify-end gap-2">
+          <button type="button" className="okan-liquid-btn-secondary px-4 py-2.5 text-sm font-semibold" onClick={onClose}>
             {t('mpts.common.cancel')}
           </button>
           <button
             type="button"
             disabled={!valid}
-            className="rounded bg-blue-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40"
+            className="okan-liquid-btn-primary px-4 py-2.5 text-sm font-semibold disabled:pointer-events-none disabled:opacity-40"
             onClick={submit}
           >
             {t('mpts.common.add')}
@@ -69,20 +76,21 @@ export function AddPieceFromTemplateModal({ open, onClose, jobId }: Props) {
         </div>
       }
     >
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-3">
+      <div className="grid gap-5 md:grid-cols-2 md:items-start">
+        <div className="okan-liquid-panel-nested space-y-3.5 p-4">
           <label className="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
             {t('mpts.common.job')}
             <input
-              className="mt-0.5 w-full rounded border border-slate-200 bg-slate-100 px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-800"
+              className="okan-liquid-input mt-1.5 w-full cursor-default px-3 py-2.5 font-mono text-sm opacity-95"
               readOnly
               value={jobId}
             />
           </label>
-          <label className="block text-[11px] font-medium">
-            {t('mpts.modal.addFromTpl.phase')} *
+          <label className="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
+            <span>{t('mpts.modal.addFromTpl.phase')}</span>{' '}
+            <span className="text-amber-800 dark:text-amber-200">*</span>
             <select
-              className="mt-0.5 w-full rounded border border-slate-300 px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900"
+              className="okan-liquid-select mt-1.5 w-full px-3 py-2.5 text-sm"
               value={phase}
               onChange={(e) => setPhase(e.target.value)}
             >
@@ -94,10 +102,11 @@ export function AddPieceFromTemplateModal({ open, onClose, jobId }: Props) {
               ))}
             </select>
           </label>
-          <label className="block text-[11px] font-medium">
-            {t('mpts.modal.addFromTpl.plant')} *
+          <label className="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
+            <span>{t('mpts.modal.addFromTpl.plant')}</span>{' '}
+            <span className="text-amber-800 dark:text-amber-200">*</span>
             <select
-              className="mt-0.5 w-full rounded border border-slate-300 px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900"
+              className="okan-liquid-select mt-1.5 w-full px-3 py-2.5 text-sm"
               value={plant}
               onChange={(e) => {
                 setPlant(e.target.value)
@@ -112,10 +121,11 @@ export function AddPieceFromTemplateModal({ open, onClose, jobId }: Props) {
               ))}
             </select>
           </label>
-          <label className="block text-[11px] font-medium">
-            {t('mpts.modal.addFromTpl.product')} *
+          <label className="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
+            <span>{t('mpts.modal.addFromTpl.product')}</span>{' '}
+            <span className="text-amber-800 dark:text-amber-200">*</span>
             <select
-              className="mt-0.5 w-full rounded border border-slate-300 px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900"
+              className="okan-liquid-select mt-1.5 w-full px-3 py-2.5 text-sm"
               value={product}
               onChange={(e) => {
                 setProduct(e.target.value)
@@ -130,10 +140,11 @@ export function AddPieceFromTemplateModal({ open, onClose, jobId }: Props) {
               ))}
             </select>
           </label>
-          <label className="block text-[11px] font-medium">
-            {t('mpts.modal.addFromTpl.template')} *
+          <label className="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
+            <span>{t('mpts.modal.addFromTpl.template')}</span>{' '}
+            <span className="text-amber-800 dark:text-amber-200">*</span>
             <select
-              className="mt-0.5 w-full rounded border border-slate-300 px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900"
+              className="okan-liquid-select mt-1.5 w-full px-3 py-2.5 text-sm disabled:opacity-45"
               value={templateId}
               onChange={(e) => {
                 const id = e.target.value
@@ -151,50 +162,65 @@ export function AddPieceFromTemplateModal({ open, onClose, jobId }: Props) {
               ))}
             </select>
           </label>
-          <label className="block text-[11px] font-medium">
-            {t('mpts.modal.addFromTpl.pieceMark')} *
+          <label className="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
+            <span>{t('mpts.modal.addFromTpl.pieceMark')}</span>{' '}
+            <span className="text-amber-800 dark:text-amber-200">*</span>
             <input
-              className="mt-0.5 w-full rounded border border-slate-300 px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900"
+              className="okan-liquid-input mt-1.5 w-full px-3 py-2.5 font-mono text-sm"
               value={pieceMark}
               onChange={(e) => setPieceMark(e.target.value)}
             />
           </label>
-          <label className="block text-[11px] font-medium">
-            {t('mpts.modal.addFromTpl.qty')} *
+          <label className="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
+            <span>{t('mpts.modal.addFromTpl.qty')}</span>{' '}
+            <span className="text-amber-800 dark:text-amber-200">*</span>
             <input
-              type="number"
-              min={1}
-              className="mt-0.5 w-full rounded border border-slate-300 px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900"
-              value={qty}
-              onChange={(e) => setQty(Number(e.target.value))}
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              className="okan-liquid-input mt-1.5 w-full px-3 py-2.5 text-sm tabular-nums"
+              value={qtyStr}
+              onChange={(e) => {
+                const v = e.target.value.trim()
+                if (v === '') {
+                  setQtyStr('')
+                  return
+                }
+                if (!/^\d+$/.test(v)) return
+                setQtyStr(String(parseInt(v, 10)))
+              }}
             />
           </label>
         </div>
-        <div className="rounded-lg border border-blue-100 bg-slate-50 p-4 dark:border-blue-900/50 dark:bg-slate-800/50">
-          <p className="text-xs font-semibold uppercase text-slate-500">{t('mpts.modal.addFromTpl.previewTitle')}</p>
+        <div className="okan-liquid-panel-nested flex min-h-[12rem] flex-col p-4 md:min-h-0">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            {t('mpts.modal.addFromTpl.previewTitle')}
+          </p>
           {selectedTpl ? (
-            <dl className="mt-3 space-y-1 text-xs">
-              <div>
-                <dt className="text-slate-500">{t('mpts.field.description')}</dt>
-                <dd className="font-medium text-slate-900 dark:text-slate-100">{selectedTpl.description}</dd>
+            <dl className="mt-3 space-y-3 text-xs text-slate-800 dark:text-slate-200">
+              <div className="border-b border-white/10 pb-2 dark:border-white/8">
+                <dt className="text-[11px] text-slate-500 dark:text-slate-400">{t('mpts.field.description')}</dt>
+                <dd className="mt-0.5 font-medium text-slate-900 dark:text-slate-50">{selectedTpl.description}</dd>
+              </div>
+              <div className="grid grid-cols-2 gap-2 border-b border-white/10 pb-2 dark:border-white/8">
+                <div>
+                  <dt className="text-[11px] text-slate-500 dark:text-slate-400">{t('mpts.common.location')}</dt>
+                  <dd className="mt-0.5">{selectedTpl.location}</dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] text-slate-500 dark:text-slate-400">{t('mpts.field.rev')}</dt>
+                  <dd className="mt-0.5 font-mono">{selectedTpl.header.rev}</dd>
+                </div>
               </div>
               <div>
-                <dt className="text-slate-500">{t('mpts.common.location')}</dt>
-                <dd>{selectedTpl.location}</dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">{t('mpts.field.rev')}</dt>
-                <dd>{selectedTpl.header.rev}</dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">{t('mpts.modal.addFromTpl.estWeight')}</dt>
-                <dd className="tabular-nums">
+                <dt className="text-[11px] text-slate-500 dark:text-slate-400">{t('mpts.modal.addFromTpl.estWeight')}</dt>
+                <dd className="mt-0.5 tabular-nums font-medium">
                   {selectedTpl.header.weight.toLocaleString()} {t('mpts.modal.addFromTpl.lb')}
                 </dd>
               </div>
             </dl>
           ) : (
-            <p className="mt-4 text-sm text-slate-500">{t('mpts.modal.addFromTpl.previewEmpty')}</p>
+            <p className="mt-6 flex-1 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{t('mpts.modal.addFromTpl.previewEmpty')}</p>
           )}
         </div>
       </div>

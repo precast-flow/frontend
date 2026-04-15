@@ -42,7 +42,7 @@ function Scene({ payloadKey }: { payloadKey: string }) {
 export function ParametricViewer({ payload }: { payload: ParametricPayload }) {
   const payloadKey = JSON.stringify(payload)
   return (
-    <div className="h-full min-h-[320px] w-full overflow-hidden rounded-2xl border border-gray-200/80 bg-gradient-to-b from-gray-100/90 to-gray-200/50 shadow-inner dark:border-gray-700/80 dark:from-gray-950/90 dark:to-gray-900/50">
+    <div className="h-full min-h-[280px] w-full min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200/55 bg-gradient-to-b from-sky-50/50 via-white/45 to-slate-100/35 shadow-[inset_0_1px_0_rgb(255_255_255/0.55)] dark:border-white/10 dark:from-slate-900/50 dark:via-slate-950/35 dark:to-slate-900/55">
       <Canvas
         gl={{ antialias: true, alpha: true }}
         camera={{ position: [6500, 4800, 6500], fov: 42, near: 5, far: 600_000 }}
