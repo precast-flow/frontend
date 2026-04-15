@@ -1,0 +1,28 @@
+# Precast App — Git / branch çalışma kuralları
+
+## Zorunlu: feature ve geliştirmelerde local branch
+
+- Her yeni özellik, düzeltme veya anlamlı geliştirme için **önce local bir branch** oluştur; **doğrudan `main` / `master` / `develop` üzerinde çalışma**.
+- Mevcut branch zaten `feature/*`, `fix/*`, `chore/*` vb. ise ve görev o branch’in kapsamındaysa aynı branch’te devam edebilirsin; aksi halde **yeni branch aç**.
+
+## Branch isimlendirme (profesyonel)
+
+- `feature/kisa-aciklama` — yeni özellik
+- `fix/kisa-aciklama` veya `fix/issue-123` — hata düzeltmesi
+- `chore/kisa-aciklama` — araç, bağımlılık, dokümantasyon (kod davranışı değişmiyorsa)
+- `refactor/kisa-aciklama` — davranışı koruyan yeniden yapılandırma
+- Küçük harf, kelimeler arası tire; Türkçe veya İngilizce tutarlı kullan.
+
+## Branch açmadan önce (tercih)
+
+- Mümkünse taban branch’i (`main` veya proje standardı) **güncelle** (`git fetch`, sonra `git merge` / `git rebase` — projede hangisi kullanılıyorsa ona uy).
+- Yeni branch: `git checkout -b feature/kisa-aciklama` (veya uygun prefix).
+
+## Commit ve PR
+
+- Anlamlı, atomik commit mesajları; gereksiz dosya ekleme.
+- Birleştirme için **Pull Request** akışına uy (doğrudan production branch’e merge etme, proje politikası böyle değilse).
+
+## Özet (asistan için)
+
+Yapılacak iş bir feature/fix/chore ise: uygun isimde **local branch oluştur veya kullan**, değişiklikleri orada yap; kullanıcıya hangi branch’te çalışıldığını kısaca belirt.
