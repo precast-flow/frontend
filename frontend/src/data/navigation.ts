@@ -39,6 +39,18 @@ export const startNavItems: NavItem[] = [
  */
 export const navGroups: NavGroup[] = [
   {
+    id: 'planning',
+    titleKey: 'nav.sidebar.section.planning',
+    items: [
+      { id: 'crm', labelKey: 'nav.crm', slug: 'crm' },
+      { id: 'quote', labelKey: 'nav.quote', slug: 'teklif' },
+      { id: 'project', labelKey: 'nav.project', slug: 'proje' },
+      { id: 'engineering', labelKey: 'nav.engineering', slug: 'muhendislik' },
+      { id: 'parametric-3d', labelKey: 'nav.parametric3d', slug: 'parametrik-3b' },
+      { id: 'planning-design', labelKey: 'nav.planningDesign', slug: 'planlama-tasarim' },
+    ],
+  },
+  {
     id: 'production',
     titleKey: 'nav.sidebar.section.production',
     items: [
@@ -51,24 +63,6 @@ export const navGroups: NavGroup[] = [
       { id: 'production-role-preview', labelKey: 'nav.productionRolePreview', slug: 'uretim-roller' },
       { id: 'production-factory-ops', labelKey: 'nav.productionFactoryOps', slug: 'fabrika-vardiya-kalip-ekip' },
       { id: 'yard', labelKey: 'nav.yard', slug: 'yard' },
-    ],
-  },
-  {
-    id: 'planning',
-    titleKey: 'nav.sidebar.section.planning',
-    items: [
-      { id: 'crm', labelKey: 'nav.crm', slug: 'crm' },
-      { id: 'quote', labelKey: 'nav.quote', slug: 'teklif' },
-      { id: 'work-start', labelKey: 'nav.workStart', slug: 'is-baslat' },
-      { id: 'project', labelKey: 'nav.project', slug: 'proje' },
-      { id: 'engineering', labelKey: 'nav.engineering', slug: 'muhendislik' },
-      {
-        id: 'manual-piece-studio',
-        labelKey: 'nav.manualPieceStudio',
-        slug: 'parca-sablon-studyosu',
-      },
-      { id: 'parametric-3d', labelKey: 'nav.parametric3d', slug: 'parametrik-3b' },
-      { id: 'planning-design', labelKey: 'nav.planningDesign', slug: 'planlama-tasarim' },
     ],
   },
   {
