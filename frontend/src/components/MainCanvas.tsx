@@ -20,7 +20,7 @@ import { MesModuleView } from './mes/MesModuleView'
 import { EngineeringIntegrationOkanPage } from './muhendislikOkan/EngineeringIntegrationOkanPage'
 import { ManualPieceTemplateStudioModule } from './manualPieceTemplateStudio/ManualPieceTemplateStudioModule'
 import { Parametric3DModuleView } from './parametric3d/Parametric3DModuleView'
-import { ProjectModuleView } from './proje/ProjectModuleView'
+import { ProjectManagementModuleView } from './proje/ProjectManagementModuleView'
 import { QuoteModuleView } from './teklif/QuoteModuleView'
 import { StartWorkWizardView } from './satis/StartWorkWizardView'
 import { ApprovalFlowDesignerView } from './onay/ApprovalFlowDesignerView'
@@ -77,7 +77,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
           ? 'gm-glass-main-canvas gm-glass-main-canvas--full flex min-h-0 flex-1 flex-col overflow-hidden'
           : [
               'gm-glass-main-canvas flex min-h-0 flex-1 flex-col rounded-3xl p-5 md:p-6',
-              isEngineering || isManualPieceStudio
+              isEngineering || isManualPieceStudio || isProject || isCrm || isQuote
                 ? 'gm-glass-main-canvas--okan-liquid min-h-[min(100%,42rem)]'
                 : 'bg-pf-surface shadow-neo-out',
             ].join(' ')
@@ -104,7 +104,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
       ) : isWorkStart ? (
         <StartWorkWizardView onNavigate={onNavigate} />
       ) : isProject ? (
-        <ProjectModuleView onNavigate={onNavigate} />
+        <ProjectManagementModuleView onNavigate={onNavigate} />
       ) : isEngineering ? (
         <EngineeringIntegrationOkanPage onCloseModule={() => onNavigate('dashboard')} />
       ) : isManualPieceStudio ? (
