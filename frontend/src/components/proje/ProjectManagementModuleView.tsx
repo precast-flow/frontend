@@ -93,15 +93,24 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
       </div>
       <div className="okan-liquid-content flex min-h-0 flex-1 flex-col gap-4">
         <div className={`${panelClass} p-3`}>
-          <button
-            type="button"
-            onClick={() => setFiltersOpen((v) => !v)}
-            className="okan-liquid-btn-secondary inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold sm:text-sm"
-          >
-            <Filter className="size-4" aria-hidden />
-            Filtrele
-            <ChevronDown className={`size-4 transition ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden />
-          </button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((v) => !v)}
+              className="okan-liquid-btn-secondary inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold sm:text-sm"
+            >
+              <Filter className="size-4" aria-hidden />
+              Filtrele
+              <ChevronDown className={`size-4 transition ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/proje-olustur', { state: { fromProjectManagement: true } })}
+              className="okan-liquid-btn-primary px-4 py-2 text-xs font-semibold sm:text-sm"
+            >
+              Proje olustur
+            </button>
+          </div>
 
           {filtersOpen ? (
             <div className="mt-3 grid gap-3 rounded-2xl border border-indigo-300/20 bg-indigo-500/10 p-3 backdrop-blur-md md:grid-cols-3">
