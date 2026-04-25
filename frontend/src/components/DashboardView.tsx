@@ -1,4 +1,4 @@
-import { Box, Package, Truck } from 'lucide-react'
+import { Package, Truck } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useFactoryContext } from '../context/FactoryContext'
 import {
@@ -234,14 +234,6 @@ export function DashboardView({ onNavigate }: Props) {
           >
             <Package className="size-4 shrink-0" strokeWidth={2} aria-hidden />
             Yard durumu
-          </button>
-          <button
-            type="button"
-            onClick={() => onNavigate('parametric-3d')}
-            className={`${glassPrimitiveClasses.btnSecondary} flex w-full items-center justify-center gap-2 px-4 py-3 sm:min-w-[10rem]`}
-          >
-            <Box className="size-4 shrink-0" strokeWidth={2} aria-hidden />
-            Parametrik 3B
           </button>
         </div>
       </section>

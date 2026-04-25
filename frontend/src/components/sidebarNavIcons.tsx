@@ -1,7 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   BarChart3,
-  Box,
   Building2,
   CalendarRange,
   ClipboardCheck,
@@ -13,6 +12,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   ListOrdered,
+  PanelsTopLeft,
   PlayCircle,
   FlaskConical,
   Gauge,
@@ -33,6 +33,7 @@ import {
 } from 'lucide-react'
 
 const NAV_ICONS: Record<string, LucideIcon> = {
+  'planning-hub': PanelsTopLeft,
   dashboard: LayoutDashboard,
   profile: UserCircle,
   settings: Settings,
@@ -41,7 +42,6 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   'work-start': PlayCircle,
   project: FolderKanban,
   engineering: ClipboardCheck,
-  'parametric-3d': Box,
   'production-summary': Sunrise,
   mes: Factory,
   'mold-board': LayoutGrid,
