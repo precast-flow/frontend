@@ -48,11 +48,17 @@ function GlassAppShellInner() {
   const topBarLeftPadding = '0px'
   const contentColStart = 'md:col-start-1'
   const hasPreviewBanner = Boolean(previewRoleId)
+  const isProjectPage = location.pathname.startsWith('/proje')
 
   return (
     <GlassLayout>
       <div className="flex min-h-dvh w-full min-w-0 flex-col gap-3 p-3 text-[var(--glass-text-primary)] md:gap-4 md:p-5">
-        <div className="relative z-0 flex min-h-0 min-w-0 flex-1 flex-col gap-3 pt-20 md:min-h-0 md:grid md:grid-cols-1 md:gap-x-4 md:gap-y-4 md:pt-24">
+        <div
+          className={[
+            'relative z-0 flex min-h-0 min-w-0 flex-1 flex-col gap-3 md:min-h-0 md:grid md:grid-cols-1 md:gap-x-4 md:gap-y-4',
+            isProjectPage ? 'pt-14 md:pt-16' : 'pt-20 md:pt-24',
+          ].join(' ')}
+        >
           {previewRoleId ? (
             <div className={['order-1', contentColStart, 'md:row-start-1'].join(' ')}>
               <ProductionRolePreviewBanner />
@@ -62,7 +68,9 @@ function GlassAppShellInner() {
           <main
             id="main-module"
             className={[
-              'gm-glass-panel-l1 gm-motion relative z-0 flex min-h-[60vh] flex-1 flex-col overflow-visible rounded-2xl p-1 md:min-h-[62vh] md:rounded-3xl',
+              `gm-motion relative z-0 flex min-h-[60vh] flex-1 flex-col overflow-visible rounded-2xl ${
+                isProjectPage ? 'p-0 md:p-0' : 'p-1'
+              } md:min-h-[62vh] md:rounded-3xl`,
               hasPreviewBanner
                 ? ['order-2', contentColStart, 'md:row-start-2'].join(' ')
                 : ['order-1', contentColStart, 'md:row-start-1'].join(' '),
@@ -71,7 +79,10 @@ function GlassAppShellInner() {
           >
             <div
               id="gm-glass-outlet"
-              className="gm-glass-outlet-scope flex min-h-0 flex-1 flex-col overflow-visible rounded-[1.25rem] p-2 md:rounded-[1.35rem] md:p-3"
+              className={[
+                'gm-glass-outlet-scope flex min-h-0 flex-1 flex-col overflow-visible rounded-[1.25rem] md:rounded-[1.35rem]',
+                isProjectPage ? 'p-0 md:p-0' : 'p-2 md:p-3',
+              ].join(' ')}
             >
               <Outlet context={outletContext} />
             </div>
@@ -92,8 +103,8 @@ function GlassAppShellInner() {
         </div>
       </div>
 
-      <div className="pointer-events-none fixed top-3 left-0 right-0 z-[95] md:top-5">
-        <div className="w-full min-w-0 px-3 md:px-5">
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-[95] pt-[env(safe-area-inset-top,0px)]">
+        <div className="w-full min-w-0">
           <div
             className="hidden md:block motion-reduce:transition-none transition-[padding-left] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
             style={{ paddingLeft: topBarLeftPadding }}

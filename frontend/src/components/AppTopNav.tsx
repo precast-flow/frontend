@@ -106,7 +106,7 @@ function TopNavDropdown({
         aria-controls={`${menuId}-panel-${ddId}`}
         onClick={() => setOpenKey(open ? null : ddId)}
         className={[
-          'gm-topnav-trigger inline-flex max-w-[10rem] items-center gap-1.5 rounded-xl border px-2.5 py-2 text-left text-xs font-semibold backdrop-blur-sm transition md:max-w-[12rem] md:px-3 md:text-sm',
+          'gm-topnav-trigger inline-flex max-w-[10rem] items-center gap-1.5 rounded-lg border-0 bg-transparent px-2.5 py-2 text-left text-xs font-semibold shadow-none transition md:max-w-[12rem] md:px-3 md:text-sm',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 dark:focus-visible:ring-cyan-400/60',
           hasActive || open ? 'gm-topnav-trigger--active' : '',
         ].join(' ')}
@@ -171,12 +171,12 @@ export function AppTopNav({ onMenuToggle, onModuleNavigate, startItems, groups, 
           ) : null}
 
           <div
-            className="gm-topnav-brand pointer-events-none flex min-w-0 max-w-[min(100%,15rem)] items-center gap-2.5 rounded-2xl border px-2.5 py-2 backdrop-blur-md sm:max-w-[17rem] sm:gap-3 sm:px-3 md:max-w-[19rem]"
+            className="gm-topnav-brand pointer-events-none flex min-w-0 max-w-[min(100%,15rem)] items-center gap-2.5 border-0 bg-transparent px-2 py-2 shadow-none sm:max-w-[17rem] sm:gap-3 sm:px-2.5 md:max-w-[19rem]"
             role="img"
             aria-label={`${t('sidebar.brandPrimary')}. ${t('sidebar.brandProduct')}`}
           >
             <span
-              className="gm-topnav-brand-mark flex size-9 shrink-0 items-center justify-center rounded-xl border text-xs font-bold tabular-nums tracking-tight shadow-sm md:size-10 md:text-sm"
+              className="gm-topnav-brand-mark flex size-9 shrink-0 items-center justify-center border-0 bg-transparent text-xs font-bold tabular-nums tracking-tight shadow-none md:size-10 md:text-sm"
               aria-hidden
             >
               PF

@@ -122,6 +122,7 @@ const shell: Record<string, string> = {
   'nav.group.account': 'Account',
   'nav.sidebar.section.production': 'Production',
   'nav.sidebar.section.planning': 'Planning',
+  'nav.planningHub': 'Planning home',
   'nav.sidebar.section.quality': 'Quality',
   'nav.sidebar.section.logistics': 'Logistics & Field',
   'nav.sidebar.section.system': 'System & Approvals',
@@ -132,7 +133,6 @@ const shell: Record<string, string> = {
   'nav.project': 'Project management',
   'nav.engineering': 'Engineering Integration',
   'nav.manualPieceStudio': 'Manual Piece & Template Studio',
-  'nav.parametric3d': 'Parametric 3D',
   'nav.productionSummary': 'Production summary',
   'nav.mes': 'MES',
   'nav.planningDesign': 'Planning — Design',
@@ -155,6 +155,7 @@ const shell: Record<string, string> = {
   'nav.logisticsFieldQueues': 'Logistics & field work queue',
   'nav.profile': 'Profile',
   'nav.settings': 'Settings',
+  'project.breadcrumbAria': 'Breadcrumb',
 
   'sidebar.brandPrimary': 'Kam Beton',
   'sidebar.brandProduct': 'Precast Flow',
@@ -172,6 +173,8 @@ const shell: Record<string, string> = {
 
   'main.desc.dashboard':
     'Overview — KPI (5), notification bell, tasks; all-factories summary (mvp-14).',
+  'main.desc.planningHub':
+    'Jump to any module in the Planning group—from sales through production scheduling.',
   'main.desc.crm': 'Customer & contacts — list/detail, tabs and drawer (Prompt 04).',
   'main.desc.quote': 'Quote — versions, line table and approval drawer (Prompt 05).',
   'main.desc.workStart':
@@ -179,8 +182,6 @@ const shell: Record<string, string> = {
   'main.desc.project': 'Project board — tabs, progress steps and element list (Prompt 06).',
   'main.desc.engineering':
     'Production readiness hub — readiness %, risk panel, workflow, smart production order modal (mock).',
-  'main.desc.parametric3d':
-    'Precast parametric elements (column, beam, culvert, panel, L/U wall) — JSON schema, 3D preview, saved designs (Step 18).',
   'main.desc.productionSummary':
     'Morning production summary — KPIs, critical orders, shift filter; Step 13 / prod-01 (mock).',
   'main.desc.mes':
@@ -345,7 +346,6 @@ const shell: Record<string, string> = {
   'eng.bie06.rev.colNote': 'Note',
   'eng.bie06.rev.noNote': '(no note)',
   'eng.bie06.linkMes': 'Production (MES)',
-  'eng.bie06.parametricBridge': 'Parametric product bridge (18) — {{family}}',
   'eng.bie06.openProject': 'Open project',
   'eng.bie06.timelineTitle': 'Timeline (mock)',
   'eng.bie06.timelineFlash':
@@ -535,49 +535,6 @@ const shell: Record<string, string> = {
   'sia.detail.gridEmpty': 'No component rows yet.',
 
   'main.desc.default': 'Module content renders in this rounded card area.',
-
-  'parametric3d.family': 'Element family',
-  'parametric3d.family.COLUMN': 'Column (rectangular)',
-  'parametric3d.family.BEAM': 'Beam (prismatic)',
-  'parametric3d.family.CULVERT': 'Box culvert',
-  'parametric3d.family.PANEL': 'Wall / slab panel',
-  'parametric3d.family.PROFILE_WALL': 'L / U profile wall',
-  'parametric3d.variantCode': 'Variant / type code',
-  'parametric3d.field.sectionWidth': 'Section width (mm)',
-  'parametric3d.field.sectionDepth': 'Section depth (mm)',
-  'parametric3d.field.height': 'Height / length (mm)',
-  'parametric3d.field.span': 'Span (mm)',
-  'parametric3d.field.width': 'Section width (mm)',
-  'parametric3d.field.beamHeight': 'Section height (mm)',
-  'parametric3d.field.outerLength': 'Outer length (mm)',
-  'parametric3d.field.outerWidth': 'Outer width (mm)',
-  'parametric3d.field.outerHeight': 'Outer height (mm)',
-  'parametric3d.field.innerLength': 'Inner length (mm)',
-  'parametric3d.field.innerWidth': 'Inner width (mm)',
-  'parametric3d.field.innerHeight': 'Inner height (mm)',
-  'parametric3d.field.length': 'Panel length (mm)',
-  'parametric3d.field.panelHeight': 'Panel height (mm)',
-  'parametric3d.field.thickness': 'Thickness (mm)',
-  'parametric3d.field.legA': 'Leg A (mm)',
-  'parametric3d.field.legB': 'Leg B (mm)',
-  'parametric3d.field.legC': 'Leg C / base (U) (mm)',
-  'parametric3d.field.wallThickness': 'Wall thickness (mm)',
-  'parametric3d.field.extrusionHeight': 'Wall height (mm)',
-  'parametric3d.culvert.outer': 'Outer dimensions',
-  'parametric3d.culvert.inner': 'Inner void',
-  'parametric3d.panelKind': 'Panel kind',
-  'parametric3d.panelKind.wall': 'Wall',
-  'parametric3d.panelKind.slab': 'Slab',
-  'parametric3d.profileType': 'Profile',
-  'parametric3d.saveAs': 'Save name (optional)',
-  'parametric3d.saveAsPlaceholder': 'e.g. Project A — column C12',
-  'parametric3d.save': 'Save design',
-  'parametric3d.exportGlb': 'Download GLB',
-  'parametric3d.savedTitle': 'Saved designs',
-  'parametric3d.savedEmpty': 'No saved designs yet.',
-  'parametric3d.remove': 'Remove',
-  'parametric3d.unit': 'Unit',
-  'parametric3d.loading': 'Loading…',
 
   'qualityDashboard.sectionTitle': 'Quality summary',
   'qualityDashboard.intro':

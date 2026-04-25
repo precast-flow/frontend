@@ -19,8 +19,8 @@ import { ProductionSummaryDashboard } from './production/ProductionSummaryDashbo
 import { MesModuleView } from './mes/MesModuleView'
 import { EngineeringIntegrationOkanPage } from './muhendislikOkan/EngineeringIntegrationOkanPage'
 import { ManualPieceTemplateStudioModule } from './manualPieceTemplateStudio/ManualPieceTemplateStudioModule'
-import { Parametric3DModuleView } from './parametric3d/Parametric3DModuleView'
 import { ProjectManagementModuleView } from './proje/ProjectManagementModuleView'
+import { PlanningHubView } from './planlama/PlanningHubView'
 import { QuoteModuleView } from './teklif/QuoteModuleView'
 import { StartWorkWizardView } from './satis/StartWorkWizardView'
 import { ApprovalFlowDesignerView } from './onay/ApprovalFlowDesignerView'
@@ -43,9 +43,9 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
   const isQuote = activeId === 'quote'
   const isWorkStart = activeId === 'work-start'
   const isProject = activeId === 'project'
+  const isPlanningHub = activeId === 'planning-hub'
   const isEngineering = activeId === 'engineering'
   const isManualPieceStudio = activeId === 'manual-piece-studio'
-  const isParametric3d = activeId === 'parametric-3d'
   const isProductionSummary = activeId === 'production-summary'
   const isMes = activeId === 'mes'
   const isPlanningDesign = activeId === 'planning-design'
@@ -76,9 +76,17 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
         fullBleedInMainModule
           ? 'gm-glass-main-canvas gm-glass-main-canvas--full gm-glass-main-canvas--okan-liquid flex min-h-0 flex-1 flex-col overflow-hidden'
           : [
-              'gm-glass-main-canvas flex min-h-0 flex-1 flex-col rounded-3xl p-5 md:p-6',
-              isEngineering || isManualPieceStudio || isProject || isCrm || isQuote || isParametric3d
-                ? 'gm-glass-main-canvas--okan-liquid min-h-[min(100%,42rem)]'
+              `gm-glass-main-canvas flex min-h-0 flex-1 flex-col rounded-3xl ${
+                isProject ? 'px-0 py-1 md:px-1 md:py-2' : 'p-5 md:p-6'
+              }`,
+              isProject
+                ? 'gm-glass-main-canvas--okan-liquid h-[calc(100dvh-12.5rem)] min-h-[calc(100dvh-12.5rem)] max-h-[calc(100dvh-12.5rem)]'
+                : isEngineering ||
+                    isManualPieceStudio ||
+                    isCrm ||
+                    isQuote ||
+                    isPlanningHub
+                  ? 'gm-glass-main-canvas--okan-liquid min-h-[min(100%,42rem)]'
                 : 'bg-pf-surface shadow-neo-out',
             ].join(' ')
       }
@@ -87,7 +95,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
         className={
           fullBleedInMainModule
             ? 'mb-3 shrink-0 border-b border-gray-200/90 pb-3 dark:border-gray-700/90'
-            : 'mb-5 border-b border-gray-200/90 pb-4 dark:border-gray-700/90'
+            : 'mb-2 pb-2'
         }
       >
         <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-50 md:text-2xl">
@@ -101,6 +109,8 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
         <CrmModuleView onNavigate={onNavigate} />
       ) : isQuote ? (
         <QuoteModuleView onNavigate={onNavigate} />
+      ) : isPlanningHub ? (
+        <PlanningHubView />
       ) : isWorkStart ? (
         <StartWorkWizardView onNavigate={onNavigate} />
       ) : isProject ? (
@@ -109,8 +119,6 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
         <EngineeringIntegrationOkanPage onCloseModule={() => onNavigate('dashboard')} />
       ) : isManualPieceStudio ? (
         <ManualPieceTemplateStudioModule onCloseModule={() => onNavigate('dashboard')} />
-      ) : isParametric3d ? (
-        <Parametric3DModuleView />
       ) : isProductionSummary ? (
         <ProductionSummaryDashboard onNavigate={onNavigate} />
       ) : isMes ? (
