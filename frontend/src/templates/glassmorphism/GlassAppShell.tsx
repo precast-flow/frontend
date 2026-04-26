@@ -48,7 +48,11 @@ function GlassAppShellInner() {
   const topBarLeftPadding = '0px'
   const contentColStart = 'md:col-start-1'
   const hasPreviewBanner = Boolean(previewRoleId)
-  const isProjectPage = location.pathname.startsWith('/proje')
+  /** Proje, CRM, Teklif: aynı `MainCanvas` yoğunluğu + outlet’te ekstra padding yok */
+  const isOkanPlanSplitPage =
+    location.pathname.startsWith('/proje') ||
+    location.pathname.startsWith('/crm') ||
+    location.pathname.startsWith('/teklif')
 
   return (
     <GlassLayout>
@@ -56,7 +60,7 @@ function GlassAppShellInner() {
         <div
           className={[
             'relative z-0 flex min-h-0 min-w-0 flex-1 flex-col gap-3 md:min-h-0 md:grid md:grid-cols-1 md:gap-x-4 md:gap-y-4',
-            isProjectPage ? 'pt-14 md:pt-16' : 'pt-20 md:pt-24',
+            isOkanPlanSplitPage ? 'pt-14 md:pt-16' : 'pt-20 md:pt-24',
           ].join(' ')}
         >
           {previewRoleId ? (
@@ -69,7 +73,7 @@ function GlassAppShellInner() {
             id="main-module"
             className={[
               `gm-motion relative z-0 flex min-h-[60vh] flex-1 flex-col overflow-visible rounded-2xl ${
-                isProjectPage ? 'p-0 md:p-0' : 'p-1'
+                isOkanPlanSplitPage ? 'p-0 md:p-0' : 'p-1'
               } md:min-h-[62vh] md:rounded-3xl`,
               hasPreviewBanner
                 ? ['order-2', contentColStart, 'md:row-start-2'].join(' ')
@@ -81,7 +85,7 @@ function GlassAppShellInner() {
               id="gm-glass-outlet"
               className={[
                 'gm-glass-outlet-scope flex min-h-0 flex-1 flex-col overflow-visible rounded-[1.25rem] md:rounded-[1.35rem]',
-                isProjectPage ? 'p-0 md:p-0' : 'p-2 md:p-3',
+                isOkanPlanSplitPage ? 'p-0 md:p-0' : 'p-2 md:p-3',
               ].join(' ')}
             >
               <Outlet context={outletContext} />

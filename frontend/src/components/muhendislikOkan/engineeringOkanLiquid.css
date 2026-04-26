@@ -537,6 +537,30 @@ html[data-ui-template='glass']:not(.dark) .gm-glass-main-canvas.gm-glass-main-ca
     0 4px 18px rgb(0 0 0 / 0.22);
 }
 
+/* Proje / CRM / Teklif split listesi: seçili satır hafif öne çıksın (abartısız) */
+.okan-split-list-active-lift .okan-project-list-row--active {
+  transform: translateY(-0.5px);
+  box-shadow:
+    3px 0 0 0 rgb(14 165 233 / 0.22),
+    0 0 0 1px rgb(14 165 233 / 0.1),
+    0 3px 14px rgb(15 23 42 / 0.07) !important;
+  border-color: rgb(125 211 252 / 0.4) !important;
+}
+
+@media (min-width: 1024px) {
+  .okan-split-list-active-lift .okan-project-list-row--active {
+    z-index: 2;
+  }
+}
+
+.dark .okan-split-list-active-lift .okan-project-list-row--active {
+  box-shadow:
+    3px 0 0 0 rgb(56 189 248 / 0.2),
+    0 0 0 1px rgb(14 165 233 / 0.08),
+    0 4px 16px rgb(0 0 0 / 0.24) !important;
+  border-color: rgb(14 165 233 / 0.22) !important;
+}
+
 .okan-project-tab-active.okan-liquid-pill-active {
   box-shadow:
     0 0 0 1px rgb(148 163 184 / 0.35),
