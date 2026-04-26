@@ -115,7 +115,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-[1.25rem]">
       <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-2">
-        <div className="py-1">
+        <div className="px-[0.6875rem] py-1">
           <nav
             aria-label={t('project.breadcrumbAria')}
             className="mb-0"
@@ -141,7 +141,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
 
         <div className="min-h-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
           <div className="okan-project-split-grid grid h-full min-h-0 gap-2.5 lg:grid-cols-2">
-            <section className="okan-project-split-list flex min-h-0 flex-col overflow-hidden p-3">
+            <section className="okan-project-split-list okan-split-list-active-lift flex min-h-0 flex-col overflow-hidden p-3">
             <div className="mb-3 flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-2">
               <h2 className="min-w-0 text-sm font-semibold text-slate-900 dark:text-slate-50 sm:text-base">
                 Projeler
