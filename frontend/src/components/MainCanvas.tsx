@@ -85,7 +85,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
                 ? 'gm-glass-main-canvas--okan-liquid h-[calc(100dvh-12.5rem)] min-h-[calc(100dvh-12.5rem)] max-h-[calc(100dvh-12.5rem)]'
                 : isEngineering || isManualPieceStudio || isPlanningHub
                   ? 'gm-glass-main-canvas--okan-liquid min-h-[min(100%,42rem)]'
-                : 'bg-pf-surface shadow-neo-out',
+                  : 'bg-pf-surface shadow-neo-out',
             ].join(' ')
       }
     >
