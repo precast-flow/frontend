@@ -47,6 +47,7 @@ export const navGroups: NavGroup[] = [
       { id: 'quote', labelKey: 'nav.quote', slug: 'teklif' },
       { id: 'project', labelKey: 'nav.project', slug: 'proje' },
       { id: 'engineering', labelKey: 'nav.engineering', slug: 'muhendislik' },
+      { id: 'element-identity', labelKey: 'nav.elementIdentity', slug: 'eleman-kimlik' },
       { id: 'planning-design', labelKey: 'nav.planningDesign', slug: 'planlama-tasarim' },
     ],
   },

@@ -132,6 +132,7 @@ const shell: Record<string, string> = {
   'nav.workStart': 'Start work',
   'nav.project': 'Project management',
   'nav.engineering': 'Engineering Integration',
+  'nav.elementIdentity': 'Element Identity & Naming',
   'nav.manualPieceStudio': 'Manual Piece & Template Studio',
   'nav.productionSummary': 'Production summary',
   'nav.mes': 'MES',
