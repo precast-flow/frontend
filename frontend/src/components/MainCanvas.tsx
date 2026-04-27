@@ -70,7 +70,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
   /** Tek kart: ana modül kabuğu yeterli; planlama cetveli doğrudan outlet içinde. */
   const fullBleedInMainModule = isPlanningDesign
   /** Split modülde panel içi liste başlığına göre hafif girinti: tam sütun hizasının yarısı (0.6875rem) */
-  const okanSplitHeadingAlign = isProject || isCrm || isQuote
+  const okanSplitHeadingAlign = isProject || isCrm || isQuote || isPlanningDesign
 
   return (
     <div
@@ -92,7 +92,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
       <div
         className={[
           fullBleedInMainModule
-            ? 'mb-3 shrink-0 border-b border-gray-200/90 pb-3 dark:border-gray-700/90'
+            ? 'mb-2 shrink-0 pb-2'
             : 'mb-2 pb-2',
           okanSplitHeadingAlign ? 'ps-[0.6875rem] pe-[0.6875rem]' : '',
         ]
@@ -125,7 +125,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
       ) : isMes ? (
         <MesModuleView onNavigate={onNavigate} />
       ) : isPlanningDesign ? (
-        <PlanningDesignView onNavigate={onNavigate} />
+        <PlanningDesignView />
       ) : isMoldBoard ? (
         <MoldBoardView />
       ) : isPendingPriority ? (
