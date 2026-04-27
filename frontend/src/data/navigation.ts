@@ -42,11 +42,11 @@ export const navGroups: NavGroup[] = [
     id: 'planning',
     titleKey: 'nav.sidebar.section.planning',
     items: [
+      { id: 'planning-hub', labelKey: 'nav.planningHub', slug: 'planlama' },
       { id: 'crm', labelKey: 'nav.crm', slug: 'crm' },
       { id: 'quote', labelKey: 'nav.quote', slug: 'teklif' },
       { id: 'project', labelKey: 'nav.project', slug: 'proje' },
       { id: 'engineering', labelKey: 'nav.engineering', slug: 'muhendislik' },
-      { id: 'parametric-3d', labelKey: 'nav.parametric3d', slug: 'parametrik-3b' },
       { id: 'planning-design', labelKey: 'nav.planningDesign', slug: 'planlama-tasarim' },
     ],
   },

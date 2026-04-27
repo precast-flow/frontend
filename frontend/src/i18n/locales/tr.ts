@@ -122,6 +122,7 @@ const shell: Record<string, string> = {
   'nav.group.account': 'Hesap',
   'nav.sidebar.section.production': 'Üretim',
   'nav.sidebar.section.planning': 'Planlama',
+  'nav.planningHub': 'Planlama özeti',
   'nav.sidebar.section.quality': 'Kalite',
   'nav.sidebar.section.logistics': 'Lojistik & Saha',
   'nav.sidebar.section.system': 'Sistem & Onay',
@@ -132,7 +133,6 @@ const shell: Record<string, string> = {
   'nav.project': 'Proje Yönetimi',
   'nav.engineering': 'Mühendislik Entegrasyonu',
   'nav.manualPieceStudio': 'Manuel Parça ve Şablon Stüdyosu',
-  'nav.parametric3d': 'Parametrik 3B',
   'nav.productionSummary': 'Üretim özeti',
   'nav.mes': 'Üretim (MES)',
   'nav.planningDesign': 'Planlama — Tasarım',
@@ -155,6 +155,7 @@ const shell: Record<string, string> = {
   'nav.logisticsFieldQueues': 'Lojistik & saha iş kuyruğu',
   'nav.profile': 'Profil',
   'nav.settings': 'Ayarlar',
+  'project.breadcrumbAria': 'Sayfa konumu',
 
   'sidebar.brandPrimary': 'Kam Beton',
   'sidebar.brandProduct': 'Precast Flow',
@@ -172,6 +173,8 @@ const shell: Record<string, string> = {
 
   'main.desc.dashboard':
     'Genel bakış — KPI (5), bildirim zili, yapılacaklar; tüm fabrikalar özeti (mvp-14).',
+  'main.desc.planningHub':
+    'Satıştan üretim planına kadar Planlama grubundaki modüllere buradan geçiş yapın.',
   'main.desc.crm': 'Müşteri ve kontak yönetimi — liste–detay, sekmeler ve drawer (Prompt 04).',
   'main.desc.quote': 'Teklif ve keşif — versiyon, kalem tablosu ve onay drawer (Prompt 05).',
   'main.desc.workStart':
@@ -179,8 +182,6 @@ const shell: Record<string, string> = {
   'main.desc.project': 'Proje panosu — sekmeler, ilerleme adımları ve eleman listesi (Prompt 06).',
   'main.desc.engineering':
     'Üretim hazırlık merkezi — hazırlık %, risk paneli, iş akışı ve akıllı üretim emri (mock).',
-  'main.desc.parametric3d':
-    'Prefab eleman parametreleri (kolon, kiriş, menfez, panel, L/U perde) — JSON şema, 3B önizleme ve kayıtlı tasarımlar (Adım 18).',
   'main.desc.productionSummary':
     'Sabah üretim özeti — KPI, kritik emirler, vardiya filtresi; Adım 13 / prod-01 (mock).',
   'main.desc.mes':
@@ -345,7 +346,6 @@ const shell: Record<string, string> = {
   'eng.bie06.rev.colNote': 'Not',
   'eng.bie06.rev.noNote': '(not yok)',
   'eng.bie06.linkMes': 'Üretim (MES)',
-  'eng.bie06.parametricBridge': 'Parametrik ürün köprüsü (18) — {{family}}',
   'eng.bie06.openProject': 'Projeyi aç',
   'eng.bie06.timelineTitle': 'Zaman çizelgesi (mock)',
   'eng.bie06.timelineFlash':
@@ -535,49 +535,6 @@ const shell: Record<string, string> = {
   'sia.detail.gridEmpty': 'Henüz bileşen satırı yok.',
 
   'main.desc.default': 'Modül içeriği bu yuvarlak kart alanında gösterilir.',
-
-  'parametric3d.family': 'Eleman ailesi',
-  'parametric3d.family.COLUMN': 'Kolon (dikdörtgen kesit)',
-  'parametric3d.family.BEAM': 'Kiriş (prizmatik)',
-  'parametric3d.family.CULVERT': 'Kutu menfez',
-  'parametric3d.family.PANEL': 'Duvar / döşeme paneli',
-  'parametric3d.family.PROFILE_WALL': 'L / U perde köşe',
-  'parametric3d.variantCode': 'Varyant / tip kodu',
-  'parametric3d.field.sectionWidth': 'Kesit genişliği (mm)',
-  'parametric3d.field.sectionDepth': 'Kesit derinliği (mm)',
-  'parametric3d.field.height': 'Yükseklik / boy (mm)',
-  'parametric3d.field.span': 'Açıklık / span (mm)',
-  'parametric3d.field.width': 'Kesit genişliği (mm)',
-  'parametric3d.field.beamHeight': 'Kesit yüksekliği (mm)',
-  'parametric3d.field.outerLength': 'Dış uzunluk (mm)',
-  'parametric3d.field.outerWidth': 'Dış genişlik (mm)',
-  'parametric3d.field.outerHeight': 'Dış yükseklik (mm)',
-  'parametric3d.field.innerLength': 'İç uzunluk (mm)',
-  'parametric3d.field.innerWidth': 'İç genişlik (mm)',
-  'parametric3d.field.innerHeight': 'İç yükseklik (mm)',
-  'parametric3d.field.length': 'Panel uzun kenar (mm)',
-  'parametric3d.field.panelHeight': 'Panel diğer kenar (mm)',
-  'parametric3d.field.thickness': 'Kalınlık (mm)',
-  'parametric3d.field.legA': 'Bacak A (mm)',
-  'parametric3d.field.legB': 'Bacak B (mm)',
-  'parametric3d.field.legC': 'Bacak C / taban (U) (mm)',
-  'parametric3d.field.wallThickness': 'Duvar kalınlığı (mm)',
-  'parametric3d.field.extrusionHeight': 'Perde yüksekliği (mm)',
-  'parametric3d.culvert.outer': 'Dış ölçüler',
-  'parametric3d.culvert.inner': 'İç boşluk',
-  'parametric3d.panelKind': 'Panel türü',
-  'parametric3d.panelKind.wall': 'Duvar',
-  'parametric3d.panelKind.slab': 'Döşeme',
-  'parametric3d.profileType': 'Profil',
-  'parametric3d.saveAs': 'Kayıt adı (isteğe bağlı)',
-  'parametric3d.saveAsPlaceholder': 'Örn. Proje A — kolon C12',
-  'parametric3d.save': 'Tasarımı kaydet',
-  'parametric3d.exportGlb': 'GLB indir',
-  'parametric3d.savedTitle': 'Kayıtlı tasarımlar',
-  'parametric3d.savedEmpty': 'Henüz kayıt yok — ölçüleri girip kaydedin.',
-  'parametric3d.remove': 'Sil',
-  'parametric3d.unit': 'Birim',
-  'parametric3d.loading': 'Yükleniyor…',
 
   'qualityDashboard.sectionTitle': 'Kalite özeti',
   'qualityDashboard.intro':

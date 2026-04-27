@@ -1503,14 +1503,22 @@ html[data-ui-template='glass']:not(.dark) {
     box-shadow: var(--glass-shadow-soft);
   }
 
-  /* —— Planlama & tasarım: cam cetvel, kuyruk sağda, buğulu zaman şeridi —— */
-  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar,
-  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside {
+  /* —— Planlama & tasarım: tek kabuk (.gm-planning-design-shell), iç bölgeler düz —— */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-design-shell {
     background-color: var(--glass-surface-panel) !important;
     border-color: var(--glass-border-muted) !important;
     box-shadow: var(--glass-shadow-soft);
     backdrop-filter: blur(var(--glass-blur-lg));
     -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+    color: var(--glass-text-primary);
+  }
+
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-toolbar,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     color: var(--glass-text-primary);
   }
 
@@ -1782,8 +1790,8 @@ html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-de
     color-mix(in srgb, var(--glass-surface-panel) 55%, rgb(248 250 252 / 0.9)) var(--gm-planning-mold-rail, 200px),
     color-mix(in srgb, var(--glass-surface-panel-strong) 62%, rgb(248 250 252 / 0.86)) var(--gm-planning-mold-rail, 200px)
   ) !important;
-  border-color: var(--glass-border-muted) !important;
-  box-shadow: var(--glass-shadow-inset) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
   backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.12) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.12) !important;
 }
@@ -1795,15 +1803,14 @@ html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-v
     color-mix(in srgb, var(--glass-surface-panel) 50%, rgb(15 23 42 / 0.78)) var(--gm-planning-mold-rail, 200px),
     color-mix(in srgb, var(--glass-surface-panel-strong) 58%, rgb(30 41 59 / 0.72)) var(--gm-planning-mold-rail, 200px)
   ) !important;
-  border-color: var(--glass-border-muted) !important;
-  box-shadow: var(--glass-shadow-inset) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
   backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.12) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.12) !important;
 }
 
 html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-corner-cell,
-html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-mold-label,
-html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside {
+html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-mold-label {
   background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 68%, rgb(248 250 252 / 0.84)) !important;
   border-color: var(--glass-border-muted) !important;
   backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.08) !important;
@@ -1812,13 +1819,28 @@ html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-de
 }
 
 html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-corner-cell,
-html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-mold-label,
-html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside {
+html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-mold-label {
   background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 62%, rgb(30 41 59 / 0.75)) !important;
   border-color: var(--glass-border-muted) !important;
   backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.08) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.08) !important;
   box-shadow: var(--glass-shadow-soft) !important;
+}
+
+html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside {
+  background-color: transparent !important;
+  border-color: var(--glass-border-muted) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside {
+  background-color: transparent !important;
+  border-color: var(--glass-border-muted) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1843,8 +1865,7 @@ html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-v
   }
 
   html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-mold-label,
-  html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-corner-cell,
-  html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside {
+  html[data-ui-template='glass']:not(.dark) .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-corner-cell {
     background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 75%, rgb(248 250 252 / 0.82)) !important;
     box-shadow: none !important;
   }
@@ -1855,8 +1876,7 @@ html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-v
   }
 
   html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-mold-label,
-  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-corner-cell,
-  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-queue-aside {
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-corner-cell {
     background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 72%, rgb(30 41 59 / 0.68)) !important;
   }
 }

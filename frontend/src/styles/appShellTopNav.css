@@ -32,58 +32,73 @@ html[data-ui-template='glass'].dark .gm-glass-topbar-host.gm-glass-topbar-okan {
   -webkit-backdrop-filter: blur(24px) saturate(1.35);
 }
 
-/* —— Marka kutusu —— */
-html[data-ui-template='glass']:not(.dark) .gm-topnav-brand {
+/* Üste yapışık şerit: yüzen kart gölgesi / köşe yok, ince alt ayrım */
+html[data-ui-template='glass']:not(.dark) .gm-glass-topbar-host.gm-glass-topbar-okan.gm-glass-topbar-flush {
+  border-radius: 0;
+  border-width: 0 0 1px;
+  border-style: solid;
   border-color: rgb(15 23 42 / 0.08);
-  background-color: rgb(255 255 255 / 0.38);
-  box-shadow:
-    0 2px 16px rgb(15 23 42 / 0.05),
-    inset 0 1px 0 rgb(255 255 255 / 0.65);
+  box-shadow: inset 0 -1px 0 rgb(255 255 255 / 0.55);
+}
+
+html[data-ui-template='glass'].dark .gm-glass-topbar-host.gm-glass-topbar-okan.gm-glass-topbar-flush {
+  border-radius: 0;
+  border-width: 0 0 1px;
+  border-style: solid;
+  border-color: rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 -1px 0 rgb(255 255 255 / 0.05);
+}
+
+/* —— Marka —— kutu / gradyan yok */
+html[data-ui-template='glass']:not(.dark) .gm-topnav-brand {
+  border-color: transparent;
+  background-color: transparent;
+  box-shadow: none;
 }
 
 html[data-ui-template='glass'].dark .gm-topnav-brand {
-  border-color: rgb(255 255 255 / 0.1);
-  background-color: rgb(0 0 0 / 0.2);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  border-color: transparent;
+  background-color: transparent;
+  box-shadow: none;
 }
 
 html[data-ui-template='glass']:not(.dark) .gm-topnav-brand-mark {
-  border-color: rgb(255 255 255 / 0.45);
-  background: linear-gradient(145deg, rgb(56 189 248 / 0.22), rgb(167 139 250 / 0.2));
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
   color: rgb(15 23 42);
 }
 
 html[data-ui-template='glass'].dark .gm-topnav-brand-mark {
-  border-color: rgb(255 255 255 / 0.12);
-  background: linear-gradient(145deg, rgb(56 189 248 / 0.2), rgb(99 102 241 / 0.15));
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
   color: rgb(226 232 240);
 }
 
-/* —— Nav tetikleyici (dropdown başlığı) —— */
+/* —— Nav tetikleyici (dropdown başlığı) —— düz metin; kutu / cam zemin yok */
 html[data-ui-template='glass']:not(.dark) .gm-topnav-trigger {
-  border-color: rgb(15 23 42 / 0.08);
-  background-color: rgb(255 255 255 / 0.32);
+  border-color: transparent;
+  background-color: transparent;
   color: rgb(15 23 42);
-  box-shadow: 0 1px 8px rgb(15 23 42 / 0.04);
+  box-shadow: none;
 }
 
 html[data-ui-template='glass']:not(.dark) .gm-topnav-trigger:hover {
-  background-color: rgb(255 255 255 / 0.52);
+  background-color: rgb(15 23 42 / 0.06);
 }
 
 html[data-ui-template='glass']:not(.dark) .gm-topnav-trigger--active {
-  border-color: rgb(14 165 233 / 0.35);
-  background-color: rgb(255 255 255 / 0.55);
-  box-shadow:
-    0 2px 12px rgb(14 165 233 / 0.12),
-    inset 0 1px 0 rgb(255 255 255 / 0.75);
+  border-color: transparent;
+  background-color: rgb(15 23 42 / 0.08);
+  box-shadow: none;
 }
 
 html[data-ui-template='glass'].dark .gm-topnav-trigger {
-  border-color: rgb(255 255 255 / 0.1);
-  background-color: rgb(0 0 0 / 0.15);
+  border-color: transparent;
+  background-color: transparent;
   color: rgb(248 250 252);
+  box-shadow: none;
 }
 
 html[data-ui-template='glass'].dark .gm-topnav-trigger:hover {
@@ -91,8 +106,9 @@ html[data-ui-template='glass'].dark .gm-topnav-trigger:hover {
 }
 
 html[data-ui-template='glass'].dark .gm-topnav-trigger--active {
-  border-color: rgb(125 211 252 / 0.28);
+  border-color: transparent;
   background-color: rgb(255 255 255 / 0.1);
+  box-shadow: none;
 }
 
 /* —— Mobil menü düğmesi —— */
