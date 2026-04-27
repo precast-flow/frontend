@@ -48,11 +48,12 @@ function GlassAppShellInner() {
   const topBarLeftPadding = '0px'
   const contentColStart = 'md:col-start-1'
   const hasPreviewBanner = Boolean(previewRoleId)
-  /** Proje, CRM, Teklif: aynı `MainCanvas` yoğunluğu + outlet’te ekstra padding yok */
+  /** Proje/CRM/Teklif (alt path dahil) + Planlama — Tasarım: üst boşluk `pt-14 md:pt-16`, outlet padding 0 — navbar–başlık hizası */
   const isOkanPlanSplitPage =
     location.pathname.startsWith('/proje') ||
     location.pathname.startsWith('/crm') ||
-    location.pathname.startsWith('/teklif')
+    location.pathname.startsWith('/teklif') ||
+    effectiveActiveId === 'planning-design'
 
   return (
     <GlassLayout>
@@ -60,6 +61,9 @@ function GlassAppShellInner() {
         <div
           className={[
             'relative z-0 flex min-h-0 min-w-0 flex-1 flex-col gap-3 md:min-h-0 md:grid md:grid-cols-1 md:gap-x-4 md:gap-y-4',
+            hasPreviewBanner
+              ? 'md:grid-rows-[auto_minmax(0,1fr)_auto]'
+              : 'md:grid-rows-[minmax(0,1fr)_auto]',
             isOkanPlanSplitPage ? 'pt-14 md:pt-16' : 'pt-20 md:pt-24',
           ].join(' ')}
         >
@@ -72,9 +76,9 @@ function GlassAppShellInner() {
           <main
             id="main-module"
             className={[
-              `gm-motion relative z-0 flex min-h-[60vh] flex-1 flex-col overflow-visible rounded-2xl ${
+              `gm-motion relative z-0 flex min-h-0 flex-1 flex-col overflow-visible rounded-2xl ${
                 isOkanPlanSplitPage ? 'p-0 md:p-0' : 'p-1'
-              } md:min-h-[62vh] md:rounded-3xl`,
+              } md:min-h-0 md:rounded-3xl`,
               hasPreviewBanner
                 ? ['order-2', contentColStart, 'md:row-start-2'].join(' ')
                 : ['order-1', contentColStart, 'md:row-start-1'].join(' '),

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { Link } from 'react-router-dom'
 import {
   Calendar,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -10,17 +12,19 @@ import {
   GripVertical,
   PauseCircle,
   PlayCircle,
+  History,
+  Redo2,
   Save,
   Send,
   Trash2,
+  Undo2,
   Wrench,
   X,
   XCircle,
 } from 'lucide-react'
-import { useFixedMenuPosition } from '../useFixedMenuPosition'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
-import { useFactoryContext } from '../../context/FactoryContext'
 import { useProductionRolePreviewOptional } from '../../context/ProductionRolePreviewContext'
+import { useI18n } from '../../i18n/I18nProvider'
 import { getRoleMatrixRow } from '../../data/productionRoleMatrixMock'
 import {
   CONCRETE_RECIPES_MOCK,
@@ -41,11 +45,29 @@ import {
   type PlanStatusKey,
 } from '../../data/planningDesignMock'
 
-type Props = {
-  onNavigate: (moduleId: string) => void
+const SHIFT_SHORT = ['S', 'Ö', 'G'] as const
+
+const MAX_PLAN_CHECKPOINTS = 48
+
+type PlanCheckpoint = {
+  id: string
+  items: PlanItem[]
+  label: string
+  note?: string
+  atMs: number
 }
 
-const SHIFT_SHORT = ['S', 'Ö', 'G'] as const
+function clonePlanItems(xs: PlanItem[]): PlanItem[] {
+  return xs.map((x) => ({ ...x }))
+}
+
+function planItemsEqual(a: PlanItem[], b: PlanItem[]): boolean {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i += 1) {
+    if (JSON.stringify(a[i]) !== JSON.stringify(b[i])) return false
+  }
+  return true
+}
 
 /** Sol kalıp etiket sütunu — yatay kaydırmada sabit kalır. */
 const MOLD_COL_PX = 200
@@ -109,8 +131,8 @@ function statusIcon(key: PlanStatusKey) {
   }
 }
 
-export function PlanningDesignView({ onNavigate }: Props) {
-  const { selectedFactory, selectedCodes } = useFactoryContext()
+export function PlanningDesignView() {
+  const { t } = useI18n()
   const preview = useProductionRolePreviewOptional()
   const matrixRow = preview?.previewRoleId ? getRoleMatrixRow(preview.previewRoleId) : null
   const canEdit = !matrixRow || matrixRow.editIds.includes('planning-design')
@@ -124,7 +146,21 @@ export function PlanningDesignView({ onNavigate }: Props) {
   const [search, setSearch] = useState('')
   const [draftState, setDraftState] = useState<'draft' | 'published'>('draft')
   const [items, setItems] = useState<PlanItem[]>(() => INITIAL_PLAN_ITEMS.map((x) => ({ ...x })))
-  const [undoSnapshot, setUndoSnapshot] = useState<PlanItem[] | null>(null)
+  const [planHistory, setPlanHistory] = useState<{
+    checkpoints: PlanCheckpoint[]
+    cursor: number
+  }>(() => ({
+    checkpoints: [
+      {
+        id: 'cp-init',
+        items: clonePlanItems(INITIAL_PLAN_ITEMS),
+        label: 'Başlangıç',
+        atMs: Date.now(),
+      },
+    ],
+    cursor: 0,
+  }))
+  const [historyPanelOpen, setHistoryPanelOpen] = useState(false)
 
   const [dragId, setDragId] = useState<string | null>(null)
   const [dropTarget, setDropTarget] = useState<{ moldId: string; slot: number } | null>(null)
@@ -142,7 +178,7 @@ export function PlanningDesignView({ onNavigate }: Props) {
   const contextShiftAnchorRef = useRef<HTMLDivElement>(null)
   const shiftCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [filterOpen, setFilterOpen] = useState(false)
-  const [legendOpen, setLegendOpen] = useState(false)
+  const [queueOpen, setQueueOpen] = useState(true)
   const [assignOpen, setAssignOpen] = useState<{ moldId: string; slot: number } | null>(null)
   const [nonProdModal, setNonProdModal] = useState<{ moldId: string; slot: number; itemId: string } | null>(
     null,
@@ -154,13 +190,24 @@ export function PlanningDesignView({ onNavigate }: Props) {
   const [moldFilter, setMoldFilter] = useState<string[]>([])
 
   const gridScrollRef = useRef<HTMLDivElement>(null)
-  const filterToolbarRef = useRef<HTMLDivElement>(null)
-  const legendToolbarRef = useRef<HTMLDivElement>(null)
-  const filterPopoverRef = useRef<HTMLDivElement>(null)
-  const legendPopoverRef = useRef<HTMLDivElement>(null)
 
-  const filterPos = useFixedMenuPosition(filterToolbarRef, filterOpen)
-  const legendPos = useFixedMenuPosition(legendToolbarRef, legendOpen)
+  const activePlanningFilterCount = useMemo(
+    () =>
+      moldFilter.length +
+      statusFilter.length +
+      (search.trim() ? 1 : 0) +
+      (workdaysOnly ? 1 : 0),
+    [moldFilter, statusFilter, search, workdaysOnly],
+  )
+
+  const itemsRef = useRef(items)
+  const planHistoryRef = useRef(planHistory)
+  useEffect(() => {
+    itemsRef.current = items
+  }, [items])
+  useEffect(() => {
+    planHistoryRef.current = planHistory
+  }, [planHistory])
 
   const updateShiftSubmenuPos = useCallback(() => {
     const el = contextShiftAnchorRef.current
@@ -357,41 +404,66 @@ export function PlanningDesignView({ onNavigate }: Props) {
     return { day: d, moldRows, jobRows, dayItems }
   }, [dayDetailDate, items, visibleDays, slotIndexForItem])
 
-  const pushUndo = useCallback(() => {
-    setUndoSnapshot(items.map((x) => ({ ...x })))
-  }, [items])
+  const appendCheckpoint = useCallback((nextItems: PlanItem[], label: string, note?: string) => {
+    const cloned = clonePlanItems(nextItems)
+    setPlanHistory((ph) => {
+      const trimmed = ph.checkpoints.slice(0, ph.cursor + 1)
+      const cp: PlanCheckpoint = {
+        id: `cp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        items: clonePlanItems(cloned),
+        label,
+        note,
+        atMs: Date.now(),
+      }
+      let checkpoints = [...trimmed, cp]
+      if (checkpoints.length > MAX_PLAN_CHECKPOINTS) {
+        checkpoints = checkpoints.slice(-MAX_PLAN_CHECKPOINTS)
+      }
+      return { checkpoints, cursor: checkpoints.length - 1 }
+    })
+    setItems(cloned)
+  }, [])
 
-  const shiftMoldItems = useCallback(
-    (moldId: string, deltaSlots: number) => {
-      if (!canEdit || deltaSlots === 0) return
-      const moldItems = items.filter((it) => it.moldId === moldId)
-      if (!moldItems.length) return
+  const restoreCheckpoint = useCallback((index: number) => {
+    setPlanHistory((ph) => {
+      if (index < 0 || index >= ph.checkpoints.length) return ph
+      const nextItems = clonePlanItems(ph.checkpoints[index].items)
+      setItems(nextItems)
+      return { ...ph, cursor: index }
+    })
+  }, [])
 
-      const plan = moldItems.map((it) => {
-        const oldSlot = slotIndexForItem(it.startAt)
-        if (oldSlot < 0) return null
-        const nextSlot = oldSlot + deltaSlots
-        if (nextSlot < 0 || nextSlot >= totalSlots) return null
-        return { itemId: it.id, nextSlot }
-      })
-      if (plan.some((x) => x === null)) return
-
-      const slotById = new Map(plan.map((x) => [x!.itemId, x!.nextSlot]))
-      pushUndo()
-      setItems((prev) =>
-        prev.map((it) => {
-          if (it.moldId !== moldId) return it
-          const nextSlot = slotById.get(it.id)
-          if (nextSlot === undefined) return it
-          const { startAt } = isoFromSlotVisible(visibleDays, nextSlot)
-          const start = new Date(startAt)
-          const end = new Date(start.getTime() + it.durationHours * 3600000)
-          return { ...it, startAt: start.toISOString(), endAt: end.toISOString() }
-        }),
+  const updateCheckpointNote = useCallback((index: number, note: string) => {
+    const trimmed = note.trim()
+    setPlanHistory((ph) => {
+      if (index < 0 || index >= ph.checkpoints.length) return ph
+      const checkpoints = ph.checkpoints.map((c, i) =>
+        i === index ? { ...c, note: trimmed || undefined } : c,
       )
-    },
-    [canEdit, items, pushUndo, slotIndexForItem, totalSlots, visibleDays],
-  )
+      return { ...ph, checkpoints }
+    })
+  }, [])
+
+  const saveDraftAndResetHistory = useCallback(() => {
+    if (!canEdit) return
+    const ok = window.confirm(
+      'Taslağı kaydetmek istiyor musunuz? Kaydettikten sonra yerel adım geçmişi sıfırlanır; bundan sonra yalnızca bu kayıtlı plan üzerinde yeni geçmiş tutulur.',
+    )
+    if (!ok) return
+    const snapshot = clonePlanItems(itemsRef.current)
+    setDraftState('draft')
+    setPlanHistory({
+      checkpoints: [
+        {
+          id: `cp-saved-${Date.now()}`,
+          items: snapshot,
+          label: 'Kayıt sonrası',
+          atMs: Date.now(),
+        },
+      ],
+      cursor: 0,
+    })
+  }, [canEdit])
 
   const wouldViolateMaxConcurrent = useCallback(
     (candidateItemId: string | null, moldId: string, slotStart: number, span: number) => {
@@ -415,25 +487,58 @@ export function PlanningDesignView({ onNavigate }: Props) {
     [items, slotIndexForItem],
   )
 
-  const applyMove = (itemId: string, moldId: string, slot: number, skipNonProdCheck?: boolean) => {
-    const prev = items.find((i) => i.id === itemId)
-    const { startAt, durationHours: slotDur } = isoFromSlotVisible(visibleDays, slot)
-    const dur = prev?.durationHours ?? slotDur
-    const span = spanSlotsFromDuration(dur)
+  const shiftMoldItems = useCallback(
+    (moldId: string, deltaSlots: number) => {
+      if (!canEdit || deltaSlots === 0) return
+      const moldItems = items.filter((it) => it.moldId === moldId)
+      if (!moldItems.length) return
 
-    if (wouldViolateMaxConcurrent(itemId, moldId, slot, span)) return
+      const plan = moldItems.map((it) => {
+        const oldSlot = slotIndexForItem(it.startAt)
+        if (oldSlot < 0) return null
+        const nextSlot = oldSlot + deltaSlots
+        if (nextSlot < 0 || nextSlot >= totalSlots) return null
+        return { itemId: it.id, nextSlot }
+      })
+      if (plan.some((x) => x === null)) return
 
-    const day = visibleDays[Math.floor(slot / PLANNING_SHIFTS.length)]
-    if (day?.isNonProduction && !skipNonProdCheck) {
-      setNonProdModal({ moldId, slot, itemId })
-      return
-    }
+      const slotById = new Map(plan.map((x) => [x!.itemId, x!.nextSlot]))
+      const nextItems = items.map((it) => {
+        if (it.moldId !== moldId) return it
+        const nextSlot = slotById.get(it.id)
+        if (nextSlot === undefined) return it
+        const { startAt } = isoFromSlotVisible(visibleDays, nextSlot)
+        const start = new Date(startAt)
+        const end = new Date(start.getTime() + it.durationHours * 3600000)
+        return { ...it, startAt: start.toISOString(), endAt: end.toISOString() }
+      })
+      if (planItemsEqual(nextItems, items)) return
+      appendCheckpoint(
+        nextItems,
+        deltaSlots > 0 ? 'Hat kaydırıldı (sağa)' : 'Hat kaydırıldı (sola)',
+      )
+    },
+    [appendCheckpoint, canEdit, items, slotIndexForItem, totalSlots, visibleDays],
+  )
 
-    pushUndo()
-    const start = new Date(startAt)
-    const end = new Date(start.getTime() + dur * 3600000)
-    setItems((prevItems) =>
-      prevItems.map((it) =>
+  const applyMove = useCallback(
+    (itemId: string, moldId: string, slot: number, skipNonProdCheck?: boolean) => {
+      const prev = items.find((i) => i.id === itemId)
+      const { startAt, durationHours: slotDur } = isoFromSlotVisible(visibleDays, slot)
+      const dur = prev?.durationHours ?? slotDur
+      const span = spanSlotsFromDuration(dur)
+
+      if (wouldViolateMaxConcurrent(itemId, moldId, slot, span)) return
+
+      const day = visibleDays[Math.floor(slot / PLANNING_SHIFTS.length)]
+      if (day?.isNonProduction && !skipNonProdCheck) {
+        setNonProdModal({ moldId, slot, itemId })
+        return
+      }
+
+      const start = new Date(startAt)
+      const end = new Date(start.getTime() + dur * 3600000)
+      const nextItems = items.map((it) =>
         it.id === itemId
           ? {
               ...it,
@@ -443,9 +548,11 @@ export function PlanningDesignView({ onNavigate }: Props) {
               durationHours: dur,
             }
           : it,
-      ),
-    )
-  }
+      )
+      appendCheckpoint(nextItems, 'Plan öğesi taşındı')
+    },
+    [appendCheckpoint, items, visibleDays, wouldViolateMaxConcurrent],
+  )
 
   /** Tarayıcılar çoğu zaman yalnızca text/plain taşır; özel MIME yedeklenir. */
   const readQueueIdFromDrop = (e: React.DragEvent): string | null => {
@@ -474,7 +581,7 @@ export function PlanningDesignView({ onNavigate }: Props) {
     const onKey = (ev: KeyboardEvent) => {
       if (ev.key === 'Escape') {
         setFilterOpen(false)
-        setLegendOpen(false)
+        setHistoryPanelOpen(false)
         setAssignOpen(null)
         setDayDetailDate(null)
         setDropTarget(null)
@@ -482,25 +589,22 @@ export function PlanningDesignView({ onNavigate }: Props) {
         setContextMenu(null)
         setNonProdModal(null)
       }
+      if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'z') {
+        const ph = planHistoryRef.current
+        if (ev.shiftKey) {
+          if (ph.cursor < ph.checkpoints.length - 1) {
+            ev.preventDefault()
+            restoreCheckpoint(ph.cursor + 1)
+          }
+        } else if (ph.cursor > 0) {
+          ev.preventDefault()
+          restoreCheckpoint(ph.cursor - 1)
+        }
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
-
-  useEffect(() => {
-    if (!filterOpen && !legendOpen) return
-    const onPointerDown = (e: PointerEvent) => {
-      const t = e.target as Node
-      if (filterToolbarRef.current?.contains(t)) return
-      if (legendToolbarRef.current?.contains(t)) return
-      if (filterPopoverRef.current?.contains(t)) return
-      if (legendPopoverRef.current?.contains(t)) return
-      setFilterOpen(false)
-      setLegendOpen(false)
-    }
-    document.addEventListener('pointerdown', onPointerDown, true)
-    return () => document.removeEventListener('pointerdown', onPointerDown, true)
-  }, [filterOpen, legendOpen])
+  }, [restoreCheckpoint])
 
   useEffect(() => {
     const onGlobalPointer = () => setContextMenu(null)
@@ -526,8 +630,8 @@ export function PlanningDesignView({ onNavigate }: Props) {
     if (!canEdit) return
     e.stopPropagation()
     e.preventDefault()
-    pushUndo()
-    const resizingItem = items.find((it) => it.id === itemId)
+    const beforeItems = clonePlanItems(itemsRef.current)
+    const resizingItem = itemsRef.current.find((it) => it.id === itemId)
     const startX = e.clientX
     const slotW = Math.max(colW, 24)
     const onMove = (ev: MouseEvent) => {
@@ -549,6 +653,10 @@ export function PlanningDesignView({ onNavigate }: Props) {
     const onUp = () => {
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('mouseup', onUp)
+      const after = itemsRef.current
+      if (!planItemsEqual(beforeItems, after)) {
+        appendCheckpoint(after, 'Süre (vardiya) güncellendi')
+      }
     }
     document.addEventListener('mousemove', onMove)
     document.addEventListener('mouseup', onUp)
@@ -570,76 +678,64 @@ export function PlanningDesignView({ onNavigate }: Props) {
 
   return (
     <>
-    <div className="okan-liquid-root flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.25rem]">
+    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-[1.25rem]">
+      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-2">
+        <div className="px-[0.6875rem] py-1">
+          <nav aria-label={t('project.breadcrumbAria')} className="mb-0">
+            <ol className="flex flex-wrap items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+              <li>
+                <Link
+                  to="/planlama"
+                  className="font-medium text-slate-600 underline-offset-2 transition hover:text-sky-600 hover:underline dark:text-slate-300 dark:hover:text-sky-400"
+                >
+                  {t('nav.sidebar.section.planning')}
+                </Link>
+              </li>
+              <li className="flex items-center gap-1" aria-hidden>
+                <ChevronRight className="size-3.5 shrink-0 opacity-70" />
+              </li>
+              <li className="font-semibold text-slate-800 dark:text-slate-100" aria-current="page">
+                {t('nav.planningDesign')}
+              </li>
+            </ol>
+          </nav>
+        </div>
+
+        <div className="okan-liquid-root flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.25rem]">
       <div className="okan-liquid-blobs" aria-hidden>
         <div className="okan-liquid-blob okan-liquid-blob--a" />
         <div className="okan-liquid-blob okan-liquid-blob--b" />
         <div className="okan-liquid-blob okan-liquid-blob--c" />
       </div>
-      <div className="okan-liquid-content flex min-h-0 flex-1 flex-col gap-3">
+      <div className="okan-liquid-content flex min-h-0 flex-1 flex-col">
     <div
-      className="gm-planning-design-view flex min-h-0 flex-1 flex-col gap-3"
+      className="gm-planning-design-view flex min-h-0 flex-1 flex-col"
       style={{ ['--gm-planning-mold-rail' as string]: `${MOLD_COL_PX}px` }}
     >
-      <div className="gm-planning-toolbar okan-liquid-panel relative z-[75] flex min-h-11 flex-nowrap items-center justify-between gap-2 overflow-visible px-3 py-2 md:gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <span
-            className="okan-liquid-panel-nested hidden max-w-[10rem] shrink-0 truncate px-2 py-1 text-xs font-medium text-slate-900 sm:inline dark:text-slate-50"
-            title={selectedCodes.length > 1 ? selectedCodes.join(', ') : selectedFactory.name}
+      <div className="okan-liquid-panel gm-planning-design-shell flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="gm-planning-toolbar relative z-[75] grid min-h-11 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 overflow-visible border-b border-[var(--okan-panel-border-soft)] px-3 py-2 md:gap-3">
+        <div className="flex min-w-0 items-center justify-self-start gap-2">
+          <button
+            type="button"
+            onClick={() => setFilterOpen((v) => !v)}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border-0 bg-transparent px-3 py-2 text-sm font-semibold text-slate-800 shadow-none transition hover:bg-slate-200/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:text-slate-100 dark:hover:bg-white/10"
+            aria-expanded={filterOpen}
+            aria-controls="gm-planning-filter-panel"
           >
-            {selectedCodes.length > 1 ? selectedCodes.join(', ') : selectedFactory.name}
-          </span>
-          <span
-            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 sm:text-xs ${
-              draftState === 'draft'
-                ? 'bg-gray-200/60 text-gray-900 ring-gray-300 dark:bg-gray-800 dark:text-gray-100'
-                : 'bg-emerald-50 text-emerald-900 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100'
-            }`}
-          >
-            {draftState === 'draft' ? 'Taslak' : 'Yayınlandı'}
-          </span>
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Ara…"
-            title="Ürün / emir / proje"
-            className="okan-liquid-input min-w-[6rem] max-w-[14rem] flex-1 border-0 px-2.5 py-1.5 text-sm shadow-none placeholder:text-slate-500 focus:outline-none dark:placeholder:text-slate-400 md:max-w-[18rem] md:px-3 md:py-2"
-          />
-          <div className="relative shrink-0" ref={filterToolbarRef}>
-            <button
-              type="button"
-              onClick={() => setFilterOpen((v) => !v)}
-              className="okan-liquid-btn-secondary inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-semibold md:px-3 md:py-2"
-            >
-              <Filter className="h-4 w-4" />
-              <span className="hidden sm:inline">Filtreler</span>
-            </button>
-          </div>
-          <div className="relative shrink-0" ref={legendToolbarRef}>
-            <button
-              type="button"
-              onClick={() => setLegendOpen((v) => !v)}
-              className="okan-liquid-btn-secondary rounded-xl px-2.5 py-1.5 text-sm font-semibold md:px-3 md:py-2"
-            >
-              <span className="hidden sm:inline">Durum</span>
-              <span className="sm:hidden">Renk</span>
-            </button>
-          </div>
+            <Filter className="size-4 shrink-0 opacity-80" aria-hidden />
+            <span>Filtrele</span>
+            {activePlanningFilterCount > 0 ? (
+              <span className="rounded-full bg-sky-500/25 px-1.5 py-0.5 text-xs font-bold tabular-nums text-sky-900 dark:bg-sky-400/20 dark:text-sky-100">
+                {activePlanningFilterCount}
+              </span>
+            ) : null}
+            <ChevronDown
+              className={`size-4 shrink-0 opacity-70 transition ${filterOpen ? 'rotate-180' : ''}`}
+              aria-hidden
+            />
+          </button>
         </div>
-        <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
-          {undoSnapshot ? (
-            <button
-              type="button"
-              onClick={() => {
-                if (undoSnapshot) setItems(undoSnapshot.map((x) => ({ ...x })))
-                setUndoSnapshot(null)
-              }}
-              className="rounded-xl bg-amber-50 px-2 py-1.5 text-xs font-medium text-amber-900 ring-1 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-100"
-            >
-              Geri al
-            </button>
-          ) : null}
+        <div className="flex shrink-0 items-center justify-center gap-1.5 md:gap-2">
           <button
             type="button"
             onClick={() => goToday()}
@@ -663,25 +759,46 @@ export function PlanningDesignView({ onNavigate }: Props) {
           >
             <ChevronRight className="h-5 w-5" />
           </button>
-          <label
-            className="hidden items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 md:flex"
-            title="Yalnızca iş günlerini göster"
+        </div>
+        <div className="flex min-w-0 flex-wrap items-center justify-end justify-self-end gap-1.5 md:gap-2">
+          <button
+            type="button"
+            disabled={!canEdit || planHistory.cursor <= 0}
+            onClick={() => restoreCheckpoint(planHistory.cursor - 1)}
+            className="inline-flex shrink-0 items-center rounded-lg border-0 bg-transparent p-2 text-slate-700 hover:bg-slate-200/40 disabled:opacity-35 dark:text-slate-200 dark:hover:bg-white/10"
+            title="Önceki adım (⌘Z / Ctrl+Z)"
+            aria-label="Önceki adım"
           >
-            <input
-              type="checkbox"
-              checked={workdaysOnly}
-              onChange={(e) => setWorkdaysOnly(e.target.checked)}
-              className="rounded border-gray-400"
+            <Undo2 className="h-4 w-4" aria-hidden />
+          </button>
+          <button
+            type="button"
+            disabled={!canEdit || planHistory.cursor >= planHistory.checkpoints.length - 1}
+            onClick={() => restoreCheckpoint(planHistory.cursor + 1)}
+            className="inline-flex shrink-0 items-center rounded-lg border-0 bg-transparent p-2 text-slate-700 hover:bg-slate-200/40 disabled:opacity-35 dark:text-slate-200 dark:hover:bg-white/10"
+            title="İleri (⇧⌘Z / Ctrl+Shift+Z)"
+            aria-label="İleri"
+          >
+            <Redo2 className="h-4 w-4" aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={() => setHistoryPanelOpen((v) => !v)}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border-0 bg-transparent px-2 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-200/35 dark:text-slate-100 dark:hover:bg-white/10"
+            aria-expanded={historyPanelOpen}
+            aria-controls="gm-planning-history-panel"
+          >
+            <History className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+            <span className="hidden sm:inline">Geçmiş</span>
+            <ChevronDown
+              className={`hidden size-4 shrink-0 opacity-70 transition sm:block ${historyPanelOpen ? 'rotate-180' : ''}`}
+              aria-hidden
             />
-            İş günleri
-          </label>
+          </button>
           <button
             type="button"
             disabled={!canEdit}
-            onClick={() => {
-              if (!canEdit) return
-              setDraftState('draft')
-            }}
+            onClick={saveDraftAndResetHistory}
             className="okan-liquid-btn-primary inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
@@ -699,26 +816,188 @@ export function PlanningDesignView({ onNavigate }: Props) {
             <Send className="h-4 w-4" />
             Yayınla
           </button>
-          <button
-            type="button"
-            onClick={() => onNavigate('mes')}
-            className="okan-liquid-btn-secondary px-3 py-2 text-sm font-semibold"
-          >
-            MES’e git
-          </button>
         </div>
       </div>
 
+      {filterOpen ? (
+        <div
+          id="gm-planning-filter-panel"
+          className="max-h-[min(52vh,28rem)] shrink-0 space-y-4 overflow-y-auto border-t border-[var(--okan-panel-border-soft)] bg-transparent px-3 pb-3 pt-3"
+          role="region"
+          aria-label="Planlama filtreleri"
+        >
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Ara</p>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Ürün / emir / proje…"
+              title="Ürün / emir / proje"
+              className="mt-2 w-full border-x-0 border-b border-t-0 border-slate-200/80 bg-transparent py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-sky-500/60 focus:ring-0 dark:border-slate-600/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400/50"
+            />
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Kalıp</p>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {PLANNING_MOLDS.map((m) => {
+                const on = moldFilter.includes(m.moldId)
+                return (
+                  <button
+                    key={m.moldId}
+                    type="button"
+                    onClick={() =>
+                      setMoldFilter((prev) =>
+                        on ? prev.filter((x) => x !== m.moldId) : [...prev, m.moldId],
+                      )
+                    }
+                    className={`rounded-full px-2 py-0.5 text-xs ${
+                      on
+                        ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900'
+                        : 'bg-transparent text-slate-700 ring-1 ring-slate-300/60 dark:text-slate-200 dark:ring-slate-500/35'
+                    }`}
+                  >
+                    {m.moldId}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Durum</p>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {(Object.keys(STATUS_META) as PlanStatusKey[]).map((k) => {
+                const on = statusFilter.includes(k)
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() =>
+                      setStatusFilter((prev) => (on ? prev.filter((x) => x !== k) : [...prev, k]))
+                    }
+                    className={`rounded-full px-2 py-0.5 text-xs ${
+                      on
+                        ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900'
+                        : 'bg-transparent text-slate-700 ring-1 ring-slate-300/60 dark:text-slate-200 dark:ring-slate-500/35'
+                    }`}
+                  >
+                    {STATUS_META[k].label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+              İş günleri
+            </p>
+            <label
+              className="mt-2 flex cursor-pointer items-center gap-2 text-sm text-slate-700 dark:text-slate-200"
+              title="Yalnızca iş günlerini göster"
+            >
+              <input
+                type="checkbox"
+                checked={workdaysOnly}
+                onChange={(e) => setWorkdaysOnly(e.target.checked)}
+                className="size-4 shrink-0 rounded border-slate-400 text-sky-600 focus:ring-sky-500/40 dark:border-slate-500 dark:bg-slate-900/80"
+              />
+              <span>Yalnızca iş günlerini göster</span>
+            </label>
+          </div>
+        </div>
+      ) : null}
+
+      {historyPanelOpen ? (
+        <div
+          id="gm-planning-history-panel"
+          className="max-h-[min(40vh,22rem)] shrink-0 overflow-y-auto border-t border-[var(--okan-panel-border-soft)] bg-transparent px-3 pb-3 pt-3"
+          role="region"
+          aria-label="Plan değişiklik geçmişi"
+        >
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+            Kayıtlı sürümler
+          </p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Bir sürüme dönünce daha sonraki sürümler yeni düzenleme yapılana kadar gizlenir. ⌘Z / Ctrl+Z ile önceki
+            adım, ⇧⌘Z ile ileri.
+          </p>
+          <ol className="mt-3 list-none space-y-2 p-0">
+            {[...planHistory.checkpoints.slice(0, planHistory.cursor + 1)]
+              .map((cp, idx) => ({ cp, index: idx }))
+              .reverse()
+              .map(({ cp, index }) => {
+                const isCurrent = index === planHistory.cursor
+                return (
+                  <li
+                    key={cp.id}
+                    className={`rounded-lg border px-2.5 py-2 text-sm ${
+                      isCurrent
+                        ? 'border-sky-400/50 bg-sky-500/10 dark:border-sky-500/35'
+                        : 'border-slate-200/60 bg-transparent dark:border-slate-600/50'
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-slate-900 dark:text-slate-50">{cp.label}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                          {new Date(cp.atMs).toLocaleString('tr-TR', {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                          })}
+                          {isCurrent ? ' · Şu an' : null}
+                        </div>
+                        {cp.note ? (
+                          <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{cp.note}</p>
+                        ) : null}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={!canEdit || isCurrent}
+                        onClick={() => restoreCheckpoint(index)}
+                        className="shrink-0 rounded-md bg-slate-200/80 px-2 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-300/80 disabled:cursor-default disabled:opacity-40 dark:bg-slate-700/80 dark:text-slate-100"
+                      >
+                        Bu sürüme dön
+                      </button>
+                    </div>
+                  </li>
+                )
+              })}
+          </ol>
+          {canEdit ? (
+            <label className="mt-4 block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                Seçili sürüm notu
+              </span>
+              <textarea
+                key={planHistory.checkpoints[planHistory.cursor]?.id ?? 'cur'}
+                defaultValue={planHistory.checkpoints[planHistory.cursor]?.note ?? ''}
+                onBlur={(e) => updateCheckpointNote(planHistory.cursor, e.target.value)}
+                rows={2}
+                placeholder="Bu sürüm için kısa not (isteğe bağlı)…"
+                className="mt-1 w-full resize-y rounded-md border border-slate-200/80 bg-transparent px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-sky-500/50 dark:border-slate-600/70 dark:text-slate-100"
+              />
+            </label>
+          ) : null}
+        </div>
+      ) : null}
+
       {!canEdit ? (
-        <div className="okan-liquid-banner-warn px-3 py-2 text-sm text-amber-950 dark:text-amber-100">
+        <div className="okan-liquid-banner-warn shrink-0 border-b border-amber-200/50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900/40 dark:text-amber-100">
           Salt okunur: sürükle-bırak ve yeniden boyutlandırma kapalı.
         </div>
       ) : null}
 
-      <div className="relative z-0 grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[1fr_280px]">
+      <div
+        className={`relative z-0 grid min-h-0 flex-1 grid-cols-1 gap-0 ${
+          queueOpen ? 'lg:grid-cols-[1fr_280px]' : 'lg:grid-cols-[1fr_2.75rem]'
+        }`}
+      >
         <div
           ref={gridScrollRef}
-          className="gm-planning-scroll-host okan-liquid-panel min-h-0 min-w-0 overflow-auto !rounded-2xl !p-0"
+          className="gm-planning-scroll-host min-h-0 min-w-0 overflow-auto p-0 lg:min-h-0"
           title="Ctrl/⌘ + fare tekerleği: yakınlaştır / uzaklaştır"
         >
           <div className="flex min-h-0 min-w-full w-max flex-col">
@@ -850,53 +1129,30 @@ export function PlanningDesignView({ onNavigate }: Props) {
                                 const { startAt, endAt, durationHours } = isoFromSlotVisible(visibleDays, slot)
                                 const span = spanSlotsFromDuration(durationHours)
                                 if (wouldViolateMaxConcurrent(null, mold.moldId, slot, span)) return
-                                pushUndo()
                                 const newId = `P-${Date.now()}`
                                 const np = day?.isNonProduction
+                                const newRow: PlanItem = {
+                                  id: newId,
+                                  title: q.title,
+                                  productId: 'MOCK-PROD',
+                                  imageUrl: null,
+                                  moldId: mold.moldId,
+                                  startAt,
+                                  endAt,
+                                  durationHours,
+                                  status: 'PLANNED',
+                                  priority: q.priority,
+                                  concreteRecipeId: 'RC-C30-01',
+                                  estimatedVolumeM3: 8,
+                                  estimatedSteelKg: 600,
+                                  tags: ['queue'],
+                                  warnings: np ? ['Üretim dışı güne yerleşim (mock)'] : [],
+                                }
+                                const nextItems = [...itemsRef.current, newRow]
                                 if (np) {
                                   setNonProdModal({ moldId: mold.moldId, slot, itemId: newId })
-                                  setItems((prev) => [
-                                    ...prev,
-                                    {
-                                      id: newId,
-                                      title: q.title,
-                                      productId: 'MOCK-PROD',
-                                      imageUrl: null,
-                                      moldId: mold.moldId,
-                                      startAt,
-                                      endAt,
-                                      durationHours,
-                                      status: 'PLANNED',
-                                      priority: q.priority,
-                                      concreteRecipeId: 'RC-C30-01',
-                                      estimatedVolumeM3: 8,
-                                      estimatedSteelKg: 600,
-                                      tags: ['queue'],
-                                      warnings: np ? ['Üretim dışı güne yerleşim (mock)'] : [],
-                                    },
-                                  ])
-                                  return
                                 }
-                                setItems((prev) => [
-                                  ...prev,
-                                  {
-                                    id: newId,
-                                    title: q.title,
-                                    productId: 'MOCK-PROD',
-                                    imageUrl: null,
-                                    moldId: mold.moldId,
-                                    startAt,
-                                    endAt,
-                                    durationHours,
-                                    status: 'PLANNED',
-                                    priority: q.priority,
-                                    concreteRecipeId: 'RC-C30-01',
-                                    estimatedVolumeM3: 8,
-                                    estimatedSteelKg: 600,
-                                    tags: ['queue'],
-                                    warnings: [],
-                                  },
-                                ])
+                                appendCheckpoint(nextItems, 'Kuyruktan plana eklendi')
                                 return
                               }
                               handleDropPlanItem(mold.moldId, slot, e)
@@ -1030,7 +1286,7 @@ export function PlanningDesignView({ onNavigate }: Props) {
                     onClick={() => setDayDetailDate(d.date)}
                     className="col-span-3 border-r border-slate-200/65 px-1 py-2 text-left text-[10px] transition hover:bg-slate-100/75 dark:border-slate-600/45 dark:hover:bg-slate-900/35"
                   >
-                    <div className="okan-liquid-panel-nested px-2 py-1.5">
+                    <div className="rounded-md bg-slate-100/55 px-2 py-1.5 dark:bg-slate-800/45">
                       <div className="font-semibold leading-snug text-slate-900 dark:text-slate-50">
                         {t.pieces} iş · {t.activeMolds} kalıp
                       </div>
@@ -1049,119 +1305,83 @@ export function PlanningDesignView({ onNavigate }: Props) {
         </div>
         </div>
 
-        <aside className="gm-planning-queue-aside okan-liquid-panel flex min-h-0 flex-col p-3 lg:max-h-none">
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Bekleyen iş (mock)</h2>
-          <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
-            Tıklayın veya sürükleyip hücreye bırakın. Esc iptal.
-          </p>
-          <ul className="mt-3 max-h-[420px] space-y-2 overflow-auto pr-1 lg:max-h-[min(420px,calc(100vh-16rem))]">
-            {QUEUE_MOCK.map((q) => (
-              <li
-                key={q.queueId}
-                draggable={canEdit}
-                onDragStart={(e) => {
-                  e.dataTransfer.setData('text/plain', `queue:${q.queueId}`)
-                  e.dataTransfer.setData('text/plan-queue-id', q.queueId)
-                  e.dataTransfer.effectAllowed = 'copy'
-                  setDragId(`queue:${q.queueId}`)
-                }}
-                onDragEnd={() => {
-                  setDragId(null)
-                  setDropTarget(null)
-                }}
-                className="okan-liquid-list-card cursor-grab p-2 text-xs active:cursor-grabbing"
+        <aside
+          className={`gm-planning-queue-aside flex min-h-0 flex-col border-t border-[var(--okan-panel-border-soft)] lg:min-h-0 lg:border-l lg:border-t-0 ${
+            queueOpen ? 'p-3' : 'p-2 lg:items-center lg:overflow-hidden lg:p-1.5'
+          }`}
+        >
+          {queueOpen ? (
+            <>
+              <div className="flex shrink-0 items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Bekleyen iş (mock)</h2>
+                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                    Tıklayın veya sürükleyip hücreye bırakın. Esc iptal.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-expanded={queueOpen}
+                  aria-controls="gm-planning-queue-list"
+                  onClick={() => setQueueOpen(false)}
+                  className="shrink-0 rounded-lg border-0 bg-transparent p-1.5 text-slate-600 hover:bg-slate-200/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:text-slate-300 dark:hover:bg-white/10"
+                  title="Kuyruğu gizle"
+                >
+                  <ChevronRight className="h-5 w-5" aria-hidden />
+                  <span className="sr-only">Kuyruğu gizle</span>
+                </button>
+              </div>
+              <ul
+                id="gm-planning-queue-list"
+                className="mt-3 max-h-[420px] min-h-0 flex-1 divide-y divide-slate-200/40 overflow-auto pr-1 dark:divide-white/10 lg:max-h-none"
               >
-                <div className="font-medium text-slate-900 dark:text-slate-50">{q.title}</div>
-                <div className="mt-1 text-slate-500 dark:text-slate-400">Öncelik {q.priority} · risk {q.risk}</div>
-              </li>
-            ))}
-          </ul>
-        </aside>
-      </div>
-    </div>
-      </div>
-    </div>
-
-      {typeof document !== 'undefined' && filterOpen
-        ? createPortal(
-            <div
-              ref={filterPopoverRef}
-              className="gm-glass-dropdown-panel gm-planning-toolbar-popover gm-planning-menu-portal fixed z-[130] w-[min(100vw-2rem,18rem)] rounded-2xl p-3 text-sm sm:w-72"
-              style={{ top: filterPos.top, right: filterPos.rightInset }}
-            >
-              <p className="mb-2 font-semibold text-gray-900 dark:text-gray-50">Kalıp</p>
-              <div className="mb-3 flex flex-wrap gap-1">
-                {PLANNING_MOLDS.map((m) => {
-                  const on = moldFilter.includes(m.moldId)
-                  return (
-                    <button
-                      key={m.moldId}
-                      type="button"
-                      onClick={() =>
-                        setMoldFilter((prev) =>
-                          on ? prev.filter((x) => x !== m.moldId) : [...prev, m.moldId],
-                        )
-                      }
-                      className={`rounded-full px-2 py-0.5 text-xs ${
-                        on
-                          ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900'
-                          : 'bg-white/55 text-slate-700 ring-1 ring-slate-300/70 dark:bg-white/5 dark:text-slate-200 dark:ring-white/12'
-                      }`}
-                    >
-                      {m.moldId}
-                    </button>
-                  )
-                })}
-              </div>
-              <p className="mb-2 font-semibold text-gray-900 dark:text-gray-50">Durum</p>
-              <div className="flex flex-wrap gap-1">
-                {(Object.keys(STATUS_META) as PlanStatusKey[]).map((k) => {
-                  const on = statusFilter.includes(k)
-                  return (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() =>
-                        setStatusFilter((prev) => (on ? prev.filter((x) => x !== k) : [...prev, k]))
-                      }
-                      className={`rounded-full px-2 py-0.5 text-xs ${
-                        on
-                          ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900'
-                          : 'bg-white/55 text-slate-700 ring-1 ring-slate-300/70 dark:bg-white/5 dark:text-slate-200 dark:ring-white/12'
-                      }`}
-                    >
-                      {STATUS_META[k].label}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>,
-            document.body,
-          )
-        : null}
-
-      {typeof document !== 'undefined' && legendOpen
-        ? createPortal(
-            <div
-              ref={legendPopoverRef}
-              className="gm-glass-dropdown-panel gm-planning-toolbar-popover gm-planning-menu-portal fixed z-[130] max-h-80 w-[min(100vw-2rem,20rem)] overflow-auto rounded-2xl p-3 text-xs sm:w-80"
-              style={{ top: legendPos.top, right: legendPos.rightInset }}
-            >
-              <p className="mb-2 font-semibold text-gray-900 dark:text-gray-50">Renk + ikon</p>
-              <ul className="space-y-2">
-                {(Object.keys(STATUS_META) as PlanStatusKey[]).map((k) => (
-                  <li key={k} className="flex min-h-0 items-start gap-2">
-                    <span
-                      className={`mt-0.5 w-1 shrink-0 self-stretch rounded-full border-l-4 ${STATUS_META[k].borderClass}`}
-                    />
-                    <span className="text-gray-800 dark:text-gray-200">{STATUS_META[k].label}</span>
+                {QUEUE_MOCK.map((q) => (
+                  <li
+                    key={q.queueId}
+                    draggable={canEdit}
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', `queue:${q.queueId}`)
+                      e.dataTransfer.setData('text/plan-queue-id', q.queueId)
+                      e.dataTransfer.effectAllowed = 'copy'
+                      setDragId(`queue:${q.queueId}`)
+                    }}
+                    onDragEnd={() => {
+                      setDragId(null)
+                      setDropTarget(null)
+                    }}
+                    className="cursor-grab py-2.5 text-xs first:pt-0 last:pb-0 active:cursor-grabbing"
+                  >
+                    <div className="font-medium text-slate-900 dark:text-slate-50">{q.title}</div>
+                    <div className="mt-1 text-slate-500 dark:text-slate-400">
+                      Öncelik {q.priority} · risk {q.risk}
+                    </div>
                   </li>
                 ))}
               </ul>
-            </div>,
-            document.body,
-          )
-        : null}
+            </>
+          ) : (
+            <button
+              type="button"
+              aria-expanded={false}
+              onClick={() => setQueueOpen(true)}
+              className="flex w-full flex-1 flex-col items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:text-slate-200 dark:hover:bg-white/10 lg:min-h-0 lg:py-4"
+              title="Bekleyen işi göster"
+            >
+              <ChevronLeft className="h-5 w-5 shrink-0 lg:rotate-180" aria-hidden />
+              <span className="lg:hidden">Bekleyen işi göster</span>
+              <span className="hidden max-w-[3rem] text-center text-[10px] font-semibold uppercase leading-tight tracking-wide text-slate-500 dark:text-slate-400 lg:block lg:[writing-mode:vertical-rl] lg:rotate-180">
+                Bekleyen iş
+              </span>
+            </button>
+          )}
+        </aside>
+      </div>
+      </div>
+    </div>
+      </div>
+    </div>
+      </div>
+    </div>
 
       {typeof document !== 'undefined'
         ? createPortal(
@@ -1333,8 +1553,10 @@ export function PlanningDesignView({ onNavigate }: Props) {
                     setContextMenu(null)
                     return
                   }
-                  pushUndo()
-                  setItems((prev) => prev.filter((it) => it.id !== contextMenu.itemId))
+                  appendCheckpoint(
+                    itemsRef.current.filter((it) => it.id !== contextMenu.itemId),
+                    'Plan öğesi kaldırıldı',
+                  )
                   setContextMenu(null)
                 }}
               >
@@ -1514,30 +1736,27 @@ export function PlanningDesignView({ onNavigate }: Props) {
                       const { startAt, endAt, durationHours } = isoFromSlotVisible(visibleDays, assignOpen.slot)
                       const span = spanSlotsFromDuration(durationHours)
                       if (wouldViolateMaxConcurrent(null, assignOpen.moldId, assignOpen.slot, span)) return
-                      pushUndo()
                       const day = visibleDays[Math.floor(assignOpen.slot / PLANNING_SHIFTS.length)]
                       const np = day?.isNonProduction
                       const newId = `P-${Date.now()}`
-                      setItems((prev) => [
-                        ...prev,
-                        {
-                          id: newId,
-                          title: q.title,
-                          productId: 'MOCK-PROD',
-                          imageUrl: null,
-                          moldId: assignOpen.moldId,
-                          startAt,
-                          endAt,
-                          durationHours,
-                          status: 'PLANNED',
-                          priority: q.priority,
-                          concreteRecipeId: 'RC-C30-01',
-                          estimatedVolumeM3: 8,
-                          estimatedSteelKg: 600,
-                          tags: ['queue'],
-                          warnings: np ? ['Üretim dışı güne yerleşim (mock)'] : [],
-                        },
-                      ])
+                      const newRow: PlanItem = {
+                        id: newId,
+                        title: q.title,
+                        productId: 'MOCK-PROD',
+                        imageUrl: null,
+                        moldId: assignOpen.moldId,
+                        startAt,
+                        endAt,
+                        durationHours,
+                        status: 'PLANNED',
+                        priority: q.priority,
+                        concreteRecipeId: 'RC-C30-01',
+                        estimatedVolumeM3: 8,
+                        estimatedSteelKg: 600,
+                        tags: ['queue'],
+                        warnings: np ? ['Üretim dışı güne yerleşim (mock)'] : [],
+                      }
+                      appendCheckpoint([...itemsRef.current, newRow], 'Hücreye atandı (mock)')
                       if (np) setNonProdModal({ moldId: assignOpen.moldId, slot: assignOpen.slot, itemId: newId })
                       setAssignOpen(null)
                     }}
@@ -1583,7 +1802,10 @@ export function PlanningDesignView({ onNavigate }: Props) {
               <button
                 type="button"
                 onClick={() => {
-                  setItems((prev) => prev.filter((x) => x.id !== nonProdModal.itemId))
+                  appendCheckpoint(
+                    itemsRef.current.filter((x) => x.id !== nonProdModal.itemId),
+                    'Üretim dışı yerleşim iptal',
+                  )
                   setNonProdModal(null)
                 }}
                 className="gm-glass-btn-secondary rounded-xl px-4 py-2 text-sm font-medium"
