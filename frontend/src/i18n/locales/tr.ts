@@ -132,6 +132,7 @@ const shell: Record<string, string> = {
   'nav.workStart': 'İş başlat',
   'nav.project': 'Proje Yönetimi',
   'nav.engineering': 'Mühendislik Entegrasyonu',
+  'nav.elementIdentity': 'Eleman Kimlik ve İsimlendirme',
   'nav.manualPieceStudio': 'Manuel Parça ve Şablon Stüdyosu',
   'nav.productionSummary': 'Üretim özeti',
   'nav.mes': 'Üretim (MES)',

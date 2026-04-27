@@ -19,6 +19,7 @@ import { ProductionSummaryDashboard } from './production/ProductionSummaryDashbo
 import { MesModuleView } from './mes/MesModuleView'
 import { EngineeringIntegrationOkanPage } from './muhendislikOkan/EngineeringIntegrationOkanPage'
 import { ManualPieceTemplateStudioModule } from './manualPieceTemplateStudio/ManualPieceTemplateStudioModule'
+import { ElementIdentityModuleView } from './elementIdentity/ElementIdentityModuleView'
 import { ProjectManagementModuleView } from './proje/ProjectManagementModuleView'
 import { PlanningHubView } from './planlama/PlanningHubView'
 import { QuoteModuleView } from './teklif/QuoteModuleView'
@@ -46,6 +47,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
   const isPlanningHub = activeId === 'planning-hub'
   const isEngineering = activeId === 'engineering'
   const isManualPieceStudio = activeId === 'manual-piece-studio'
+  const isElementIdentity = activeId === 'element-identity'
   const isProductionSummary = activeId === 'production-summary'
   const isMes = activeId === 'mes'
   const isPlanningDesign = activeId === 'planning-design'
@@ -83,7 +85,10 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
               }`,
               isProject || isCrm || isQuote
                 ? 'gm-glass-main-canvas--okan-liquid h-[calc(100dvh-12.5rem)] min-h-[calc(100dvh-12.5rem)] max-h-[calc(100dvh-12.5rem)]'
-                : isEngineering || isManualPieceStudio || isPlanningHub
+                : isEngineering ||
+                    isManualPieceStudio ||
+                    isPlanningHub ||
+                    isElementIdentity
                   ? 'gm-glass-main-canvas--okan-liquid min-h-[min(100%,42rem)]'
                   : 'bg-pf-surface shadow-neo-out',
             ].join(' ')
@@ -120,6 +125,8 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
         <EngineeringIntegrationOkanPage onCloseModule={() => onNavigate('dashboard')} />
       ) : isManualPieceStudio ? (
         <ManualPieceTemplateStudioModule onCloseModule={() => onNavigate('dashboard')} />
+      ) : isElementIdentity ? (
+        <ElementIdentityModuleView />
       ) : isProductionSummary ? (
         <ProductionSummaryDashboard onNavigate={onNavigate} />
       ) : isMes ? (
