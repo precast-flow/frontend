@@ -11,31 +11,12 @@ export type NavGroup = {
   items: NavItem[]
 }
 
-/** Giriş sonrası varsayılan ekran — Prompt 03 */
-export const pinnedNavItem: NavItem = {
-  id: 'dashboard',
-  labelKey: 'nav.dashboard',
-  slug: 'genel-bakis',
-}
-
-/** Kenar çubuğu “Başlangıç” bölümü — Genel bakış + birim iş kuyruğu (bie-05) + lojistik/saha (bie-08) */
-export const startNavItems: NavItem[] = [
-  pinnedNavItem,
-  {
-    id: 'unit-work-queue',
-    labelKey: 'nav.unitWorkQueue',
-    slug: 'birim-is-kuyrugu',
-  },
-  {
-    id: 'logistics-field-queues',
-    labelKey: 'nav.logisticsFieldQueues',
-    slug: 'lojistik-saha-is-kuyrugu',
-  },
-]
+/** Kenar çubuğu “Başlangıç” — modül yok (eski Genel bakış / kuyruk ekranları kaldırıldı). */
+export const startNavItems: NavItem[] = []
 
 /**
  * Planlama grubu modül listesi — üst yatay nav (AppTopNav) ile kullanılır.
- * Üretim grubu id’si `production` kalmalı (rol önizlemesi süzgeci).
+ * Üretim / Kalite / Lojistik gruplarında şimdilik alt modül yok; grup başlığı menüde kalır.
  */
 export const navGroups: NavGroup[] = [
   {
@@ -47,39 +28,23 @@ export const navGroups: NavGroup[] = [
       { id: 'quote', labelKey: 'nav.quote', slug: 'teklif' },
       { id: 'project', labelKey: 'nav.project', slug: 'proje' },
       { id: 'engineering', labelKey: 'nav.engineering', slug: 'muhendislik' },
-      { id: 'element-identity', labelKey: 'nav.elementIdentity', slug: 'eleman-kimlik' },
       { id: 'planning-design', labelKey: 'nav.planningDesign', slug: 'planlama-tasarim' },
     ],
   },
   {
     id: 'production',
     titleKey: 'nav.sidebar.section.production',
-    items: [
-      { id: 'production-summary', labelKey: 'nav.productionSummary', slug: 'uretim-ozet' },
-      { id: 'mes', labelKey: 'nav.mes', slug: 'mes' },
-      { id: 'mold-board', labelKey: 'nav.moldBoard', slug: 'kalip-tahtasi' },
-      { id: 'pending-priority', labelKey: 'nav.pendingPriority', slug: 'oncelik-raporu' },
-      { id: 'concrete-recipe', labelKey: 'nav.concreteRecipe', slug: 'beton-recete' },
-      { id: 'batch-plant', labelKey: 'nav.batchPlant', slug: 'beton-santrali' },
-      { id: 'production-role-preview', labelKey: 'nav.productionRolePreview', slug: 'uretim-roller' },
-      { id: 'production-factory-ops', labelKey: 'nav.productionFactoryOps', slug: 'fabrika-vardiya-kalip-ekip' },
-      { id: 'yard', labelKey: 'nav.yard', slug: 'yard' },
-    ],
+    items: [],
   },
   {
     id: 'quality',
     titleKey: 'nav.sidebar.section.quality',
-    items: [{ id: 'quality', labelKey: 'nav.quality', slug: 'kalite' }],
+    items: [],
   },
   {
     id: 'logistics',
     titleKey: 'nav.sidebar.section.logistics',
-    items: [
-      { id: 'dispatch', labelKey: 'nav.dispatch', slug: 'sevkiyat' },
-      { id: 'field', labelKey: 'nav.field', slug: 'saha' },
-      { id: 'reporting', labelKey: 'nav.reporting', slug: 'raporlama' },
-      { id: 'mobile', labelKey: 'nav.mobile', slug: 'mobil' },
-    ],
+    items: [],
   },
   {
     id: 'system',
@@ -88,6 +53,14 @@ export const navGroups: NavGroup[] = [
       { id: 'approval-flow', labelKey: 'nav.approvalFlow', slug: 'onay-akisi' },
       { id: 'roles-permissions', labelKey: 'nav.roles', slug: 'roller-izinler' },
       { id: 'user-management', labelKey: 'nav.users', slug: 'kullanicilar' },
+    ],
+  },
+  {
+    id: 'configuration',
+    titleKey: 'nav.sidebar.section.configuration',
+    items: [
+      { id: 'configuration-center', labelKey: 'nav.configurationCenter', slug: 'konfigurasyon' },
+      { id: 'element-identity', labelKey: 'nav.elementIdentity', slug: 'eleman-kimlik' },
     ],
   },
   {
@@ -102,6 +75,8 @@ export const navGroups: NavGroup[] = [
 
 /** Hesap — `findNavItem` / geriye dönük referanslar için son gruptan türetilir */
 export const accountNavGroup: NavGroup = navGroups.find((g) => g.id === 'account')!
+
+const DEFAULT_MODULE_ID = 'project'
 
 export function findNavItem(id: string): NavItem | undefined {
   const inStart = startNavItems.find((i) => i.id === id)
@@ -130,21 +105,21 @@ export function findModuleIdBySlug(slug: string): string | undefined {
 export function moduleIdToPath(id: string): string {
   if (id === 'profile') return '/profile'
   if (id === 'settings') return '/settings'
-  if (id === 'dashboard') return '/'
   const item = findNavItem(id)
   if (!item) return '/'
   return `/${item.slug}`
 }
 
-/** URL → kenar çubuğu vurgusu (geçersiz segment için dashboard varsayılır; canvas ayrıca yönlendirir). */
+/** URL → kenar çubuğu vurgusu */
 export function activeModuleIdFromPathname(pathname: string): string {
   if (pathname === '/profile') return 'profile'
   if (pathname === '/settings') return 'settings'
-  if (pathname === '/') return 'dashboard'
+  if (pathname === '/') return DEFAULT_MODULE_ID
   if (pathname.startsWith('/musteri-detay/')) return 'crm'
+  if (pathname.startsWith('/eleman-kimlik')) return 'configuration-center'
   const seg = pathname.replace(/^\//, '').split('/')[0]
-  if (!seg) return 'dashboard'
-  return findModuleIdBySlug(seg) ?? 'dashboard'
+  if (!seg) return DEFAULT_MODULE_ID
+  return findModuleIdBySlug(seg) ?? DEFAULT_MODULE_ID
 }
 
 /** Aktif modülün hangi akordeon grubunda olduğu (yoksa null). */

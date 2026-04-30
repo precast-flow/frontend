@@ -187,7 +187,7 @@ export function StartWorkWizardView({ onNavigate }: Props) {
             </button>
             <button
               type="button"
-              onClick={() => onNavigate('unit-work-queue')}
+              onClick={() => onNavigate('project')}
               className="rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-800 shadow-neo-out-sm dark:bg-gray-900 dark:text-gray-100"
             >
               Birim iş kuyruğunu aç

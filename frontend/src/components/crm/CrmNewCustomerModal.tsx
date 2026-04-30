@@ -1,20 +1,72 @@
 import { useEffect, useId, useState } from 'react'
-import { X } from 'lucide-react'
+import { MapPin, Trash2, X } from 'lucide-react'
+import type { CrmCustomer, CrmLocationRow } from '../../data/crmCustomers'
 
 type Props = {
   open: boolean
+  mode?: 'create' | 'edit'
+  initialCustomer?: CrmCustomer | null
+  existingCodes: string[]
+  onSave: (payload: CustomerDraft) => void
   onClose: () => void
 }
 
-const steps = ['Genel bilgi', 'Fatura & adres', 'Özet'] as const
+type CustomerDraft = {
+  name: string
+  code: string
+  sector: string
+  taxId: string
+  city: string
+  billingAddress: string
+  locations: CrmLocationRow[]
+}
 
-export function CrmNewCustomerModal({ open, onClose }: Props) {
+const EMPTY_DRAFT: CustomerDraft = {
+  name: '',
+  code: '',
+  sector: 'Konut',
+  taxId: '',
+  city: '',
+  billingAddress: '',
+  locations: [],
+}
+
+export function CrmNewCustomerModal({
+  open,
+  mode = 'create',
+  initialCustomer = null,
+  existingCodes,
+  onSave,
+  onClose,
+}: Props) {
   const titleId = useId()
-  const [step, setStep] = useState(0)
+  const [draft, setDraft] = useState<CustomerDraft>(EMPTY_DRAFT)
+  const [error, setError] = useState<string | null>(null)
+  const [newLocationName, setNewLocationName] = useState('')
+  const [newLocationInfo, setNewLocationInfo] = useState('')
 
   useEffect(() => {
-    if (!open) setStep(0)
-  }, [open])
+    if (!open) {
+      setDraft(EMPTY_DRAFT)
+      setError(null)
+      setNewLocationName('')
+      setNewLocationInfo('')
+      return
+    }
+    if (mode === 'edit' && initialCustomer) {
+      setDraft({
+        name: initialCustomer.name,
+        code: initialCustomer.code,
+        sector: initialCustomer.sector,
+        taxId: initialCustomer.taxId,
+        city: initialCustomer.city,
+        billingAddress: initialCustomer.iletisim.adresNotu ?? '',
+        locations: initialCustomer.locations ?? [],
+      })
+    } else {
+      setDraft(EMPTY_DRAFT)
+    }
+  }, [open, mode, initialCustomer])
 
   useEffect(() => {
     if (!open) return
@@ -27,156 +79,247 @@ export function CrmNewCustomerModal({ open, onClose }: Props) {
 
   if (!open) return null
 
+  const addLocation = () => {
+    const name = newLocationName.trim()
+    const info = newLocationInfo.trim()
+    if (!name || !info) return
+    setDraft((prev) => ({
+      ...prev,
+      locations: [...prev.locations, { id: `loc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name, locationInfo: info }],
+    }))
+    setNewLocationName('')
+    setNewLocationInfo('')
+  }
+
+  const removeLocation = (locationId: string) => {
+    setDraft((prev) => ({ ...prev, locations: prev.locations.filter((loc) => loc.id !== locationId) }))
+  }
+
+  const updateLocation = (locationId: string, patch: Partial<CrmLocationRow>) => {
+    setDraft((prev) => ({
+      ...prev,
+      locations: prev.locations.map((loc) => (loc.id === locationId ? { ...loc, ...patch } : loc)),
+    }))
+  }
+
+  const save = () => {
+    const code = draft.code.trim().toUpperCase()
+    if (code.length < 2 || code.length > 4) {
+      setError('Müşteri kodu 2-4 karakter olmalı.')
+      return
+    }
+    if (!draft.name.trim()) {
+      setError('Ticari unvan zorunludur.')
+      return
+    }
+    const duplicate = existingCodes
+      .filter((item) => (mode === 'edit' && initialCustomer ? item !== initialCustomer.code : true))
+      .some((item) => item.toUpperCase() === code)
+    if (duplicate) {
+      setError('Bu müşteri kodu zaten kullanılıyor.')
+      return
+    }
+    if (!draft.locations.length) {
+      setError('En az bir lokasyon eklemelisiniz.')
+      return
+    }
+    setError(null)
+    onSave({ ...draft, code })
+  }
+
   return (
     <div
-      className="gm-glass-modal-shell fixed inset-0 z-[80] flex items-end justify-center p-3 sm:items-center sm:p-6"
+      className="fixed inset-0 z-[95] flex items-end justify-center p-3 sm:items-center sm:p-6"
       role="presentation"
     >
       <button
         type="button"
-        className="gm-glass-drawer-backdrop absolute inset-0 bg-gray-900/25 backdrop-blur-[2px]"
-        aria-label="Kapat"
+        className="absolute inset-0 bg-slate-950/30 backdrop-blur-[2px]"
+        aria-label="Müşteri dialog kapat"
         onClick={onClose}
       />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="gm-glass-modal-shell relative z-10 flex max-h-[min(90dvh,720px)] w-full max-w-lg flex-col rounded-3xl border border-gray-200/90 bg-gray-100 p-5 shadow-neo-out dark:border-gray-700 dark:bg-gray-900 md:max-w-xl"
+        className="relative z-10 w-full max-w-2xl rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xl dark:border-slate-700/70 dark:bg-slate-900"
       >
-        <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="mb-4 flex items-start justify-between gap-2">
           <div>
-            <h2 id={titleId} className="text-lg font-semibold text-gray-900 dark:text-gray-50">
-              Yeni müşteri
+            <h2 id={titleId} className="text-base font-semibold text-slate-900 dark:text-slate-50">
+              {mode === 'edit' ? 'Müşteri düzenle' : 'Yeni müşteri'}
             </h2>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-              Adım {step + 1} / {steps.length} — {steps[step]}
-            </p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Genel bilgileri tek formda doldurun.</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-300 shadow-neo-out-sm transition hover:text-gray-900 dark:text-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-100 dark:ring-offset-gray-900"
+            className="inline-flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
             aria-label="Pencereyi kapat"
           >
-            <X className="size-5" strokeWidth={2} />
+            <X className="size-4" aria-hidden />
           </button>
         </div>
 
-        <div className="mb-4 flex gap-1 rounded-full bg-gray-100 dark:bg-gray-900 p-1 shadow-neo-in">
-          {steps.map((label, i) => (
-            <div
-              key={label}
-              className={`flex-1 rounded-full px-2 py-1.5 text-center text-xs font-semibold ${
-                i === step
-                  ? 'bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-50 shadow-neo-out-sm'
-                  : 'text-gray-600 dark:text-gray-300'
-              }`}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="sm:col-span-2">
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Ticari unvan</span>
+            <input
+              type="text"
+              value={draft.name}
+              onChange={(event) => setDraft((prev) => ({ ...prev, name: event.target.value }))}
+              placeholder="Örn. Örnek Yapı A.Ş."
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+            />
+          </label>
+          <label>
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Müşteri kodu</span>
+            <input
+              type="text"
+              value={draft.code}
+              onChange={(event) => setDraft((prev) => ({ ...prev, code: event.target.value.toUpperCase() }))}
+              maxLength={4}
+              placeholder="2-4 karakter"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm uppercase dark:border-slate-600 dark:bg-slate-950"
+            />
+          </label>
+          <label>
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Sektör</span>
+            <select
+              value={draft.sector}
+              onChange={(event) => setDraft((prev) => ({ ...prev, sector: event.target.value }))}
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
             >
-              {i + 1}. {label}
+              <option>Konut</option>
+              <option>Altyapı</option>
+              <option>Endüstriyel</option>
+            </select>
+          </label>
+          <label>
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Vergi numarası</span>
+            <input
+              type="text"
+              value={draft.taxId}
+              onChange={(event) => setDraft((prev) => ({ ...prev, taxId: event.target.value }))}
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+            />
+          </label>
+          <label>
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Şehir</span>
+            <input
+              type="text"
+              value={draft.city}
+              onChange={(event) => setDraft((prev) => ({ ...prev, city: event.target.value }))}
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+            />
+          </label>
+          <label className="sm:col-span-2">
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Fatura adresi</span>
+            <textarea
+              rows={3}
+              value={draft.billingAddress}
+              onChange={(event) => setDraft((prev) => ({ ...prev, billingAddress: event.target.value }))}
+              className="mt-1 w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+              placeholder="Mahalle, cadde, No…"
+            />
+          </label>
+
+          <div className="sm:col-span-2 border-t border-slate-200 pt-4 dark:border-slate-700">
+            <div className="flex items-start gap-2">
+              <MapPin className="mt-0.5 size-4 shrink-0 text-slate-400" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">Lokasyonlar</p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  En az bir lokasyon tanımlayın. Projelerde lokasyon seçimi bu listeden yapılır.
+                </p>
+              </div>
             </div>
-          ))}
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
+              <label className="min-w-0 flex-1">
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Lokasyon adı</span>
+                <input
+                  type="text"
+                  value={newLocationName}
+                  onChange={(event) => setNewLocationName(event.target.value)}
+                  placeholder="Örn. Merkez ofis"
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+                />
+              </label>
+              <label className="min-w-0 flex-[1.35]">
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Adres / konum</span>
+                <input
+                  type="text"
+                  value={newLocationInfo}
+                  onChange={(event) => setNewLocationInfo(event.target.value)}
+                  placeholder="İl, ilçe, açık adres…"
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={addLocation}
+                className="shrink-0 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white sm:mb-px"
+              >
+                Ekle
+              </button>
+            </div>
+            {draft.locations.length > 0 ? (
+              <ul className="mt-3 space-y-2" role="list">
+                {draft.locations.map((location) => (
+                  <li
+                    key={location.id}
+                    className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950/40 sm:flex-row sm:items-center"
+                  >
+                    <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2">
+                      <input
+                        type="text"
+                        value={location.name}
+                        onChange={(event) => updateLocation(location.id, { name: event.target.value })}
+                        aria-label="Lokasyon adı"
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+                      />
+                      <input
+                        type="text"
+                        value={location.locationInfo}
+                        onChange={(event) => updateLocation(location.id, { locationInfo: event.target.value })}
+                        aria-label="Adres"
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeLocation(location.id)}
+                      className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 dark:border-slate-600 dark:hover:border-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-300"
+                      aria-label="Lokasyonu kaldır"
+                    >
+                      <Trash2 className="size-4" aria-hidden />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Henüz lokasyon eklenmedi.</p>
+            )}
+          </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl bg-gray-50 dark:bg-gray-950/90/80 p-4 shadow-neo-in">
-          {step === 0 ? (
-            <div className="flex flex-col gap-3">
-              <label className="block">
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">Ticari unvan</span>
-                <input
-                  type="text"
-                  className="mt-1 w-full rounded-xl border-0 bg-gray-100 dark:bg-gray-900 px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 shadow-neo-in placeholder:text-gray-500 dark:text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
-                  placeholder="Örn. Örnek Yapı A.Ş."
-                />
-              </label>
-              <label className="block">
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">Müşteri kodu</span>
-                <input
-                  type="text"
-                  className="mt-1 w-full rounded-xl border-0 bg-gray-100 dark:bg-gray-900 px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 shadow-neo-in placeholder:text-gray-500 dark:text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
-                  placeholder="Otomatik veya elle"
-                />
-              </label>
-              <label className="block">
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">Sektör</span>
-                <select className="mt-1 w-full rounded-xl border-0 bg-gray-100 dark:bg-gray-900 px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 shadow-neo-in focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400">
-                  <option>Konut</option>
-                  <option>Altyapı</option>
-                  <option>Endüstriyel</option>
-                </select>
-              </label>
-            </div>
-          ) : null}
-          {step === 1 ? (
-            <div className="flex flex-col gap-3">
-              <label className="block">
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">Vergi numarası</span>
-                <input
-                  type="text"
-                  className="mt-1 w-full rounded-xl border-0 bg-gray-100 dark:bg-gray-900 px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 shadow-neo-in placeholder:text-gray-500 dark:text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
-                />
-              </label>
-              <label className="block">
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">Şehir</span>
-                <input
-                  type="text"
-                  className="mt-1 w-full rounded-xl border-0 bg-gray-100 dark:bg-gray-900 px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 shadow-neo-in placeholder:text-gray-500 dark:text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
-                />
-              </label>
-              <label className="block">
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">Fatura adresi</span>
-                <textarea
-                  rows={3}
-                  className="mt-1 w-full resize-none rounded-xl border-0 bg-gray-100 dark:bg-gray-900 px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 shadow-neo-in placeholder:text-gray-500 dark:text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
-                  placeholder="Mahalle, cadde, No…"
-                />
-              </label>
-            </div>
-          ) : null}
-          {step === 2 ? (
-            <div className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
-              <p className="font-medium text-gray-900 dark:text-gray-50">Kayıt özeti (yer tutucu)</p>
-              <p className="text-gray-600 dark:text-gray-300">
-                Bilgiler kaydedilmeden önce son kontrol. Gerçek uygulamada API’ye POST.
-              </p>
-            </div>
-          ) : null}
-        </div>
+        {error ? <p className="mt-3 text-xs font-semibold text-rose-600 dark:text-rose-300">{error}</p> : null}
 
-        <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-gray-200/90 dark:border-gray-700/90 pt-4">
+        <div className="mt-4 flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl bg-gray-100 dark:bg-gray-900 px-4 py-2.5 text-sm font-medium text-gray-800 dark:text-gray-100 shadow-neo-out-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-100 dark:ring-offset-gray-900"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200"
           >
             Vazgeç
           </button>
-          {step > 0 ? (
-            <button
-              type="button"
-              onClick={() => setStep((s) => s - 1)}
-              className="rounded-xl bg-gray-100 dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-gray-800 dark:text-gray-100 shadow-neo-out-sm transition active:shadow-neo-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-100 dark:ring-offset-gray-900"
-            >
-              Geri
-            </button>
-          ) : null}
-          {step < steps.length - 1 ? (
-            <button
-              type="button"
-              onClick={() => setStep((s) => s + 1)}
-              className="rounded-xl bg-gray-100 dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-gray-800 dark:text-gray-100 shadow-neo-out-sm transition active:shadow-neo-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-100 dark:ring-offset-gray-900"
-            >
-              İleri
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-xl bg-gray-800 px-4 py-2.5 text-sm font-semibold text-white shadow-neo-out-sm transition hover:bg-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-100 dark:ring-offset-gray-900"
-            >
-              Kaydet (demo)
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={save}
+            className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+          >
+            {mode === 'edit' ? 'Değişiklikleri kaydet' : 'Müşteriyi oluştur'}
+          </button>
         </div>
       </div>
     </div>

@@ -105,7 +105,9 @@ export function IfcImportWizardPanel({
         sequence: seq,
         revision: 0,
         instanceMark: '',
+        attributes: {},
         status: 'active',
+        namingTemplateId: activeTemplate.id,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }
@@ -135,9 +137,9 @@ export function IfcImportWizardPanel({
   ])
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       {/* Stepper */}
-      <div className="flex items-center gap-2 rounded-2xl bg-gray-50 p-3 shadow-neo-in dark:bg-gray-900/60">
+      <div className="flex items-center gap-2 rounded-xl border border-slate-200/70 bg-white/70 p-3 dark:border-slate-700/70 dark:bg-slate-900/40">
         {[1, 2, 3].map((s) => {
           const isActive = step === (s as Step)
           const isDone = step > (s as Step)
@@ -177,11 +179,11 @@ export function IfcImportWizardPanel({
 
       {/* Step 1 */}
       {step === 1 && (
-        <section className="flex flex-col gap-4 rounded-2xl bg-pf-surface p-4 shadow-neo-out dark:bg-gray-800/90">
+        <section className="flex flex-col gap-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-700/70 dark:bg-slate-900/40">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-50">
             CAD Dosyasını Yükle
           </h3>
-          <div className="rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 p-10 text-center dark:border-gray-700 dark:bg-gray-900/70">
+          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-900">
             <div className="mb-3 text-3xl opacity-60">📂</div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {t('elementIdentity.ifc.dropZone')}
@@ -201,10 +203,10 @@ export function IfcImportWizardPanel({
                   key={f.fileName}
                   onClick={() => setSelectedFile(f)}
                   className={[
-                    'flex items-center justify-between gap-2 rounded-xl p-3 text-left text-xs shadow-neo-out-sm transition',
+                    'flex items-center justify-between gap-2 rounded-lg border p-3 text-left text-xs transition',
                     selectedFile?.fileName === f.fileName
-                      ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900'
-                      : 'bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-900/70 dark:text-gray-200 dark:hover:bg-gray-900/50',
+                      ? 'border-slate-700 bg-slate-800 text-white dark:border-slate-300 dark:bg-slate-200 dark:text-slate-900'
+                      : 'border-slate-200 bg-white text-gray-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-200 dark:hover:bg-slate-800',
                   ].join(' ')}
                 >
                   <span>
@@ -226,7 +228,7 @@ export function IfcImportWizardPanel({
               <select
                 value={sourceOverride ?? selectedFile?.sourceSystem ?? 'IFC_GENERIC'}
                 onChange={(e) => setSourceOverride(e.target.value as SourceSystem)}
-                className="rounded-xl bg-gray-50 px-3 py-2 text-sm shadow-neo-in focus:outline-none dark:bg-gray-900/80 dark:text-gray-100"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               >
                 <option value="TEKLA">Tekla</option>
                 <option value="REVIT">Revit</option>
@@ -243,7 +245,7 @@ export function IfcImportWizardPanel({
                 type="text"
                 readOnly
                 value={`${activeProject.code} — ${activeProject.name ?? ''}`}
-                className="rounded-xl bg-gray-100 px-3 py-2 text-sm text-gray-700 shadow-neo-in dark:bg-gray-900/80 dark:text-gray-300"
+                className="rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-gray-700 dark:border-slate-600 dark:bg-slate-900 dark:text-gray-300"
               />
             </label>
           </div>
@@ -252,7 +254,7 @@ export function IfcImportWizardPanel({
             <button
               disabled={!selectedFile}
               onClick={() => selectedFile && parseFile(selectedFile)}
-              className="rounded-xl bg-gray-800 px-4 py-2 text-sm font-semibold text-white shadow-neo-out-sm hover:bg-gray-900 disabled:opacity-40 dark:bg-gray-200 dark:text-gray-900"
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900"
             >
               {t('elementIdentity.ifc.parse')}
             </button>
@@ -262,7 +264,7 @@ export function IfcImportWizardPanel({
 
       {/* Step 2 */}
       {step === 2 && (
-        <section className="flex flex-col gap-3 rounded-2xl bg-pf-surface p-4 shadow-neo-out dark:bg-gray-800/90">
+        <section className="flex flex-col gap-3 rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-700/70 dark:bg-slate-900/40">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-50">
               Eşlemeyi İncele
@@ -293,11 +295,11 @@ export function IfcImportWizardPanel({
               placeholder="Ara..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="ml-auto rounded-lg bg-gray-50 px-3 py-1 text-xs shadow-neo-in focus:outline-none dark:bg-gray-900/80 dark:text-gray-100"
+              className="ml-auto rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             />
           </div>
 
-          <div className="max-h-[50vh] overflow-auto rounded-xl bg-gray-50 shadow-neo-in dark:bg-gray-900/60">
+          <div className="max-h-[50vh] overflow-auto rounded-xl border border-slate-200/70 bg-white/70 dark:border-slate-700/70 dark:bg-slate-900/40">
             <table className="w-full table-auto text-xs">
               <thead className="sticky top-0 bg-gray-50 text-[10px] uppercase tracking-wider text-gray-500 dark:bg-gray-900/60 dark:text-gray-400">
                 <tr>
@@ -348,7 +350,7 @@ export function IfcImportWizardPanel({
                               overriddenTypologyId: null,
                             })
                           }}
-                          className="rounded-md bg-pf-surface px-2 py-1 text-[11px] shadow-neo-out-sm focus:outline-none dark:bg-gray-800/90 dark:text-gray-100"
+                          className="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                         >
                           <option value="">—</option>
                           {ELEMENT_TYPES.map((et_) => (
@@ -364,7 +366,7 @@ export function IfcImportWizardPanel({
                           onChange={(e) =>
                             updateRow(idx, { overriddenTypologyId: e.target.value || null })
                           }
-                          className="rounded-md bg-pf-surface px-2 py-1 text-[11px] shadow-neo-out-sm focus:outline-none dark:bg-gray-800/90 dark:text-gray-100"
+                          className="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                         >
                           <option value="">—</option>
                           {allowedTypologies.map((ty) => (
@@ -387,14 +389,14 @@ export function IfcImportWizardPanel({
           <div className="flex justify-between">
             <button
               onClick={() => setStep(1)}
-              className="rounded-xl bg-gray-200 px-4 py-2 text-xs font-medium text-gray-700 shadow-neo-out-sm dark:bg-gray-800 dark:text-gray-100"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-gray-700 dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100"
             >
               {t('elementIdentity.ifc.back')}
             </button>
             <button
               disabled={stats.included === 0}
               onClick={doImport}
-              className="rounded-xl bg-gray-800 px-4 py-2 text-sm font-semibold text-white shadow-neo-out-sm hover:bg-gray-900 disabled:opacity-40 dark:bg-gray-200 dark:text-gray-900"
+              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900"
             >
               {t('elementIdentity.ifc.doImport')} ({stats.included})
             </button>
@@ -404,7 +406,7 @@ export function IfcImportWizardPanel({
 
       {/* Step 3 */}
       {step === 3 && importResult && (
-        <section className="flex flex-col gap-4 rounded-2xl bg-pf-surface p-4 shadow-neo-out dark:bg-gray-800/90">
+        <section className="flex flex-col gap-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-700/70 dark:bg-slate-900/40">
           <div className="rounded-xl bg-emerald-50 p-4 text-emerald-900 shadow-neo-in dark:bg-emerald-900/30 dark:text-emerald-200">
             ✓{' '}
             {t('elementIdentity.ifc.success').replace('{{count}}', String(importResult.count))}
@@ -414,7 +416,7 @@ export function IfcImportWizardPanel({
             <SummaryCard label="Skip edildi" value={stats.total - importResult.count} tone="amber" />
             <SummaryCard label="Hedef proje" value={activeProject.code} />
           </div>
-          <div className="rounded-xl bg-gray-50 p-3 shadow-neo-in dark:bg-gray-900/60">
+          <div className="rounded-xl border border-slate-200/70 bg-white/70 p-3 dark:border-slate-700/70 dark:bg-slate-900/40">
             <h4 className="mb-2 text-xs font-semibold text-gray-900 dark:text-gray-50">
               Eleman tipi dağılımı
             </h4>
@@ -440,13 +442,13 @@ export function IfcImportWizardPanel({
                 setSelectedFile(null)
                 setImportResult(null)
               }}
-              className="rounded-xl bg-gray-200 px-4 py-2 text-xs font-medium text-gray-700 shadow-neo-out-sm dark:bg-gray-800 dark:text-gray-100"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-gray-700 dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100"
             >
               Yeni Import
             </button>
             <button
               onClick={onNavigateToList}
-              className="rounded-xl bg-gray-800 px-4 py-2 text-sm font-semibold text-white shadow-neo-out-sm dark:bg-gray-200 dark:text-gray-900"
+              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white dark:bg-slate-100 dark:text-slate-900"
             >
               Proje eleman listesine git →
             </button>

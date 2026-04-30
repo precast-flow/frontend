@@ -222,16 +222,16 @@ export function TemplateBuilderPanel() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       {/* Top bar */}
-      <div className="flex flex-wrap items-end justify-between gap-3 rounded-2xl bg-gray-50 p-3 shadow-neo-in dark:bg-gray-900/60">
+      <div className="flex flex-wrap items-end justify-between gap-3 rounded-xl border border-slate-200/70 bg-white/70 p-3 dark:border-slate-700/70 dark:bg-slate-900/40">
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex min-w-[12rem] flex-col gap-1 text-xs">
             <span className="font-semibold text-gray-600 dark:text-gray-300">Template</span>
             <select
               value={draft.id}
               onChange={(e) => setActiveTemplateId(e.target.value)}
-              className="rounded-xl bg-pf-surface px-3 py-2 text-sm shadow-neo-out-sm focus:outline-none dark:bg-gray-800/90 dark:text-gray-100"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             >
               {firmTemplates.map((tpl) => (
                 <option key={tpl.id} value={tpl.id}>
@@ -246,12 +246,12 @@ export function TemplateBuilderPanel() {
               type="text"
               value={draft.name}
               onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
-              className="rounded-xl bg-pf-surface px-3 py-2 text-sm shadow-neo-out-sm focus:outline-none dark:bg-gray-800/90 dark:text-gray-100"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             />
           </label>
           <button
             onClick={createNewTemplate}
-            className="self-end rounded-xl bg-gray-200 px-3 py-2 text-xs font-medium text-gray-700 shadow-neo-out-sm hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-100"
+            className="self-end rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100 dark:hover:bg-slate-800"
           >
             + {t('elementIdentity.template.newTemplate')}
           </button>
@@ -260,14 +260,14 @@ export function TemplateBuilderPanel() {
           <button
             onClick={cancel}
             disabled={!dirty}
-            className="rounded-xl bg-gray-200 px-4 py-2 text-xs font-medium text-gray-700 shadow-neo-out-sm disabled:opacity-40 dark:bg-gray-800 dark:text-gray-100"
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-gray-700 disabled:opacity-40 dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100"
           >
             {t('elementIdentity.cancel')}
           </button>
           <button
             onClick={save}
             disabled={!dirty}
-            className="rounded-xl bg-gray-800 px-4 py-2 text-xs font-semibold text-white shadow-neo-out-sm hover:bg-gray-900 disabled:opacity-40 dark:bg-gray-200 dark:text-gray-900"
+            className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900"
           >
             {t('elementIdentity.save')}
           </button>
@@ -275,12 +275,12 @@ export function TemplateBuilderPanel() {
       </div>
 
       {/* Presets */}
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-3">
         {PRESETS.map((preset) => (
           <button
             key={preset.id}
             onClick={() => applyPreset(preset)}
-            className="flex flex-col items-start gap-2 rounded-2xl bg-pf-surface p-3 text-left shadow-neo-out-sm transition hover:shadow-neo-out dark:bg-gray-800/90"
+            className="flex flex-col items-start gap-2 rounded-xl border border-slate-200/70 bg-white/70 p-3 text-left transition hover:bg-white dark:border-slate-700/70 dark:bg-slate-900/40 dark:hover:bg-slate-900/60"
           >
             <span className="text-xs font-semibold text-gray-900 dark:text-gray-50">
               {t(preset.labelKey)}
@@ -297,9 +297,9 @@ export function TemplateBuilderPanel() {
       </div>
 
       {/* 3-column layout */}
-      <div className="grid gap-4 xl:grid-cols-[220px_1fr_360px]">
+      <div className="grid gap-3 xl:grid-cols-[220px_1fr_360px]">
         {/* Palette */}
-        <aside className="flex flex-col gap-2 rounded-2xl bg-gray-50 p-3 shadow-neo-in dark:bg-gray-900/60">
+        <aside className="flex flex-col gap-2 rounded-xl border border-slate-200/70 bg-white/70 p-3 dark:border-slate-700/70 dark:bg-slate-900/40">
           <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300">
             {t('elementIdentity.template.palette')}
           </h3>
@@ -313,7 +313,7 @@ export function TemplateBuilderPanel() {
               onDragStart={(e) => onPaletteDragStart(e, tk)}
               onDoubleClick={() => addTokenToTemplate(tk)}
               title="Sürükle veya çift tıkla"
-              className="flex cursor-grab items-center justify-between gap-2 rounded-xl bg-pf-surface px-3 py-2 text-xs font-medium shadow-neo-out-sm active:cursor-grabbing dark:bg-gray-800/90"
+              className="flex cursor-grab items-center justify-between gap-2 rounded-lg border border-slate-200/70 bg-white px-3 py-2 text-xs font-medium active:cursor-grabbing dark:border-slate-700/70 dark:bg-slate-900"
             >
               <span className="select-none text-gray-500">⋮⋮</span>
               <span className="flex-1 truncate text-gray-900 dark:text-gray-50">
@@ -328,7 +328,7 @@ export function TemplateBuilderPanel() {
             (tk) => (
               <div
                 key={`active-${tk}`}
-                className="flex items-center justify-between gap-2 rounded-xl bg-pf-surface/60 px-3 py-1.5 text-[11px] text-gray-500 dark:bg-gray-800/60 dark:text-gray-400"
+                className="flex items-center justify-between gap-2 rounded-lg border border-slate-200/60 bg-slate-100/70 px-3 py-1.5 text-[11px] text-gray-500 dark:border-slate-700/60 dark:bg-slate-800/50 dark:text-gray-400"
               >
                 <span>✓ {t(`elementIdentity.token.${tk}`)}</span>
               </div>
@@ -342,10 +342,10 @@ export function TemplateBuilderPanel() {
           onDragLeave={() => setDragOver(false)}
           onDrop={onDropZoneDrop}
           className={[
-            'flex flex-col gap-2 rounded-2xl border-2 p-3 transition',
+            'flex flex-col gap-2 rounded-xl border p-3 transition',
             dragOver
-              ? 'border-gray-700 bg-gray-100 dark:border-gray-300 dark:bg-gray-900/80'
-              : 'border-dashed border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/60',
+              ? 'border-slate-500 bg-slate-100 dark:border-slate-400 dark:bg-slate-900/70'
+              : 'border-dashed border-slate-300 bg-white/70 dark:border-slate-700 dark:bg-slate-900/40',
           ].join(' ')}
         >
           <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -361,7 +361,7 @@ export function TemplateBuilderPanel() {
             return (
               <div
                 key={tkCfg.token}
-                className="flex flex-col gap-2 rounded-xl bg-pf-surface p-3 shadow-neo-out-sm dark:bg-gray-800/90 md:flex-row md:items-center"
+                className="flex flex-col gap-2 rounded-lg border border-slate-200/70 bg-white p-3 dark:border-slate-700/70 dark:bg-slate-900 md:flex-row md:items-center"
               >
                 <div className="flex items-center gap-2">
                   <span className="w-8 font-mono text-xs text-gray-400">#{idx + 1}</span>
@@ -458,7 +458,7 @@ export function TemplateBuilderPanel() {
       </div>
 
       {/* Global options */}
-      <section className="rounded-2xl bg-gray-50 p-3 shadow-neo-in dark:bg-gray-900/60">
+      <section className="rounded-xl border border-slate-200/70 bg-white/70 p-3 dark:border-slate-700/70 dark:bg-slate-900/40">
         <h3 className="mb-2 text-xs font-semibold text-gray-700 dark:text-gray-300">
           {t('elementIdentity.template.globalOptions')}
         </h3>

@@ -16,6 +16,7 @@ import {
   PlayCircle,
   FlaskConical,
   Gauge,
+  SlidersHorizontal,
   ScanEye,
   Settings,
   Shield,
@@ -44,6 +45,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   project: FolderKanban,
   engineering: ClipboardCheck,
   'element-identity': Tags,
+  'configuration-center': SlidersHorizontal,
   'production-summary': Sunrise,
   mes: Factory,
   'mold-board': LayoutGrid,
@@ -77,6 +79,7 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   quality: ShieldCheck,
   logistics: Truck,
   system: Shield,
+  configuration: Settings,
   account: UserCircle,
 }
 

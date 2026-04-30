@@ -197,43 +197,53 @@ export function AppTopNav({ onMenuToggle, onModuleNavigate, startItems, groups, 
             className="flex min-h-0 min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-2 overflow-visible md:flex-nowrap md:gap-x-2"
             aria-label={t('topNav.aria')}
           >
-            <TopNavDropdown
-              ddId="start"
-              openKey={openGroupKey}
-              setOpenKey={setNavDropdownKey}
-              triggerLabel={t('sidebar.start')}
-              triggerIcon={
-                <LayoutGrid className="size-4 shrink-0 text-slate-500 dark:text-[var(--glass-text-muted)]" strokeWidth={2} aria-hidden />
-              }
-              hasActive={startHasActiveItem(startItems, activeId)}
-              menuId={menuInstanceId}
-            >
-              {startItems.map((item) => (
-                <TopNavDropdownLink key={item.id} item={item} activeId={activeId} onPick={closeDropdowns} />
-              ))}
-            </TopNavDropdown>
-
-            {groups.map((group) => (
+            {startItems.length > 0 ? (
               <TopNavDropdown
-                key={group.id}
-                ddId={group.id}
+                ddId="start"
                 openKey={openGroupKey}
                 setOpenKey={setNavDropdownKey}
-                triggerLabel={t(group.titleKey)}
+                triggerLabel={t('sidebar.start')}
                 triggerIcon={
-                <NavSectionIcon
-                  groupId={group.id}
-                  className="size-4 text-slate-500 dark:text-[var(--glass-text-muted)]"
-                />
-              }
-                hasActive={groupHasActiveItem(group, activeId)}
+                  <LayoutGrid className="size-4 shrink-0 text-slate-500 dark:text-[var(--glass-text-muted)]" strokeWidth={2} aria-hidden />
+                }
+                hasActive={startHasActiveItem(startItems, activeId)}
                 menuId={menuInstanceId}
               >
-                {group.items.map((item) => (
+                {startItems.map((item) => (
                   <TopNavDropdownLink key={item.id} item={item} activeId={activeId} onPick={closeDropdowns} />
                 ))}
               </TopNavDropdown>
-            ))}
+            ) : null}
+
+            {groups.map((group) => {
+              const filteredItems =
+                group.id === 'planning' ? group.items.filter((item) => item.id !== 'planning-hub') : group.items
+              return (
+                <TopNavDropdown
+                  key={group.id}
+                  ddId={group.id}
+                  openKey={openGroupKey}
+                  setOpenKey={setNavDropdownKey}
+                  triggerLabel={t(group.titleKey)}
+                  triggerIcon={
+                    <NavSectionIcon
+                      groupId={group.id}
+                      className="size-4 text-slate-500 dark:text-[var(--glass-text-muted)]"
+                    />
+                  }
+                  hasActive={groupHasActiveItem(group, activeId)}
+                  menuId={menuInstanceId}
+                >
+                  {filteredItems.length === 0 ? (
+                    <p className="px-3 py-2 text-left text-xs text-slate-500 dark:text-slate-400">{t('topNav.sectionEmpty')}</p>
+                  ) : (
+                    filteredItems.map((item) => (
+                      <TopNavDropdownLink key={item.id} item={item} activeId={activeId} onPick={closeDropdowns} />
+                    ))
+                  )}
+                </TopNavDropdown>
+              )
+            })}
           </nav>
 
           <TopNavChrome

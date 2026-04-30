@@ -62,7 +62,7 @@ export function ProjectElementsPanel() {
 
   if (projectOnly.length === 0) {
     return (
-      <section className="flex flex-col gap-3 rounded-2xl bg-pf-surface p-6 text-center shadow-neo-out dark:bg-gray-800/90">
+      <section className="flex flex-col gap-3 rounded-xl border border-slate-200/70 bg-white/70 p-6 text-center dark:border-slate-700/70 dark:bg-slate-900/40">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-50">
           {t('elementIdentity.projectElements.title')}
         </h3>
@@ -74,7 +74,7 @@ export function ProjectElementsPanel() {
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-2xl bg-pf-surface p-4 shadow-neo-out dark:bg-gray-800/90">
+    <section className="flex flex-col gap-3 rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-700/70 dark:bg-slate-900/40">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-50">
           {t('elementIdentity.projectElements.title')} · {activeProject.code}
@@ -114,11 +114,11 @@ export function ProjectElementsPanel() {
           placeholder="Ara (instance mark / kaynak ad)..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="ml-auto rounded-lg bg-gray-50 px-3 py-1 text-xs shadow-neo-in focus:outline-none dark:bg-gray-900/80 dark:text-gray-100"
+          className="ml-auto rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
         />
       </div>
 
-      <div className="max-h-[60vh] overflow-auto rounded-xl bg-gray-50 shadow-neo-in dark:bg-gray-900/60">
+      <div className="max-h-[60vh] overflow-auto rounded-xl border border-slate-200/70 bg-white/70 dark:border-slate-700/70 dark:bg-slate-900/40">
         <table className="w-full table-auto text-xs">
           <thead className="sticky top-0 bg-gray-50 text-[10px] uppercase tracking-wider text-gray-500 dark:bg-gray-900/60 dark:text-gray-400">
             <tr>

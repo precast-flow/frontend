@@ -29,9 +29,9 @@ function ElementIdentityShell() {
   ]
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       {/* Header shelf */}
-      <div className="flex flex-wrap items-end justify-between gap-3 rounded-2xl bg-gray-50 p-4 shadow-neo-in dark:bg-gray-900/60">
+      <div className="flex flex-wrap items-end justify-between gap-3 rounded-xl border border-slate-200/70 bg-white/70 p-3 dark:border-slate-700/70 dark:bg-slate-900/40">
         <div>
           <div className="text-xs uppercase tracking-widest text-gray-500 dark:text-gray-400">
             {t('elementIdentity.demoData')}
@@ -48,11 +48,11 @@ function ElementIdentityShell() {
             <select
               value={activeFirmId}
               onChange={(e) => setActiveFirmId(e.target.value)}
-              className="rounded-xl bg-gray-50 px-3 py-2 text-sm shadow-neo-in focus:outline-none dark:bg-gray-900/80 dark:text-gray-100"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             >
               {firms.map((f) => (
                 <option key={f.id} value={f.id}>
-                  {f.name} ({f.firmCode})
+                  {f.name} ({f.firmCodePrefix})
                 </option>
               ))}
             </select>
@@ -64,7 +64,7 @@ function ElementIdentityShell() {
             <select
               value={activeProjectId}
               onChange={(e) => setActiveProjectId(e.target.value)}
-              className="rounded-xl bg-gray-50 px-3 py-2 text-sm shadow-neo-in focus:outline-none dark:bg-gray-900/80 dark:text-gray-100"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             >
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -79,7 +79,7 @@ function ElementIdentityShell() {
       {/* Tab bar */}
       <div
         role="tablist"
-        className="flex flex-wrap gap-2 rounded-2xl bg-gray-50 p-2 shadow-neo-in dark:bg-gray-900/60"
+        className="flex flex-wrap gap-2 rounded-xl border border-slate-200/70 bg-white/70 p-2 dark:border-slate-700/70 dark:bg-slate-900/40"
       >
         {tabs.map((tab_) => {
           const isActive = tab === tab_.id
@@ -92,7 +92,7 @@ function ElementIdentityShell() {
               className={[
                 'rounded-xl px-4 py-2 text-sm font-medium transition',
                 isActive
-                  ? 'bg-pf-surface text-gray-900 shadow-neo-out dark:bg-gray-800 dark:text-gray-50'
+                  ? 'bg-slate-100 text-gray-900 ring-1 ring-inset ring-slate-300/70 dark:bg-slate-800 dark:text-gray-50 dark:ring-slate-600/70'
                   : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100',
               ].join(' ')}
             >
