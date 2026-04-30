@@ -34,7 +34,7 @@ const e2eTr: E2eTriple[] = [
   },
   {
     id: 6,
-    screen: 'CRM / İletişim',
+    screen: 'Müşteri Yönetimi',
     control: '“Yeni müşteri” formu doldurulur, kaydet.',
     mock: 'Müşteri listesinde yeni kayıt görünür.',
   },
@@ -126,17 +126,19 @@ const shell: Record<string, string> = {
   'nav.sidebar.section.quality': 'Kalite',
   'nav.sidebar.section.logistics': 'Lojistik & Saha',
   'nav.sidebar.section.system': 'Sistem & Onay',
+  'nav.sidebar.section.configuration': 'Konfigürasyon',
   'nav.sidebar.section.account': 'Hesap',
-  'nav.crm': 'CRM / İletişim',
+  'nav.crm': 'Müşteri Yönetimi',
   'nav.quote': 'Teklif & Keşif',
   'nav.workStart': 'İş başlat',
   'nav.project': 'Proje Yönetimi',
   'nav.engineering': 'Mühendislik Entegrasyonu',
   'nav.elementIdentity': 'Eleman Kimlik ve İsimlendirme',
+  'nav.configurationCenter': 'Konfigürasyon Merkezi',
   'nav.manualPieceStudio': 'Manuel Parça ve Şablon Stüdyosu',
   'nav.productionSummary': 'Üretim özeti',
   'nav.mes': 'Üretim (MES)',
-  'nav.planningDesign': 'Planlama — Tasarım',
+  'nav.planningDesign': 'Üretim planlama',
   'nav.moldBoard': 'Kalıp tahtası',
   'nav.pendingPriority': 'Öncelik raporu',
   'nav.concreteRecipe': 'Beton / reçete',
@@ -188,7 +190,7 @@ const shell: Record<string, string> = {
   'main.desc.mes':
     'Üretim emirleri — liste / pano, detayda Genel · Parçalar · Beton · Birim talepleri (Kalite/ARGE, bie-07) · Kalite (mvp-09).',
   'main.desc.planningDesign':
-    'Kalıp × gün × vardiya planlama ızgarası — sürükle-bırak, özet, durum, filtre ve taslak/yayın (plan-01…08 mock).',
+    'Ürün planı — kalıp × gün × vardiya ızgarası; sürükle-bırak, özet, durum, yan filtreler ve taslak/yayın (mock).',
   'main.desc.moldBoard':
     'Kalıp K-01…K-12 panosu — tek aktif iş / hücre, sürükle-bırak veya Taşı; prod-03 (mock).',
   'main.desc.pendingPriority':
@@ -1515,6 +1517,7 @@ const shell: Record<string, string> = {
   'topNav.subtitle': 'Hızlı erişim · ERP',
   'topNav.aria': 'Üst kısayol menüsü',
   'topNav.badge': 'Üst şerit',
+  'topNav.sectionEmpty': 'Bu bölümde henüz modül yok.',
   'topbar.tagline': 'ERP · MES · Lojistik',
   'topbar.factory': 'Fabrika',
   'topbar.factorySelect': 'Fabrika seç',

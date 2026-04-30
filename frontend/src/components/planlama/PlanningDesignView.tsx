@@ -4,12 +4,12 @@ import { Link } from 'react-router-dom'
 import {
   Calendar,
   CheckCircle2,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   FileText,
   Filter,
   GripVertical,
+  ListOrdered,
   PauseCircle,
   PlayCircle,
   History,
@@ -23,9 +23,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
-import { useProductionRolePreviewOptional } from '../../context/ProductionRolePreviewContext'
 import { useI18n } from '../../i18n/I18nProvider'
-import { getRoleMatrixRow } from '../../data/productionRoleMatrixMock'
 import {
   CONCRETE_RECIPES_MOCK,
   INITIAL_PLAN_ITEMS,
@@ -133,9 +131,7 @@ function statusIcon(key: PlanStatusKey) {
 
 export function PlanningDesignView() {
   const { t } = useI18n()
-  const preview = useProductionRolePreviewOptional()
-  const matrixRow = preview?.previewRoleId ? getRoleMatrixRow(preview.previewRoleId) : null
-  const canEdit = !matrixRow || matrixRow.editIds.includes('planning-design')
+  const canEdit = true
 
   const [weekStartMonday, setWeekStartMonday] = useState(() =>
     mondayOfWeekUtc(new Date('2026-03-24T12:00:00.000Z')),
@@ -160,7 +156,9 @@ export function PlanningDesignView() {
     ],
     cursor: 0,
   }))
-  const [historyPanelOpen, setHistoryPanelOpen] = useState(false)
+  const [leftDrawerOpen, setLeftDrawerOpen] = useState(false)
+  const [leftDrawerTab, setLeftDrawerTab] = useState<'filters' | 'queue'>('filters')
+  const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false)
 
   const [dragId, setDragId] = useState<string | null>(null)
   const [dropTarget, setDropTarget] = useState<{ moldId: string; slot: number } | null>(null)
@@ -177,8 +175,6 @@ export function PlanningDesignView() {
   const [shiftSubmenuPos, setShiftSubmenuPos] = useState<{ left: number; top: number } | null>(null)
   const contextShiftAnchorRef = useRef<HTMLDivElement>(null)
   const shiftCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [filterOpen, setFilterOpen] = useState(false)
-  const [queueOpen, setQueueOpen] = useState(true)
   const [assignOpen, setAssignOpen] = useState<{ moldId: string; slot: number } | null>(null)
   const [nonProdModal, setNonProdModal] = useState<{ moldId: string; slot: number; itemId: string } | null>(
     null,
@@ -580,8 +576,9 @@ export function PlanningDesignView() {
   useEffect(() => {
     const onKey = (ev: KeyboardEvent) => {
       if (ev.key === 'Escape') {
-        setFilterOpen(false)
-        setHistoryPanelOpen(false)
+        setLeftDrawerOpen(false)
+        setHistoryDrawerOpen(false)
+        setSelectedId(null)
         setAssignOpen(null)
         setDayDetailDate(null)
         setDropTarget(null)
@@ -676,6 +673,9 @@ export function PlanningDesignView() {
 
   const selected = items.find((i) => i.id === selectedId) ?? null
 
+  const rightInsightOpen =
+    historyDrawerOpen || Boolean(dayDetailDate && dayDetailData) || Boolean(selected)
+
   return (
     <>
     <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-[1.25rem]">
@@ -701,305 +701,626 @@ export function PlanningDesignView() {
           </nav>
         </div>
 
-        <div className="okan-liquid-root flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.25rem]">
-      <div className="okan-liquid-blobs" aria-hidden>
-        <div className="okan-liquid-blob okan-liquid-blob--a" />
-        <div className="okan-liquid-blob okan-liquid-blob--b" />
-        <div className="okan-liquid-blob okan-liquid-blob--c" />
-      </div>
-      <div className="okan-liquid-content flex min-h-0 flex-1 flex-col">
-    <div
-      className="gm-planning-design-view flex min-h-0 flex-1 flex-col"
-      style={{ ['--gm-planning-mold-rail' as string]: `${MOLD_COL_PX}px` }}
-    >
-      <div className="okan-liquid-panel gm-planning-design-shell flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="gm-planning-toolbar relative z-[75] grid min-h-11 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 overflow-visible border-b border-[var(--okan-panel-border-soft)] px-3 py-2 md:gap-3">
-        <div className="flex min-w-0 items-center justify-self-start gap-2">
-          <button
-            type="button"
-            onClick={() => setFilterOpen((v) => !v)}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border-0 bg-transparent px-3 py-2 text-sm font-semibold text-slate-800 shadow-none transition hover:bg-slate-200/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:text-slate-100 dark:hover:bg-white/10"
-            aria-expanded={filterOpen}
-            aria-controls="gm-planning-filter-panel"
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/80 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/45">
+          <div
+            className="gm-planning-design-view flex min-h-0 flex-1 flex-col"
+            style={{ ['--gm-planning-mold-rail' as string]: `${MOLD_COL_PX}px` }}
           >
-            <Filter className="size-4 shrink-0 opacity-80" aria-hidden />
-            <span>Filtrele</span>
-            {activePlanningFilterCount > 0 ? (
-              <span className="rounded-full bg-sky-500/25 px-1.5 py-0.5 text-xs font-bold tabular-nums text-sky-900 dark:bg-sky-400/20 dark:text-sky-100">
-                {activePlanningFilterCount}
-              </span>
-            ) : null}
-            <ChevronDown
-              className={`size-4 shrink-0 opacity-70 transition ${filterOpen ? 'rotate-180' : ''}`}
-              aria-hidden
-            />
-          </button>
-        </div>
-        <div className="flex shrink-0 items-center justify-center gap-1.5 md:gap-2">
-          <button
-            type="button"
-            onClick={() => goToday()}
-            className="okan-liquid-btn-secondary px-2 py-1.5 text-sm font-semibold md:px-3 md:py-2"
-          >
-            Bugün
-          </button>
-          <button
-            type="button"
-            onClick={goPrev}
-            className="okan-liquid-btn-secondary p-1.5 md:p-2"
-            aria-label="Önceki hafta"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <button
-            type="button"
-            onClick={goNext}
-            className="okan-liquid-btn-secondary p-1.5 md:p-2"
-            aria-label="Sonraki hafta"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="flex min-w-0 flex-wrap items-center justify-end justify-self-end gap-1.5 md:gap-2">
-          <button
-            type="button"
-            disabled={!canEdit || planHistory.cursor <= 0}
-            onClick={() => restoreCheckpoint(planHistory.cursor - 1)}
-            className="inline-flex shrink-0 items-center rounded-lg border-0 bg-transparent p-2 text-slate-700 hover:bg-slate-200/40 disabled:opacity-35 dark:text-slate-200 dark:hover:bg-white/10"
-            title="Önceki adım (⌘Z / Ctrl+Z)"
-            aria-label="Önceki adım"
-          >
-            <Undo2 className="h-4 w-4" aria-hidden />
-          </button>
-          <button
-            type="button"
-            disabled={!canEdit || planHistory.cursor >= planHistory.checkpoints.length - 1}
-            onClick={() => restoreCheckpoint(planHistory.cursor + 1)}
-            className="inline-flex shrink-0 items-center rounded-lg border-0 bg-transparent p-2 text-slate-700 hover:bg-slate-200/40 disabled:opacity-35 dark:text-slate-200 dark:hover:bg-white/10"
-            title="İleri (⇧⌘Z / Ctrl+Shift+Z)"
-            aria-label="İleri"
-          >
-            <Redo2 className="h-4 w-4" aria-hidden />
-          </button>
-          <button
-            type="button"
-            onClick={() => setHistoryPanelOpen((v) => !v)}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border-0 bg-transparent px-2 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-200/35 dark:text-slate-100 dark:hover:bg-white/10"
-            aria-expanded={historyPanelOpen}
-            aria-controls="gm-planning-history-panel"
-          >
-            <History className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
-            <span className="hidden sm:inline">Geçmiş</span>
-            <ChevronDown
-              className={`hidden size-4 shrink-0 opacity-70 transition sm:block ${historyPanelOpen ? 'rotate-180' : ''}`}
-              aria-hidden
-            />
-          </button>
-          <button
-            type="button"
-            disabled={!canEdit}
-            onClick={saveDraftAndResetHistory}
-            className="okan-liquid-btn-primary inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold disabled:opacity-50"
-          >
-            <Save className="h-4 w-4" />
-            Kaydet
-          </button>
-          <button
-            type="button"
-            disabled={!canEdit || draftState === 'published'}
-            onClick={() => {
-              if (!canEdit) return
-              setDraftState('published')
-            }}
-            className="okan-liquid-btn-secondary inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold disabled:opacity-50"
-          >
-            <Send className="h-4 w-4" />
-            Yayınla
-          </button>
-        </div>
-      </div>
-
-      {filterOpen ? (
-        <div
-          id="gm-planning-filter-panel"
-          className="max-h-[min(52vh,28rem)] shrink-0 space-y-4 overflow-y-auto border-t border-[var(--okan-panel-border-soft)] bg-transparent px-3 pb-3 pt-3"
-          role="region"
-          aria-label="Planlama filtreleri"
-        >
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Ara</p>
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Ürün / emir / proje…"
-              title="Ürün / emir / proje"
-              className="mt-2 w-full border-x-0 border-b border-t-0 border-slate-200/80 bg-transparent py-2 text-sm text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-sky-500/60 focus:ring-0 dark:border-slate-600/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400/50"
-            />
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Kalıp</p>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {PLANNING_MOLDS.map((m) => {
-                const on = moldFilter.includes(m.moldId)
-                return (
+            <div className="gm-planning-design-shell flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent">
+              <div className="gm-planning-toolbar relative z-[75] grid min-h-11 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 overflow-visible border-b border-slate-200/70 px-3 py-2 dark:border-slate-700/50 md:gap-3">
+                <div className="flex min-w-0 flex-wrap items-center justify-self-start gap-2">
                   <button
-                    key={m.moldId}
                     type="button"
-                    onClick={() =>
-                      setMoldFilter((prev) =>
-                        on ? prev.filter((x) => x !== m.moldId) : [...prev, m.moldId],
-                      )
-                    }
-                    className={`rounded-full px-2 py-0.5 text-xs ${
-                      on
-                        ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900'
-                        : 'bg-transparent text-slate-700 ring-1 ring-slate-300/60 dark:text-slate-200 dark:ring-slate-500/35'
-                    }`}
+                    onClick={() => {
+                      if (leftDrawerOpen && leftDrawerTab === 'filters') setLeftDrawerOpen(false)
+                      else {
+                        setLeftDrawerTab('filters')
+                        setLeftDrawerOpen(true)
+                      }
+                    }}
+                    aria-expanded={leftDrawerOpen && leftDrawerTab === 'filters'}
+                    aria-controls="gm-planning-left-drawer"
+                    className={[
+                      'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
+                      leftDrawerOpen && leftDrawerTab === 'filters'
+                        ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
+                        : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
+                    ].join(' ')}
                   >
-                    {m.moldId}
+                    <Filter className="size-3.5 shrink-0" aria-hidden />
+                    Filtrele
+                    {activePlanningFilterCount > 0 ? (
+                      <span className="rounded-full bg-sky-500/25 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-sky-900 dark:bg-sky-400/20 dark:text-sky-100">
+                        {activePlanningFilterCount}
+                      </span>
+                    ) : null}
                   </button>
-                )
-              })}
-            </div>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Durum</p>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {(Object.keys(STATUS_META) as PlanStatusKey[]).map((k) => {
-                const on = statusFilter.includes(k)
-                return (
                   <button
-                    key={k}
                     type="button"
-                    onClick={() =>
-                      setStatusFilter((prev) => (on ? prev.filter((x) => x !== k) : [...prev, k]))
-                    }
-                    className={`rounded-full px-2 py-0.5 text-xs ${
-                      on
-                        ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900'
-                        : 'bg-transparent text-slate-700 ring-1 ring-slate-300/60 dark:text-slate-200 dark:ring-slate-500/35'
-                    }`}
+                    onClick={() => {
+                      if (leftDrawerOpen && leftDrawerTab === 'queue') setLeftDrawerOpen(false)
+                      else {
+                        setLeftDrawerTab('queue')
+                        setLeftDrawerOpen(true)
+                      }
+                    }}
+                    aria-expanded={leftDrawerOpen && leftDrawerTab === 'queue'}
+                    aria-controls="gm-planning-left-drawer"
+                    className={[
+                      'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
+                      leftDrawerOpen && leftDrawerTab === 'queue'
+                        ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
+                        : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
+                    ].join(' ')}
                   >
-                    {STATUS_META[k].label}
+                    <ListOrdered className="size-3.5 shrink-0" aria-hidden />
+                    <span className="hidden sm:inline">Bekleyen iş</span>
+                    <span className="sm:hidden">Kuyruk</span>
                   </button>
-                )
-              })}
-            </div>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
-              İş günleri
-            </p>
-            <label
-              className="mt-2 flex cursor-pointer items-center gap-2 text-sm text-slate-700 dark:text-slate-200"
-              title="Yalnızca iş günlerini göster"
-            >
-              <input
-                type="checkbox"
-                checked={workdaysOnly}
-                onChange={(e) => setWorkdaysOnly(e.target.checked)}
-                className="size-4 shrink-0 rounded border-slate-400 text-sky-600 focus:ring-sky-500/40 dark:border-slate-500 dark:bg-slate-900/80"
-              />
-              <span>Yalnızca iş günlerini göster</span>
-            </label>
-          </div>
-        </div>
-      ) : null}
-
-      {historyPanelOpen ? (
-        <div
-          id="gm-planning-history-panel"
-          className="max-h-[min(40vh,22rem)] shrink-0 overflow-y-auto border-t border-[var(--okan-panel-border-soft)] bg-transparent px-3 pb-3 pt-3"
-          role="region"
-          aria-label="Plan değişiklik geçmişi"
-        >
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
-            Kayıtlı sürümler
-          </p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Bir sürüme dönünce daha sonraki sürümler yeni düzenleme yapılana kadar gizlenir. ⌘Z / Ctrl+Z ile önceki
-            adım, ⇧⌘Z ile ileri.
-          </p>
-          <ol className="mt-3 list-none space-y-2 p-0">
-            {[...planHistory.checkpoints.slice(0, planHistory.cursor + 1)]
-              .map((cp, idx) => ({ cp, index: idx }))
-              .reverse()
-              .map(({ cp, index }) => {
-                const isCurrent = index === planHistory.cursor
-                return (
-                  <li
-                    key={cp.id}
-                    className={`rounded-lg border px-2.5 py-2 text-sm ${
-                      isCurrent
-                        ? 'border-sky-400/50 bg-sky-500/10 dark:border-sky-500/35'
-                        : 'border-slate-200/60 bg-transparent dark:border-slate-600/50'
-                    }`}
+                </div>
+                <div className="flex shrink-0 items-center justify-center gap-1.5 md:gap-2">
+                  <button
+                    type="button"
+                    onClick={() => goToday()}
+                    className="inline-flex items-center rounded-lg border border-slate-200/70 bg-white/70 px-2 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-white dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200 dark:hover:bg-slate-800/80 md:px-3 md:py-2 md:text-sm"
                   >
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-slate-900 dark:text-slate-50">{cp.label}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
-                          {new Date(cp.atMs).toLocaleString('tr-TR', {
-                            day: '2-digit',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit',
-                          })}
-                          {isCurrent ? ' · Şu an' : null}
-                        </div>
-                        {cp.note ? (
-                          <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{cp.note}</p>
-                        ) : null}
-                      </div>
-                      <button
-                        type="button"
-                        disabled={!canEdit || isCurrent}
-                        onClick={() => restoreCheckpoint(index)}
-                        className="shrink-0 rounded-md bg-slate-200/80 px-2 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-300/80 disabled:cursor-default disabled:opacity-40 dark:bg-slate-700/80 dark:text-slate-100"
-                      >
-                        Bu sürüme dön
-                      </button>
+                    Bugün
+                  </button>
+                  <button
+                    type="button"
+                    onClick={goPrev}
+                    className="inline-flex items-center justify-center rounded-lg border border-slate-200/70 bg-white/70 p-1.5 text-slate-700 transition hover:bg-white dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200 dark:hover:bg-slate-800/80 md:p-2"
+                    aria-label="Önceki hafta"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={goNext}
+                    className="inline-flex items-center justify-center rounded-lg border border-slate-200/70 bg-white/70 p-1.5 text-slate-700 transition hover:bg-white dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200 dark:hover:bg-slate-800/80 md:p-2"
+                    aria-label="Sonraki hafta"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </div>
+                <div className="flex min-w-0 flex-wrap items-center justify-end justify-self-end gap-1.5 md:gap-2">
+                  <button
+                    type="button"
+                    disabled={!canEdit || planHistory.cursor <= 0}
+                    onClick={() => restoreCheckpoint(planHistory.cursor - 1)}
+                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-slate-200/70 bg-white/70 text-slate-700 transition hover:bg-white disabled:opacity-35 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200 dark:hover:bg-slate-800/80"
+                    title="Önceki adım (⌘Z / Ctrl+Z)"
+                    aria-label="Önceki adım"
+                  >
+                    <Undo2 className="h-4 w-4" aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!canEdit || planHistory.cursor >= planHistory.checkpoints.length - 1}
+                    onClick={() => restoreCheckpoint(planHistory.cursor + 1)}
+                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-slate-200/70 bg-white/70 text-slate-700 transition hover:bg-white disabled:opacity-35 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200 dark:hover:bg-slate-800/80"
+                    title="İleri (⇧⌘Z / Ctrl+Shift+Z)"
+                    aria-label="İleri"
+                  >
+                    <Redo2 className="h-4 w-4" aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHistoryDrawerOpen((prev) => {
+                        const next = !prev
+                        if (next) {
+                          setDayDetailDate(null)
+                          setSelectedId(null)
+                        }
+                        return next
+                      })
+                    }}
+                    aria-expanded={historyDrawerOpen}
+                    aria-controls="gm-planning-history-drawer"
+                    className={[
+                      'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
+                      historyDrawerOpen
+                        ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
+                        : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
+                    ].join(' ')}
+                  >
+                    <History className="size-3.5 shrink-0" aria-hidden />
+                    <span className="hidden sm:inline">Geçmiş</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!canEdit}
+                    onClick={saveDraftAndResetHistory}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/70 bg-white/70 px-2 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 disabled:opacity-50 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200 dark:hover:bg-slate-800/80 md:py-2 md:text-sm"
+                  >
+                    <Save className="h-4 w-4" />
+                    Kaydet
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!canEdit || draftState === 'published'}
+                    onClick={() => {
+                      if (!canEdit) return
+                      setDraftState('published')
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/70 bg-white/70 px-2 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 disabled:opacity-50 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200 dark:hover:bg-slate-800/80 md:py-2 md:text-sm"
+                  >
+                    <Send className="h-4 w-4" />
+                    Yayınla
+                  </button>
+                </div>
+              </div>
+
+              {!canEdit ? (
+                <div className="shrink-0 border-b border-amber-200/60 bg-amber-50/90 px-3 py-2 text-xs font-medium text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
+                  Salt okunur: sürükle-bırak ve yeniden boyutlandırma kapalı.
+                </div>
+              ) : null}
+
+              <div className="relative z-0 min-h-0 flex-1 overflow-hidden">
+                <aside
+                  id="gm-planning-left-drawer"
+                  className={[
+                    'absolute inset-y-0 left-0 z-20 w-80 overflow-y-auto rounded-r-xl border border-slate-200/70 bg-white/95 p-3 shadow-xl backdrop-blur-sm transition-transform dark:border-slate-700/70 dark:bg-slate-900/95',
+                    leftDrawerOpen ? 'translate-x-0' : '-translate-x-[105%]',
+                  ].join(' ')}
+                  aria-hidden={!leftDrawerOpen}
+                >
+                  <div className="mb-3 flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+                        {leftDrawerTab === 'filters' ? 'Plan filtreleri' : 'Bekleyen iş'}
+                      </h4>
+                      <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                        {leftDrawerTab === 'filters'
+                          ? 'Arama, kalıp, durum ve iş günü'
+                          : 'Sürükleyip takvime bırakın · Esc ile kapat'}
+                      </p>
                     </div>
-                  </li>
-                )
-              })}
-          </ol>
-          {canEdit ? (
-            <label className="mt-4 block">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
-                Seçili sürüm notu
-              </span>
-              <textarea
-                key={planHistory.checkpoints[planHistory.cursor]?.id ?? 'cur'}
-                defaultValue={planHistory.checkpoints[planHistory.cursor]?.note ?? ''}
-                onBlur={(e) => updateCheckpointNote(planHistory.cursor, e.target.value)}
-                rows={2}
-                placeholder="Bu sürüm için kısa not (isteğe bağlı)…"
-                className="mt-1 w-full resize-y rounded-md border border-slate-200/80 bg-transparent px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-sky-500/50 dark:border-slate-600/70 dark:text-slate-100"
-              />
-            </label>
-          ) : null}
-        </div>
-      ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setLeftDrawerOpen(false)}
+                      className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                      aria-label="Paneli kapat"
+                    >
+                      <X className="size-3.5" aria-hidden />
+                    </button>
+                  </div>
+                  {leftDrawerTab === 'filters' ? (
+                    <div className="space-y-4" role="region" aria-label="Üretim planı filtreleri">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                          Arama
+                        </label>
+                        <input
+                          type="search"
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                          placeholder="Ürün / emir / proje…"
+                          title="Ürün / emir / proje"
+                          className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                          Kalıp
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {PLANNING_MOLDS.map((m) => {
+                            const on = moldFilter.includes(m.moldId)
+                            return (
+                              <button
+                                key={m.moldId}
+                                type="button"
+                                onClick={() =>
+                                  setMoldFilter((prev) =>
+                                    on ? prev.filter((x) => x !== m.moldId) : [...prev, m.moldId],
+                                  )
+                                }
+                                className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                                  on
+                                    ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                                    : 'bg-white text-slate-700 ring-1 ring-slate-300/70 dark:bg-slate-900/50 dark:text-slate-200 dark:ring-slate-600/60'
+                                }`}
+                              >
+                                {m.moldId}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                          Durum
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {(Object.keys(STATUS_META) as PlanStatusKey[]).map((k) => {
+                            const on = statusFilter.includes(k)
+                            return (
+                              <button
+                                key={k}
+                                type="button"
+                                onClick={() =>
+                                  setStatusFilter((prev) => (on ? prev.filter((x) => x !== k) : [...prev, k]))
+                                }
+                                className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                                  on
+                                    ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                                    : 'bg-white text-slate-700 ring-1 ring-slate-300/70 dark:bg-slate-900/50 dark:text-slate-200 dark:ring-slate-600/60'
+                                }`}
+                              >
+                                {STATUS_META[k].label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                          İş günleri
+                        </p>
+                        <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={workdaysOnly}
+                            onChange={(e) => setWorkdaysOnly(e.target.checked)}
+                            className="size-4 shrink-0 rounded border-slate-400 text-sky-600 focus:ring-sky-500/40 dark:border-slate-500 dark:bg-slate-900/80"
+                          />
+                          <span>Yalnızca iş günlerini göster</span>
+                        </label>
+                      </div>
+                    </div>
+                  ) : (
+                    <ul
+                      id="gm-planning-queue-list"
+                      className="divide-y divide-slate-200/50 dark:divide-slate-700/50"
+                      role="list"
+                    >
+                      {QUEUE_MOCK.map((q) => (
+                        <li
+                          key={q.queueId}
+                          draggable={canEdit}
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', `queue:${q.queueId}`)
+                            e.dataTransfer.setData('text/plan-queue-id', q.queueId)
+                            e.dataTransfer.effectAllowed = 'copy'
+                            setDragId(`queue:${q.queueId}`)
+                          }}
+                          onDragEnd={() => {
+                            setDragId(null)
+                            setDropTarget(null)
+                          }}
+                          className="cursor-grab py-3 text-xs first:pt-0 active:cursor-grabbing"
+                        >
+                          <div className="font-medium text-slate-900 dark:text-slate-50">{q.title}</div>
+                          <div className="mt-1 text-slate-500 dark:text-slate-400">
+                            Öncelik {q.priority} · risk {q.risk}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </aside>
 
-      {!canEdit ? (
-        <div className="okan-liquid-banner-warn shrink-0 border-b border-amber-200/50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900/40 dark:text-amber-100">
-          Salt okunur: sürükle-bırak ve yeniden boyutlandırma kapalı.
-        </div>
-      ) : null}
+                <aside
+                  id="gm-planning-history-drawer"
+                  className={[
+                    'absolute inset-y-0 right-0 z-20 w-[min(100vw-2rem,22rem)] overflow-y-auto rounded-l-xl border border-slate-200/70 bg-white/95 p-3 shadow-xl backdrop-blur-sm transition-transform dark:border-slate-700/70 dark:bg-slate-900/95',
+                    historyDrawerOpen ? 'translate-x-0' : 'translate-x-[105%]',
+                  ].join(' ')}
+                  aria-hidden={!historyDrawerOpen}
+                  role="region"
+                  aria-label="Plan değişiklik geçmişi"
+                >
+                  <div className="mb-3 flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Kayıtlı sürümler</h4>
+                      <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                        ⌘Z / Ctrl+Z önceki adım · ⇧⌘Z ileri
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setHistoryDrawerOpen(false)}
+                      className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                      aria-label="Geçmişi kapat"
+                    >
+                      <X className="size-3.5" aria-hidden />
+                    </button>
+                  </div>
+                  <ol className="list-none space-y-2 p-0">
+                    {[...planHistory.checkpoints.slice(0, planHistory.cursor + 1)]
+                      .map((cp, idx) => ({ cp, index: idx }))
+                      .reverse()
+                      .map(({ cp, index }) => {
+                        const isCurrent = index === planHistory.cursor
+                        return (
+                          <li
+                            key={cp.id}
+                            className={`rounded-lg border px-2.5 py-2 text-sm ${
+                              isCurrent
+                                ? 'border-sky-400/50 bg-sky-500/10 dark:border-sky-500/35'
+                                : 'border-slate-200/60 bg-white/50 dark:border-slate-600/50 dark:bg-slate-950/30'
+                            }`}
+                          >
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <div className="font-semibold text-slate-900 dark:text-slate-50">{cp.label}</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400">
+                                  {new Date(cp.atMs).toLocaleString('tr-TR', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                  })}
+                                  {isCurrent ? ' · Şu an' : null}
+                                </div>
+                                {cp.note ? (
+                                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{cp.note}</p>
+                                ) : null}
+                              </div>
+                              <button
+                                type="button"
+                                disabled={!canEdit || isCurrent}
+                                onClick={() => restoreCheckpoint(index)}
+                                className="shrink-0 rounded-lg border border-slate-200/70 bg-white/80 px-2 py-1 text-xs font-semibold text-slate-800 hover:bg-white disabled:cursor-default disabled:opacity-40 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-100"
+                              >
+                                Bu sürüme dön
+                              </button>
+                            </div>
+                          </li>
+                        )
+                      })}
+                  </ol>
+                  {canEdit ? (
+                    <label className="mt-4 block">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                        Seçili sürüm notu
+                      </span>
+                      <textarea
+                        key={planHistory.checkpoints[planHistory.cursor]?.id ?? 'cur'}
+                        defaultValue={planHistory.checkpoints[planHistory.cursor]?.note ?? ''}
+                        onBlur={(e) => updateCheckpointNote(planHistory.cursor, e.target.value)}
+                        rows={2}
+                        placeholder="Bu sürüm için kısa not (isteğe bağlı)…"
+                        className="mt-1 w-full resize-y rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-sky-500/50 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
+                      />
+                    </label>
+                  ) : null}
+                </aside>
 
-      <div
-        className={`relative z-0 grid min-h-0 flex-1 grid-cols-1 gap-0 ${
-          queueOpen ? 'lg:grid-cols-[1fr_280px]' : 'lg:grid-cols-[1fr_2.75rem]'
-        }`}
-      >
-        <div
-          ref={gridScrollRef}
-          className="gm-planning-scroll-host min-h-0 min-w-0 overflow-auto p-0 lg:min-h-0"
-          title="Ctrl/⌘ + fare tekerleği: yakınlaştır / uzaklaştır"
-        >
+                <aside
+                  id="gm-planning-day-drawer"
+                  className={[
+                    'absolute inset-y-0 right-0 z-[21] flex w-[min(100vw-2rem,22rem)] flex-col overflow-hidden rounded-l-xl border border-slate-200/70 bg-white/95 shadow-xl backdrop-blur-sm transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] dark:border-slate-700/70 dark:bg-slate-900/95',
+                    dayDetailDate && dayDetailData ? 'translate-x-0' : 'pointer-events-none translate-x-[105%]',
+                  ].join(' ')}
+                  aria-hidden={!(dayDetailDate && dayDetailData)}
+                  role="region"
+                  aria-label="Gün özeti"
+                >
+                  {dayDetailDate && dayDetailData ? (
+                    <>
+                      <div className="flex shrink-0 items-start justify-between gap-2 border-b border-slate-200/60 p-3 pb-2 dark:border-slate-700/60">
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+                            {dayDetailData.day.date} · {dayDetailData.day.weekdayShort}
+                          </h4>
+                          <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">Günlük özet</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDayDetailDate(null)}
+                          className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                          aria-label="Kapat"
+                        >
+                          <X className="size-3.5" aria-hidden />
+                        </button>
+                      </div>
+                      <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                        {dayDetailData.dayItems.length === 0 ? (
+                          <div className="rounded-xl border border-slate-200/70 bg-slate-50/80 p-4 text-center text-sm text-slate-600 dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-300">
+                            Bu gün için plan yok.
+                            <button
+                              type="button"
+                              className="mt-3 w-full rounded-lg bg-slate-900 py-2 text-sm font-semibold text-white dark:bg-slate-100 dark:text-slate-900"
+                              onClick={() => {
+                                setDayDetailDate(null)
+                                setAssignOpen({ moldId: PLANNING_MOLDS[0]!.moldId, slot: 0 })
+                              }}
+                            >
+                              İş ekle (mock)
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-4 text-sm">
+                            <section>
+                              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                Kalıp kırılımı
+                              </h3>
+                              <table className="mt-2 w-full text-xs">
+                                <thead>
+                                  <tr className="text-left text-slate-500 dark:text-slate-400">
+                                    <th className="py-1">Kalıp</th>
+                                    <th className="py-1">İş</th>
+                                    <th className="py-1">m³</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {dayDetailData.moldRows.map((r) => (
+                                    <tr key={r.moldId} className="border-t border-slate-200/70 dark:border-slate-700/60">
+                                      <td className="py-1 font-mono text-slate-800 dark:text-slate-200">{r.moldId}</td>
+                                      <td className="py-1 text-slate-700 dark:text-slate-300">{r.jobCount}</td>
+                                      <td className="py-1 text-slate-700 dark:text-slate-300">{r.volumeM3.toFixed(1)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </section>
+                            <section>
+                              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                İş listesi
+                              </h3>
+                              <ul className="mt-2 max-h-48 space-y-1 overflow-auto text-xs">
+                                {dayDetailData.jobRows.map((j) => (
+                                  <li
+                                    key={j.itemId}
+                                    className="flex items-center justify-between gap-2 rounded-lg border border-slate-200/60 bg-white/60 px-2 py-1.5 dark:border-slate-700/50 dark:bg-slate-950/35"
+                                  >
+                                    <span className="min-w-0 truncate font-medium text-slate-900 dark:text-slate-50">
+                                      {j.title}
+                                    </span>
+                                    <span className="shrink-0 text-slate-500 dark:text-slate-400">{j.shiftLabel}</span>
+                                    <span className="shrink-0 rounded bg-slate-200 px-1 text-[10px] dark:bg-slate-700">
+                                      {STATUS_META[j.statusKey].label}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </section>
+                            <section className="rounded-lg border border-slate-200/70 p-3 dark:border-slate-700/60">
+                              <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Toplamlar</h3>
+                              <p className="mt-2 text-sm text-slate-800 dark:text-slate-200">
+                                {dailyTotals.find((x) => x.date === dayDetailDate)?.pieces ?? 0} iş ·{' '}
+                                {dailyTotals.find((x) => x.date === dayDetailDate)?.volumeM3.toFixed(1)} m³ ·{' '}
+                                {((dailyTotals.find((x) => x.date === dayDetailDate)?.steelKg ?? 0) / 1000).toFixed(1)}{' '}
+                                t çelik
+                              </p>
+                            </section>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : null}
+                </aside>
+
+                <aside
+                  id="gm-planning-item-drawer"
+                  className={[
+                    'absolute inset-y-0 right-0 z-[21] flex w-[min(100vw-2rem,22rem)] flex-col overflow-hidden rounded-l-xl border border-slate-200/70 bg-white/95 shadow-xl backdrop-blur-sm transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] dark:border-slate-700/70 dark:bg-slate-900/95',
+                    selected ? 'translate-x-0' : 'pointer-events-none translate-x-[105%]',
+                  ].join(' ')}
+                  aria-hidden={!selected}
+                  role="region"
+                  aria-label="Plan öğesi detayı"
+                >
+                  {selected ? (
+                    <>
+                      <div className="flex shrink-0 items-start justify-between gap-2 border-b border-slate-200/60 p-3 pb-2 dark:border-slate-700/60">
+                        <h4 className="min-w-0 flex-1 text-sm font-semibold leading-snug text-slate-900 dark:text-slate-50">
+                          {selected.title}
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedId(null)}
+                          className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                          aria-label="Kapat"
+                        >
+                          <X className="size-3.5" aria-hidden />
+                        </button>
+                      </div>
+                      <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                        <div className="space-y-3 text-sm">
+                          <div className="rounded-lg border border-slate-200/70 p-3 dark:border-slate-700/60">
+                            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Ürün örnekleri</h3>
+                            <div className="mt-2 flex gap-2 overflow-auto pb-1">
+                              {PRODUCT_SAMPLE_THUMBS.map((src, idx) => (
+                                <img
+                                  key={src}
+                                  src={src}
+                                  alt={`Ürün örneği ${idx + 1}`}
+                                  className="h-24 w-32 shrink-0 rounded-lg border border-slate-200/65 bg-slate-50/60 object-cover dark:border-slate-600/50 dark:bg-slate-900/40"
+                                  draggable={false}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <div className="rounded-lg border border-slate-200/70 p-3 dark:border-slate-700/60">
+                            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Genel</h3>
+                            <dl className="mt-2 space-y-1 text-slate-800 dark:text-slate-200">
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500 dark:text-slate-400">id</dt>
+                                <dd className="font-mono text-xs">{selected.id}</dd>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500 dark:text-slate-400">Ürün</dt>
+                                <dd>{selected.productId}</dd>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500 dark:text-slate-400">Durum</dt>
+                                <dd>{STATUS_META[selected.status].label}</dd>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500 dark:text-slate-400">Öncelik</dt>
+                                <dd>{selected.priority}</dd>
+                              </div>
+                            </dl>
+                          </div>
+                          <div className="rounded-lg border border-slate-200/70 p-3 dark:border-slate-700/60">
+                            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Zaman</h3>
+                            <dl className="mt-2 space-y-1 text-slate-800 dark:text-slate-200">
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500 dark:text-slate-400">Başlangıç</dt>
+                                <dd className="font-mono text-xs">{selected.startAt}</dd>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500 dark:text-slate-400">Bitiş</dt>
+                                <dd className="font-mono text-xs">{selected.endAt}</dd>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500 dark:text-slate-400">Süre</dt>
+                                <dd>{selected.durationHours} saat</dd>
+                              </div>
+                            </dl>
+                          </div>
+                          <div className="rounded-lg border border-slate-200/70 p-3 dark:border-slate-700/60">
+                            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Kalıp & beton</h3>
+                            <dl className="mt-2 space-y-1 text-slate-800 dark:text-slate-200">
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500 dark:text-slate-400">Kalıp</dt>
+                                <dd>{selected.moldId}</dd>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500 dark:text-slate-400">Reçete</dt>
+                                <dd className="font-mono text-xs">{selected.concreteRecipeId}</dd>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500 dark:text-slate-400">Hacim</dt>
+                                <dd>{selected.estimatedVolumeM3} m³</dd>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500 dark:text-slate-400">Çelik</dt>
+                                <dd>{selected.estimatedSteelKg} kg</dd>
+                              </div>
+                            </dl>
+                          </div>
+                          <div className="rounded-lg border border-slate-200/70 p-3 dark:border-slate-700/60">
+                            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Reçete havuzu (mock)</h3>
+                            <ul className="mt-2 space-y-1 text-xs text-slate-700 dark:text-slate-300">
+                              {CONCRETE_RECIPES_MOCK.map((r) => (
+                                <li key={r.recipeId}>
+                                  {r.recipeId} — {r.label} ({r.strengthClass})
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
+                </aside>
+
+                <div
+                  ref={gridScrollRef}
+                  className="gm-planning-scroll-host box-border h-full min-h-0 min-w-0 overflow-auto transition-[padding] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                  style={{
+                    paddingLeft: leftDrawerOpen ? '20rem' : 0,
+                    paddingRight: rightInsightOpen ? 'min(22rem, calc(100vw - 2rem))' : 0,
+                  }}
+                  title="Ctrl/⌘ + fare tekerleği: yakınlaştır / uzaklaştır"
+                >
           <div className="flex min-h-0 min-w-full w-max flex-col">
             {/* Üst: tarih başlığı — sol kalıp köşesi yatayda sabit + opak */}
             <div className="flex w-max min-w-full">
@@ -1199,6 +1520,8 @@ export function PlanningDesignView() {
                           title={`${it.title} · ${it.durationHours} saat · öncelik ${it.priority}`}
                           onClick={(e) => {
                             e.stopPropagation()
+                            setDayDetailDate(null)
+                            setHistoryDrawerOpen(false)
                             setSelectedId(it.id)
                           }}
                           onContextMenu={(e) => {
@@ -1283,7 +1606,11 @@ export function PlanningDesignView() {
                   <button
                     key={`sum-${d.id}`}
                     type="button"
-                    onClick={() => setDayDetailDate(d.date)}
+                    onClick={() => {
+                      setHistoryDrawerOpen(false)
+                      setSelectedId(null)
+                      setDayDetailDate(d.date)
+                    }}
                     className="col-span-3 border-r border-slate-200/65 px-1 py-2 text-left text-[10px] transition hover:bg-slate-100/75 dark:border-slate-600/45 dark:hover:bg-slate-900/35"
                   >
                     <div className="rounded-md bg-slate-100/55 px-2 py-1.5 dark:bg-slate-800/45">
@@ -1304,206 +1631,16 @@ export function PlanningDesignView() {
           </div>
         </div>
         </div>
-
-        <aside
-          className={`gm-planning-queue-aside flex min-h-0 flex-col border-t border-[var(--okan-panel-border-soft)] lg:min-h-0 lg:border-l lg:border-t-0 ${
-            queueOpen ? 'p-3' : 'p-2 lg:items-center lg:overflow-hidden lg:p-1.5'
-          }`}
-        >
-          {queueOpen ? (
-            <>
-              <div className="flex shrink-0 items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Bekleyen iş (mock)</h2>
-                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
-                    Tıklayın veya sürükleyip hücreye bırakın. Esc iptal.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  aria-expanded={queueOpen}
-                  aria-controls="gm-planning-queue-list"
-                  onClick={() => setQueueOpen(false)}
-                  className="shrink-0 rounded-lg border-0 bg-transparent p-1.5 text-slate-600 hover:bg-slate-200/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:text-slate-300 dark:hover:bg-white/10"
-                  title="Kuyruğu gizle"
-                >
-                  <ChevronRight className="h-5 w-5" aria-hidden />
-                  <span className="sr-only">Kuyruğu gizle</span>
-                </button>
               </div>
-              <ul
-                id="gm-planning-queue-list"
-                className="mt-3 max-h-[420px] min-h-0 flex-1 divide-y divide-slate-200/40 overflow-auto pr-1 dark:divide-white/10 lg:max-h-none"
-              >
-                {QUEUE_MOCK.map((q) => (
-                  <li
-                    key={q.queueId}
-                    draggable={canEdit}
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData('text/plain', `queue:${q.queueId}`)
-                      e.dataTransfer.setData('text/plan-queue-id', q.queueId)
-                      e.dataTransfer.effectAllowed = 'copy'
-                      setDragId(`queue:${q.queueId}`)
-                    }}
-                    onDragEnd={() => {
-                      setDragId(null)
-                      setDropTarget(null)
-                    }}
-                    className="cursor-grab py-2.5 text-xs first:pt-0 last:pb-0 active:cursor-grabbing"
-                  >
-                    <div className="font-medium text-slate-900 dark:text-slate-50">{q.title}</div>
-                    <div className="mt-1 text-slate-500 dark:text-slate-400">
-                      Öncelik {q.priority} · risk {q.risk}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : (
-            <button
-              type="button"
-              aria-expanded={false}
-              onClick={() => setQueueOpen(true)}
-              className="flex w-full flex-1 flex-col items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:text-slate-200 dark:hover:bg-white/10 lg:min-h-0 lg:py-4"
-              title="Bekleyen işi göster"
-            >
-              <ChevronLeft className="h-5 w-5 shrink-0 lg:rotate-180" aria-hidden />
-              <span className="lg:hidden">Bekleyen işi göster</span>
-              <span className="hidden max-w-[3rem] text-center text-[10px] font-semibold uppercase leading-tight tracking-wide text-slate-500 dark:text-slate-400 lg:block lg:[writing-mode:vertical-rl] lg:rotate-180">
-                Bekleyen iş
-              </span>
-            </button>
-          )}
-        </aside>
-      </div>
-      </div>
-    </div>
-      </div>
-    </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
       {typeof document !== 'undefined'
         ? createPortal(
             <>
-      {selected ? (
-        <div
-          className="gm-glass-drawer-root gm-glass-drawer-root--module-scrim pointer-events-none fixed inset-0 z-[60] flex justify-end"
-          role="presentation"
-        >
-          <button
-            type="button"
-            className="gm-glass-drawer-backdrop pointer-events-auto absolute inset-0 z-0 cursor-default border-0 p-0"
-            aria-label="Kapat"
-            onClick={() => setSelectedId(null)}
-          />
-          <div
-            className="gm-glass-drawer-panel pointer-events-auto relative z-10 flex h-full min-h-0 w-full max-w-md flex-col overflow-hidden rounded-3xl border border-white/45 bg-white/75 shadow-[0_12px_40px_rgb(15_23_42/0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:shadow-[0_12px_48px_rgb(0_0_0/0.45)]"
-            role="dialog"
-            aria-label="Plan öğesi detayı"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex shrink-0 items-start justify-between gap-2 p-4 pb-0">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">{selected.title}</h2>
-              <button
-                type="button"
-                onClick={() => setSelectedId(null)}
-                className="rounded-xl border border-slate-200/70 bg-white/70 p-2 text-slate-700 shadow-sm hover:bg-white/90 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-4 pt-4">
-              <div className="space-y-3 text-sm">
-              <div className="okan-liquid-panel-nested p-3">
-                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Ürün örnekleri</h3>
-                <div className="mt-2 flex gap-2 overflow-auto pb-1">
-                  {PRODUCT_SAMPLE_THUMBS.map((src, idx) => (
-                    <img
-                      key={src}
-                      src={src}
-                      alt={`Ürün örneği ${idx + 1}`}
-                      className="h-24 w-32 shrink-0 rounded-xl border border-slate-200/65 bg-slate-50/60 object-cover dark:border-slate-600/50 dark:bg-slate-900/40"
-                      draggable={false}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="okan-liquid-panel-nested p-3">
-                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Genel</h3>
-                <dl className="mt-2 space-y-1 text-slate-800 dark:text-slate-200">
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-slate-500 dark:text-slate-400">id</dt>
-                    <dd className="font-mono text-xs">{selected.id}</dd>
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-slate-500 dark:text-slate-400">Ürün</dt>
-                    <dd>{selected.productId}</dd>
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-slate-500 dark:text-slate-400">Durum</dt>
-                    <dd>{STATUS_META[selected.status].label}</dd>
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-slate-500 dark:text-slate-400">Öncelik</dt>
-                    <dd>{selected.priority}</dd>
-                  </div>
-                </dl>
-              </div>
-              <div className="okan-liquid-panel-nested p-3">
-                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Zaman</h3>
-                <dl className="mt-2 space-y-1 text-slate-800 dark:text-slate-200">
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-slate-500 dark:text-slate-400">Başlangıç</dt>
-                    <dd className="font-mono text-xs">{selected.startAt}</dd>
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-slate-500 dark:text-slate-400">Bitiş</dt>
-                    <dd className="font-mono text-xs">{selected.endAt}</dd>
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-slate-500 dark:text-slate-400">Süre</dt>
-                    <dd>{selected.durationHours} saat</dd>
-                  </div>
-                </dl>
-              </div>
-              <div className="okan-liquid-panel-nested p-3">
-                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Kalıp & beton</h3>
-                <dl className="mt-2 space-y-1 text-slate-800 dark:text-slate-200">
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-slate-500 dark:text-slate-400">Kalıp</dt>
-                    <dd>{selected.moldId}</dd>
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-slate-500 dark:text-slate-400">Reçete</dt>
-                    <dd className="font-mono text-xs">{selected.concreteRecipeId}</dd>
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-slate-500 dark:text-slate-400">Hacim</dt>
-                    <dd>{selected.estimatedVolumeM3} m³</dd>
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-slate-500 dark:text-slate-400">Çelik</dt>
-                    <dd>{selected.estimatedSteelKg} kg</dd>
-                  </div>
-                </dl>
-              </div>
-              <div className="okan-liquid-panel-nested p-3">
-                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Reçete havuzu (mock)</h3>
-                <ul className="mt-2 space-y-1 text-xs text-slate-700 dark:text-slate-300">
-                  {CONCRETE_RECIPES_MOCK.map((r) => (
-                    <li key={r.recipeId}>
-                      {r.recipeId} — {r.label} ({r.strengthClass})
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       {contextMenu ? (
         <>
           <div
@@ -1523,6 +1660,8 @@ export function PlanningDesignView() {
                 type="button"
                 className="gm-glass-context-menu-item w-full rounded-lg px-2 py-2 text-left"
                 onClick={() => {
+                  setDayDetailDate(null)
+                  setHistoryDrawerOpen(false)
                   setSelectedId(contextMenu.itemId)
                   setContextMenu(null)
                 }}
@@ -1596,113 +1735,6 @@ export function PlanningDesignView() {
             </div>
           ) : null}
         </>
-      ) : null}
-
-      {dayDetailDate && dayDetailData ? (
-        <div
-          className="gm-glass-drawer-root gm-glass-drawer-root--module-scrim pointer-events-none fixed inset-0 z-[58] flex justify-end"
-          role="presentation"
-        >
-          <button
-            type="button"
-            className="gm-glass-drawer-backdrop pointer-events-auto absolute inset-0 z-0 cursor-default border-0 p-0"
-            aria-label="Kapat"
-            onClick={() => setDayDetailDate(null)}
-          />
-          <div
-            className="gm-glass-drawer-panel pointer-events-auto relative z-10 flex h-full min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-white/45 bg-white/75 shadow-[0_12px_40px_rgb(15_23_42/0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:shadow-[0_12px_48px_rgb(0_0_0/0.45)]"
-            role="dialog"
-            aria-label="Gün özeti detayı"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex shrink-0 items-start justify-between gap-2 p-4 pb-0">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">
-                  {dayDetailData.day.date} · {dayDetailData.day.weekdayShort}
-                </h2>
-                <p className="text-xs text-gray-500">Günlük kırılım (plan-09)</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setDayDetailDate(null)}
-                className="rounded-xl bg-gray-100 p-2 text-gray-700 shadow-neo-out-sm dark:bg-gray-800 dark:text-gray-200"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-4 pt-4">
-            {dayDetailData.dayItems.length === 0 ? (
-              <div className="mt-6 rounded-2xl bg-gray-50 p-4 text-center text-sm text-gray-600 shadow-neo-in dark:bg-gray-950/50 dark:text-gray-300">
-                Bu gün için plan yok.
-                <button
-                  type="button"
-                  className="mt-3 w-full rounded-xl bg-gray-800 py-2 text-sm font-semibold text-white dark:bg-gray-200 dark:text-gray-900"
-                  onClick={() => {
-                    setDayDetailDate(null)
-                    setAssignOpen({ moldId: PLANNING_MOLDS[0]!.moldId, slot: 0 })
-                  }}
-                >
-                  İş ekle (mock)
-                </button>
-              </div>
-            ) : (
-              <>
-                <section className="mt-4">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Kalıp kırılımı
-                  </h3>
-                  <table className="mt-2 w-full text-xs">
-                    <thead>
-                      <tr className="text-left text-gray-500">
-                        <th className="py-1">Kalıp</th>
-                        <th className="py-1">İş</th>
-                        <th className="py-1">m³</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dayDetailData.moldRows.map((r) => (
-                        <tr key={r.moldId} className="border-t border-gray-200/80 dark:border-gray-700">
-                          <td className="py-1 font-mono">{r.moldId}</td>
-                          <td className="py-1">{r.jobCount}</td>
-                          <td className="py-1">{r.volumeM3.toFixed(1)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </section>
-                <section className="mt-4">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">İş listesi</h3>
-                  <ul className="mt-2 max-h-48 space-y-1 overflow-auto text-xs">
-                    {dayDetailData.jobRows.map((j) => (
-                      <li
-                        key={j.itemId}
-                        className="flex items-center justify-between gap-2 rounded-lg bg-gray-50 px-2 py-1.5 dark:bg-gray-950/50"
-                      >
-                        <span className="min-w-0 truncate font-medium text-gray-900 dark:text-gray-100">
-                          {j.title}
-                        </span>
-                        <span className="shrink-0 text-gray-500">{j.shiftLabel}</span>
-                        <span className="shrink-0 rounded bg-gray-200 px-1 text-[10px] dark:bg-gray-800">
-                          {STATUS_META[j.statusKey].label}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-                <section className="okan-liquid-panel-nested mt-4 p-3">
-                  <h3 className="text-xs font-semibold text-gray-500">Toplamlar</h3>
-                  <p className="mt-2 text-sm text-gray-800 dark:text-gray-200">
-                    {dailyTotals.find((x) => x.date === dayDetailDate)?.pieces ?? 0} iş ·{' '}
-                    {dailyTotals.find((x) => x.date === dayDetailDate)?.volumeM3.toFixed(1)} m³ ·{' '}
-                    {((dailyTotals.find((x) => x.date === dayDetailDate)?.steelKg ?? 0) / 1000).toFixed(1)}{' '}
-                    t çelik
-                  </p>
-                </section>
-              </>
-            )}
-            </div>
-          </div>
-        </div>
       ) : null}
 
       {assignOpen && canEdit ? (

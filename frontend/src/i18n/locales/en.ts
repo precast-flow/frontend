@@ -126,17 +126,19 @@ const shell: Record<string, string> = {
   'nav.sidebar.section.quality': 'Quality',
   'nav.sidebar.section.logistics': 'Logistics & Field',
   'nav.sidebar.section.system': 'System & Approvals',
+  'nav.sidebar.section.configuration': 'Configuration',
   'nav.sidebar.section.account': 'Account',
-  'nav.crm': 'CRM',
+  'nav.crm': 'Customer Management',
   'nav.quote': 'Quote',
   'nav.workStart': 'Start work',
   'nav.project': 'Project management',
   'nav.engineering': 'Engineering Integration',
   'nav.elementIdentity': 'Element Identity & Naming',
+  'nav.configurationCenter': 'Configuration Center',
   'nav.manualPieceStudio': 'Manual Piece & Template Studio',
   'nav.productionSummary': 'Production summary',
   'nav.mes': 'MES',
-  'nav.planningDesign': 'Planning — Design',
+  'nav.planningDesign': 'Production planning',
   'nav.moldBoard': 'Mold board',
   'nav.pendingPriority': 'Priority report',
   'nav.concreteRecipe': 'Concrete / mix',
@@ -188,7 +190,7 @@ const shell: Record<string, string> = {
   'main.desc.mes':
     'Work orders — list/board, detail tabs General · Parts · Concrete · Unit requests (Quality/R&D, bie-07) · Quality (mvp-09).',
   'main.desc.planningDesign':
-    'Mold × day × shift planning grid — drag & drop, summaries, status, filters, draft/publish (plan-01…08 mock).',
+    'Product plan — mold × day × shift grid; drag & drop, summaries, side filters, draft/publish (mock).',
   'main.desc.moldBoard':
     'Mold board K-01…K-12 — one active job per cell, drag-drop or Move; prod-03 (mock).',
   'main.desc.pendingPriority':
@@ -1519,6 +1521,7 @@ const shell: Record<string, string> = {
   'topNav.subtitle': 'Quick access · ERP',
   'topNav.aria': 'Top shortcut navigation',
   'topNav.badge': 'Top strip',
+  'topNav.sectionEmpty': 'No modules in this section yet.',
   'topbar.tagline': 'ERP · MES · Logistics',
   'topbar.factory': 'Factory',
   'topbar.factorySelect': 'Select factory',

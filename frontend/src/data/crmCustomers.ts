@@ -3,6 +3,7 @@ export type CrmCustomerStatus = 'aktif' | 'beklemede' | 'pasif' | 'potansiyel'
 export type CrmProjectRow = { id: string; name: string; phase: string }
 export type CrmQuoteRow = { id: string; no: string; date: string; amount: string; status: string }
 export type CrmDocRow = { id: string; name: string; size: string; date: string }
+export type CrmLocationRow = { id: string; name: string; locationInfo: string }
 
 /** Müşteri detay — İletişim sekmesi (mock) */
 export type CrmIletisimKisi = {
@@ -52,6 +53,7 @@ export type CrmCustomer = {
   projeler: CrmProjectRow[]
   teklifler: CrmQuoteRow[]
   dokumanlar: CrmDocRow[]
+  locations?: CrmLocationRow[]
 }
 
 export const crmCustomers: CrmCustomer[] = [

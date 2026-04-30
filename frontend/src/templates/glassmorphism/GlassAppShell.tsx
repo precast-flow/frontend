@@ -1,13 +1,10 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import type { AppShellOutletContext } from '../../appShellOutletContext'
 import { activeModuleIdFromPathname, moduleIdToPath, navGroups, startNavItems } from '../../data/navigation'
 import { useFactoryContext } from '../../context/FactoryContext'
-import { useProductionRolePreview } from '../../context/ProductionRolePreviewContext'
-import { filterNavGroupsForPreview, getRoleMatrixRow } from '../../data/productionRoleMatrixMock'
 import { AppFooter } from '../../components/AppFooter'
 import { FactorySummaryDrawer } from '../../components/FactorySummaryDrawer'
-import { ProductionRolePreviewBanner } from '../../components/production/ProductionRolePreviewBanner'
 import { AppTopNav } from '../../components/AppTopNav'
 import { GlassHeader } from './GlassHeader'
 import { GlassLayout } from './GlassLayout'
@@ -16,25 +13,8 @@ function GlassAppShellInner() {
   const navigate = useNavigate()
   const location = useLocation()
   const { selectedFactory, factoryDrawerOpen, closeFactoryDrawer } = useFactoryContext()
-  const { previewRoleId } = useProductionRolePreview()
 
   const effectiveActiveId = useMemo(() => activeModuleIdFromPathname(location.pathname), [location.pathname])
-
-  const filteredNavGroups = useMemo(
-    () => filterNavGroupsForPreview(navGroups, previewRoleId),
-    [previewRoleId],
-  )
-
-  useEffect(() => {
-    if (!previewRoleId) return
-    const row = getRoleMatrixRow(previewRoleId)
-    if (!row) return
-    if (effectiveActiveId === 'production-role-preview') return
-    const prodIds = navGroups.find((g) => g.id === 'production')?.items.map((i) => i.id) ?? []
-    if (prodIds.includes(effectiveActiveId) && !row.menuIds.includes(effectiveActiveId)) {
-      navigate('/')
-    }
-  }, [previewRoleId, effectiveActiveId, navigate])
 
   const select = useCallback(
     (id: string) => {
@@ -47,8 +27,7 @@ function GlassAppShellInner() {
 
   const topBarLeftPadding = '0px'
   const contentColStart = 'md:col-start-1'
-  const hasPreviewBanner = Boolean(previewRoleId)
-  /** Proje/CRM/Teklif (alt path dahil) + Planlama — Tasarım: üst boşluk `pt-14 md:pt-16`, outlet padding 0 — navbar–başlık hizası */
+  /** Proje/CRM/Teklif (alt path dahil) + Üretim planlama: üst boşluk `pt-14 md:pt-16`, outlet padding 0 — navbar–başlık hizası */
   const isOkanPlanSplitPage =
     location.pathname.startsWith('/proje') ||
     location.pathname.startsWith('/crm') ||
@@ -61,27 +40,17 @@ function GlassAppShellInner() {
         <div
           className={[
             'relative z-0 flex min-h-0 min-w-0 flex-1 flex-col gap-3 md:min-h-0 md:grid md:grid-cols-1 md:gap-x-4 md:gap-y-4',
-            hasPreviewBanner
-              ? 'md:grid-rows-[auto_minmax(0,1fr)_auto]'
-              : 'md:grid-rows-[minmax(0,1fr)_auto]',
+            'md:grid-rows-[minmax(0,1fr)_auto]',
             isOkanPlanSplitPage ? 'pt-14 md:pt-16' : 'pt-20 md:pt-24',
           ].join(' ')}
         >
-          {previewRoleId ? (
-            <div className={['order-1', contentColStart, 'md:row-start-1'].join(' ')}>
-              <ProductionRolePreviewBanner />
-            </div>
-          ) : null}
-
           <main
             id="main-module"
             className={[
               `gm-motion relative z-0 flex min-h-0 flex-1 flex-col overflow-visible rounded-2xl ${
                 isOkanPlanSplitPage ? 'p-0 md:p-0' : 'p-1'
               } md:min-h-0 md:rounded-3xl`,
-              hasPreviewBanner
-                ? ['order-2', contentColStart, 'md:row-start-2'].join(' ')
-                : ['order-1', contentColStart, 'md:row-start-1'].join(' '),
+              ['order-1', contentColStart, 'md:row-start-1'].join(' '),
             ].join(' ')}
             aria-label="Modül içeriği"
           >
@@ -99,9 +68,7 @@ function GlassAppShellInner() {
           <div
             className={[
               'gm-glass-footer-host gm-glass-panel-l2 gm-motion rounded-2xl md:rounded-3xl',
-              hasPreviewBanner
-                ? ['order-3', contentColStart, 'md:row-start-3'].join(' ')
-                : ['order-2', contentColStart, 'md:row-start-2'].join(' '),
+              ['order-2', contentColStart, 'md:row-start-2'].join(' '),
             ].join(' ')}
           >
             <div className="[&>footer]:rounded-2xl [&>footer]:bg-transparent [&>footer]:shadow-none md:[&>footer]:rounded-3xl">
@@ -122,7 +89,7 @@ function GlassAppShellInner() {
                 <AppTopNav
                   onModuleNavigate={select}
                   startItems={startNavItems}
-                  groups={filteredNavGroups}
+                  groups={navGroups}
                   activeId={effectiveActiveId}
                 />
               </GlassHeader>
@@ -133,7 +100,7 @@ function GlassAppShellInner() {
               <AppTopNav
                 onModuleNavigate={select}
                 startItems={startNavItems}
-                groups={filteredNavGroups}
+                groups={navGroups}
                 activeId={effectiveActiveId}
               />
             </GlassHeader>

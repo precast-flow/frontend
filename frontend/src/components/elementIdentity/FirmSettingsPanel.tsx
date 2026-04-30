@@ -38,9 +38,9 @@ export function FirmSettingsPanel() {
   ]
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 xl:grid xl:grid-cols-[220px_1fr_360px]">
+    <div className="flex min-h-0 flex-1 flex-col gap-3 xl:grid xl:grid-cols-[220px_1fr_360px]">
       {/* Sidebar */}
-      <aside className="flex flex-col gap-2 rounded-2xl bg-gray-50 p-3 shadow-neo-in dark:bg-gray-900/60">
+      <aside className="flex flex-col gap-2 rounded-xl border border-slate-200/70 bg-white/70 p-3 dark:border-slate-700/70 dark:bg-slate-900/40">
         {sidebar.map((s) => {
           const isActive = key === s.id
           return (
@@ -50,7 +50,7 @@ export function FirmSettingsPanel() {
               className={[
                 'flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm transition',
                 isActive
-                  ? 'bg-pf-surface font-semibold text-gray-900 shadow-neo-out dark:bg-gray-800 dark:text-gray-50'
+                  ? 'bg-slate-100 font-semibold text-gray-900 ring-1 ring-inset ring-slate-300/70 dark:bg-slate-800 dark:text-gray-50 dark:ring-slate-600/70'
                   : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100',
               ].join(' ')}
             >
@@ -62,7 +62,7 @@ export function FirmSettingsPanel() {
       </aside>
 
       {/* Main content */}
-      <section className="min-h-0 rounded-2xl bg-pf-surface p-4 shadow-neo-out dark:bg-gray-800/90">
+      <section className="min-h-0 rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-700/70 dark:bg-slate-900/40">
         {key === 'elementTypes' && (
           <ElementTypesTable
             firmId={activeFirm.id}

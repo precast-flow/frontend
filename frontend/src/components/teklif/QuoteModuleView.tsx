@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ChevronDown, ChevronLeft, ChevronRight, Filter } from 'lucide-react'
+import { ChevronsLeftRight, ChevronRight, Filter, GripVertical, X } from 'lucide-react'
 import {
   lineTotal,
   quotes as allQuotes,
@@ -74,6 +74,13 @@ export function QuoteModuleView({ onNavigate: _onNavigate }: Props) {
   const [statusFilter, setStatusFilter] = useState<QuoteStatus[]>([])
   const [detailTab, setDetailTab] = useState<DetailTabId>('ozet')
   const [listPage, setListPage] = useState(1)
+  const [pageSize, setPageSize] = useState(QUOTE_LIST_PAGE_SIZE)
+  const [splitRatio, setSplitRatio] = useState(40)
+  const [isResizing, setIsResizing] = useState(false)
+  const [isResizerHover, setIsResizerHover] = useState(false)
+  const listRef = useRef<HTMLUListElement | null>(null)
+  const loadMoreSentinelRef = useRef<HTMLLIElement | null>(null)
+  const splitRef = useRef<HTMLDivElement | null>(null)
 
   const activeFilterCount = statusFilter.length
 
@@ -82,15 +89,17 @@ export function QuoteModuleView({ onNavigate: _onNavigate }: Props) {
     return rows.filter((r) => statusFilter.includes(r.status))
   }, [rows, statusFilter])
 
-  const listTotalPages = Math.max(1, Math.ceil(filtered.length / QUOTE_LIST_PAGE_SIZE))
+  const listTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const safeListPage = Math.min(listPage, listTotalPages)
   const listPageSlice = useMemo(() => {
-    const start = (listPage - 1) * QUOTE_LIST_PAGE_SIZE
-    return filtered.slice(start, start + QUOTE_LIST_PAGE_SIZE)
-  }, [filtered, listPage])
+    return filtered.slice(0, safeListPage * pageSize)
+  }, [filtered, safeListPage, pageSize])
+  const listPageStart = filtered.length === 0 ? 0 : 1
+  const listPageEnd = Math.min(filtered.length, safeListPage * pageSize)
 
   useEffect(() => {
     setListPage(1)
-  }, [statusFilter])
+  }, [statusFilter, pageSize])
 
   useEffect(() => {
     setListPage((p) => Math.min(p, listTotalPages))
@@ -113,6 +122,62 @@ export function QuoteModuleView({ onNavigate: _onNavigate }: Props) {
     if (!detailPanelRef.current) return
     detailPanelRef.current.scrollTo({ top: 0, behavior: 'auto' })
   }, [detailTab, selected?.id])
+
+  useEffect(() => {
+    if (!filtersOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setFiltersOpen(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [filtersOpen])
+
+  useEffect(() => {
+    if (!isResizing) return
+    const onMouseMove = (event: MouseEvent) => {
+      const host = splitRef.current
+      if (!host) return
+      const rect = host.getBoundingClientRect()
+      if (rect.width <= 0) return
+      const next = ((event.clientX - rect.left) / rect.width) * 100
+      setSplitRatio(Math.min(55, Math.max(30, Number(next.toFixed(2)))))
+    }
+    const onMouseUp = () => setIsResizing(false)
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+    return () => {
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [isResizing])
+
+  const onListScroll = () => {
+    const el = listRef.current
+    if (!el) return
+    const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 64
+    if (!nearBottom) return
+    if (safeListPage >= listTotalPages) return
+    setListPage((prev) => Math.min(listTotalPages, prev + 1))
+  }
+
+  useEffect(() => {
+    const root = listRef.current
+    const target = loadMoreSentinelRef.current
+    if (!root || !target || safeListPage >= listTotalPages) return
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) return
+        setListPage((prev) => Math.min(listTotalPages, prev + 1))
+      },
+      { root, rootMargin: '0px 0px 80px 0px', threshold: 0 },
+    )
+    io.observe(target)
+    return () => io.disconnect()
+  }, [safeListPage, listTotalPages, listPageSlice.length, filtersOpen])
 
   const toggleStatus = (s: QuoteStatus) => {
     setStatusFilter((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
@@ -142,146 +207,180 @@ export function QuoteModuleView({ onNavigate: _onNavigate }: Props) {
           </nav>
         </div>
 
-        <div className="min-h-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
-          <div className="okan-project-split-grid grid h-full min-h-0 gap-2.5 lg:grid-cols-2">
-            <section className="okan-project-split-list okan-split-list-active-lift flex min-h-0 flex-col overflow-hidden p-3">
+        <div ref={splitRef} className="min-h-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+          <div className="relative flex h-full min-h-0 min-w-0 overflow-hidden gap-0">
+            <section
+              className="okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden p-3"
+              style={{ width: `calc(${splitRatio}% - 5px)` }}
+            >
               <div className="mb-3 flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-2">
                 <h2 className="min-w-0 text-sm font-semibold text-slate-900 dark:text-slate-50 sm:text-base">
-                  Teklifler
+                  Teklif & Keşif
                 </h2>
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setFiltersOpen((v) => !v)}
                     aria-expanded={filtersOpen}
-                    className="okan-liquid-btn-secondary inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40"
+                    className={[
+                      'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
+                      filtersOpen
+                        ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
+                        : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
+                    ].join(' ')}
                   >
-                    <Filter className="size-4 shrink-0 opacity-80" aria-hidden />
+                    <Filter className="size-3.5 shrink-0" aria-hidden />
                     <span>Filtrele</span>
                     {activeFilterCount > 0 ? (
-                      <span className="rounded-full bg-sky-500/25 px-1.5 py-0.5 text-xs font-bold tabular-nums text-sky-900 dark:bg-sky-400/20 dark:text-sky-100">
+                      <span className="rounded-full bg-sky-500/25 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-sky-900 dark:bg-sky-400/20 dark:text-sky-100">
                         {activeFilterCount}
                       </span>
                     ) : null}
-                    <ChevronDown
-                      className={`size-4 shrink-0 opacity-70 transition ${filtersOpen ? 'rotate-180' : ''}`}
-                      aria-hidden
-                    />
                   </button>
                 </div>
               </div>
 
-              {filtersOpen ? (
-                <div
-                  className="mb-4 shrink-0 space-y-3 rounded-xl border border-slate-200/50 bg-white/45 p-3.5 dark:border-slate-600/40 dark:bg-slate-900/35"
-                  role="region"
-                  aria-label="Teklif filtreleri"
+              <div className="relative min-h-0 flex-1 overflow-hidden">
+                <aside
+                  className={[
+                    'absolute inset-y-0 left-0 z-20 w-64 overflow-y-auto rounded-xl border border-slate-200/70 bg-white/95 p-3 shadow-xl backdrop-blur-sm transition-transform dark:border-slate-700/70 dark:bg-slate-900/95',
+                    filtersOpen ? 'translate-x-0' : '-translate-x-[105%]',
+                  ].join(' ')}
+                  aria-hidden={!filtersOpen}
                 >
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
-                    Durum
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {ALL_STATUSES.map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => toggleStatus(s)}
-                        className={[
-                          'rounded-full px-3 py-2 text-left text-sm font-semibold leading-snug transition',
-                          statusFilter.includes(s) ? 'okan-liquid-pill-active text-slate-900' : 'okan-liquid-btn-secondary',
-                        ].join(' ')}
-                      >
-                        {statusLabel(s)}
-                      </button>
-                    ))}
-                  </div>
-                  {statusFilter.length > 0 ? (
+                  <div className="mb-3 flex items-start justify-between gap-2">
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Teklif filtreleri</h4>
                     <button
                       type="button"
-                      onClick={() => setStatusFilter([])}
-                      className="okan-liquid-btn-secondary w-full px-3 py-2 text-sm font-semibold sm:w-auto"
+                      onClick={() => setFiltersOpen(false)}
+                      className="inline-flex size-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                      aria-label="Filtreyi kapat"
                     >
-                      Tüm durumlar
+                      <X className="size-3.5" aria-hidden />
                     </button>
-                  ) : null}
-                </div>
-              ) : null}
+                  </div>
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                      Durum
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {ALL_STATUSES.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => toggleStatus(s)}
+                          className={[
+                            'rounded-full px-3 py-2 text-left text-sm font-semibold leading-snug transition',
+                            statusFilter.includes(s) ? 'okan-liquid-pill-active text-slate-900' : 'okan-liquid-btn-secondary',
+                          ].join(' ')}
+                        >
+                          {statusLabel(s)}
+                        </button>
+                      ))}
+                    </div>
+                    {statusFilter.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setStatusFilter([])}
+                        className="okan-liquid-btn-secondary w-full px-3 py-2 text-sm font-semibold sm:w-auto"
+                      >
+                        Tüm durumlar
+                      </button>
+                    ) : null}
+                  </div>
+                </aside>
 
-              {filtered.length === 0 ? (
-                <p className="text-sm text-slate-600 dark:text-slate-300">Filtreye uygun teklif yok.</p>
-              ) : (
-                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                  <ul className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1">
-                    {listPageSlice.map((row) => (
-                      <li
-                        key={row.id}
-                        className={[
-                          'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-slate-200/50 bg-white/70 px-2 py-1.5 dark:border-slate-700/50 dark:bg-slate-900/35',
-                          selected?.id === row.id ? 'okan-project-list-row--active' : '',
-                        ].join(' ')}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setSelectedId(row.id)}
-                          aria-current={selected?.id === row.id ? 'true' : undefined}
-                          className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:hover:bg-slate-900/40"
-                        >
-                          <p className="font-mono text-sm font-semibold leading-snug text-slate-900 dark:text-slate-50">
-                            {row.number}
-                          </p>
-                          <p className="mt-0.5 truncate text-xs text-slate-600 dark:text-slate-400">{row.customer}</p>
-                          <p className="mt-1.5">
-                            <span className={statusPill(row.status)}>{statusLabel(row.status)}</span>
-                          </p>
-                        </button>
-                        <button
-                          type="button"
-                          title="Tam teklif detayı"
-                          onClick={() => navigate(`/teklif-detay/${row.id}`, { state: { fromList: true } })}
-                          className="inline-flex shrink-0 items-center gap-0.5 self-center rounded-md px-1.5 py-1 text-[11px] font-medium leading-none text-slate-500 transition hover:bg-slate-500/10 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100"
-                        >
-                          Detay
-                          <ChevronRight className="size-3 opacity-70" strokeWidth={2} aria-hidden />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                  {filtered.length > QUOTE_LIST_PAGE_SIZE ? (
-                    <nav
-                      aria-label="Teklif listesi sayfaları"
-                      className="mt-1 flex shrink-0 items-center justify-between gap-2 border-t border-slate-200/35 pt-2.5 dark:border-slate-600/35"
+                {filtered.length === 0 ? (
+                  <p className="text-sm text-slate-600 dark:text-slate-300">Filtreye uygun teklif yok.</p>
+                ) : (
+                  <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                    <ul
+                      ref={listRef}
+                      className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-300"
+                      style={{ paddingLeft: filtersOpen ? '15.75rem' : '0' }}
+                      onScroll={onListScroll}
                     >
-                      <button
-                        type="button"
-                        disabled={listPage <= 1}
-                        onClick={() => setListPage((p) => Math.max(1, p - 1))}
-                        className="okan-liquid-btn-secondary inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold disabled:pointer-events-none disabled:opacity-40"
-                      >
-                        <ChevronLeft className="size-3.5 shrink-0" aria-hidden />
-                        Önceki
-                      </button>
-                      <span className="min-w-0 truncate text-center text-xs font-medium text-slate-600 dark:text-slate-300">
-                        Sayfa {listPage} / {listTotalPages}
-                        <span className="text-slate-500 dark:text-slate-400"> ({filtered.length})</span>
+                      {listPageSlice.map((row) => (
+                        <li
+                          key={row.id}
+                          className={[
+                            'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-slate-200/50 bg-white/70 px-2 py-1.5 dark:border-slate-700/50 dark:bg-slate-900/35',
+                            selected?.id === row.id ? 'okan-project-list-row--active' : '',
+                          ].join(' ')}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setSelectedId(row.id)}
+                            aria-current={selected?.id === row.id ? 'true' : undefined}
+                            className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:hover:bg-slate-900/40"
+                          >
+                            <p className="font-mono text-sm font-semibold leading-snug text-slate-900 dark:text-slate-50">
+                              {row.number}
+                            </p>
+                            <p className="mt-0.5 truncate text-xs text-slate-600 dark:text-slate-400">{row.customer}</p>
+                            <p className="mt-1.5">
+                              <span className={statusPill(row.status)}>{statusLabel(row.status)}</span>
+                            </p>
+                          </button>
+                          <button
+                            type="button"
+                            title="Tam teklif detayı"
+                            onClick={() => navigate(`/teklif-detay/${row.id}`, { state: { fromList: true } })}
+                            className="inline-flex shrink-0 items-center gap-0.5 self-center rounded-md px-1.5 py-1 text-[11px] font-medium leading-none text-slate-500 transition hover:bg-slate-500/10 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100"
+                          >
+                            Detay
+                            <ChevronRight className="size-3 opacity-70" strokeWidth={2} aria-hidden />
+                          </button>
+                        </li>
+                      ))}
+                      {safeListPage < listTotalPages ? <li ref={loadMoreSentinelRef} className="h-5" aria-hidden /> : null}
+                    </ul>
+                    <div className="mt-1.5 flex shrink-0 items-center justify-between gap-2 border-t border-slate-200/35 pt-2.5 text-[11px] dark:border-slate-600/35">
+                      <span className="text-slate-600 dark:text-slate-300">
+                        {listPageStart}-{listPageEnd} / {filtered.length} sonuç
                       </span>
-                      <button
-                        type="button"
-                        disabled={listPage >= listTotalPages}
-                        onClick={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
-                        className="okan-liquid-btn-secondary inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold disabled:pointer-events-none disabled:opacity-40"
-                      >
-                        Sonraki
-                        <ChevronRight className="size-3.5 shrink-0" aria-hidden />
-                      </button>
-                    </nav>
-                  ) : null}
-                </div>
-              )}
+                      <div className="flex items-center gap-2">
+                        <label className="text-slate-500 dark:text-slate-400">Sayfa boyutu:</label>
+                        <select
+                          value={pageSize}
+                          onChange={(event) => setPageSize(Number(event.target.value))}
+                          className="rounded-md border border-slate-300 bg-white px-1.5 py-0.5 text-[11px] text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+                        >
+                          <option value={6}>6</option>
+                          <option value={8}>8</option>
+                          <option value={12}>12</option>
+                          <option value={16}>16</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </section>
+
+            <div className="relative z-10 mx-1 hidden w-2 shrink-0 cursor-col-resize lg:flex">
+              <button
+                type="button"
+                aria-label="Paneller arası genişliği ayarla"
+                onMouseDown={() => setIsResizing(true)}
+                onMouseEnter={() => setIsResizerHover(true)}
+                onMouseLeave={() => setIsResizerHover(false)}
+                className={[
+                  'group absolute inset-y-3 left-1/2 -translate-x-1/2 rounded-full border transition',
+                  isResizing || isResizerHover
+                    ? 'w-6 border-sky-300/70 bg-sky-100/70 dark:border-sky-500/60 dark:bg-sky-900/40'
+                    : 'w-3 border-slate-200/80 bg-white/70 dark:border-slate-700/80 dark:bg-slate-900/60',
+                ].join(' ')}
+              >
+                <span className="pointer-events-none flex h-full items-center justify-center text-slate-500 dark:text-slate-300">
+                  {isResizing || isResizerHover ? <ChevronsLeftRight className="size-3.5" /> : <GripVertical className="size-3.5" />}
+                </span>
+              </button>
+            </div>
 
             <aside
               ref={detailPanelRef}
-              className="okan-project-split-aside flex h-full min-h-0 min-w-0 flex-col overflow-hidden p-3 lg:pl-2"
+              className="okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:pl-2"
             >
               {selected ? (
                 <div key={selected.id} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">

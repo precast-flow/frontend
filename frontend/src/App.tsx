@@ -15,12 +15,9 @@ import { RegisterPage } from './pages/RegisterPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ThemeProvider } from './theme/ThemeProvider'
 import { FactoryProvider } from './context/FactoryContext'
-import { ProductionQualityProvider } from './context/ProductionQualityContext'
-import { ProductionRolePreviewProvider } from './context/ProductionRolePreviewContext'
 import { I18nProvider } from './i18n/I18nProvider'
 import { GlassShowcasePage } from './pages/GlassShowcasePage'
 import { ShellResolver } from './templates/glassmorphism/ShellResolver'
-import { ProjectManagementCreatePage } from './components/proje/ProjectManagementCreatePage'
 import { ProjectManagementDetailPage } from './components/proje/ProjectManagementDetailPage'
 import { CrmCustomerDetailPage } from './components/crm/CrmCustomerDetailPage'
 import { QuoteDetailPage } from './components/teklif/QuoteDetailPage'
@@ -30,8 +27,6 @@ function App() {
     <I18nProvider>
     <ThemeProvider>
       <FactoryProvider>
-      <ProductionQualityProvider>
-      <ProductionRolePreviewProvider>
       <BrowserRouter>
         <>
         <Routes>
@@ -53,7 +48,6 @@ function App() {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="glass-showcase" element={<GlassShowcasePage />} />
             <Route path="proje-detay/:projectId" element={<ProjectManagementDetailPage />} />
-            <Route path="proje-olustur" element={<ProjectManagementCreatePage />} />
             <Route path="teklif-detay/:quoteId" element={<QuoteDetailPage />} />
             <Route path="musteri-detay/:customerId" element={<CrmCustomerDetailPage />} />
             <Route path="muhendislik-okan" element={<Navigate to="/muhendislik" replace />} />
@@ -63,8 +57,6 @@ function App() {
         </Routes>
         </>
       </BrowserRouter>
-      </ProductionRolePreviewProvider>
-      </ProductionQualityProvider>
     </FactoryProvider>
     </ThemeProvider>
     </I18nProvider>

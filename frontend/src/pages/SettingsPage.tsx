@@ -383,7 +383,7 @@ export function SettingsPage() {
                               type="button"
                               onClick={() => {
                                 setSelectedCode(DEFAULT_FACTORY_CODE)
-                                onNavigate('dashboard')
+                                onNavigate('project')
                               }}
                               className="rounded-xl bg-gray-800 px-3 py-2 text-xs font-semibold text-white shadow-neo-out-sm transition hover:bg-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:bg-gray-200 dark:text-gray-900 dark:hover:bg-white"
                             >
@@ -403,7 +403,7 @@ export function SettingsPage() {
                         {step.special === 'notifications' ? (
                           <button
                             type="button"
-                            onClick={() => onNavigate('dashboard')}
+                            onClick={() => onNavigate('project')}
                             className="rounded-xl bg-gray-100 px-3 py-2 text-xs font-medium text-gray-800 shadow-neo-out-sm transition hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
                           >
                             {t('settings.scenario.gotoNotif')}
