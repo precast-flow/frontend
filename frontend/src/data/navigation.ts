@@ -25,9 +25,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { id: 'planning-hub', labelKey: 'nav.planningHub', slug: 'planlama' },
       { id: 'crm', labelKey: 'nav.crm', slug: 'crm' },
-      { id: 'quote', labelKey: 'nav.quote', slug: 'teklif' },
       { id: 'project', labelKey: 'nav.project', slug: 'proje' },
-      { id: 'engineering', labelKey: 'nav.engineering', slug: 'muhendislik' },
       { id: 'planning-design', labelKey: 'nav.planningDesign', slug: 'planlama-tasarim' },
     ],
   },
@@ -59,8 +57,14 @@ export const navGroups: NavGroup[] = [
     id: 'configuration',
     titleKey: 'nav.sidebar.section.configuration',
     items: [
-      { id: 'configuration-center', labelKey: 'nav.configurationCenter', slug: 'konfigurasyon' },
+      { id: 'configuration-center', labelKey: 'nav.configurationCenter', slug: 'tanimlar' },
       { id: 'element-identity', labelKey: 'nav.elementIdentity', slug: 'eleman-kimlik' },
+      { id: 'material-catalog', labelKey: 'nav.materialCatalog', slug: 'malzeme-katalogu' },
+      {
+        id: 'standard-series-catalog',
+        labelKey: 'nav.standardSeriesCatalog',
+        slug: 'standart-seri-urunler',
+      },
     ],
   },
   {
@@ -116,7 +120,10 @@ export function activeModuleIdFromPathname(pathname: string): string {
   if (pathname === '/settings') return 'settings'
   if (pathname === '/') return DEFAULT_MODULE_ID
   if (pathname.startsWith('/musteri-detay/')) return 'crm'
-  if (pathname.startsWith('/eleman-kimlik')) return 'configuration-center'
+  if (pathname === '/teklif' || pathname.startsWith('/teklif/')) return 'crm'
+  if (pathname.startsWith('/eleman-kimlik')) return 'element-identity'
+  if (pathname.startsWith('/malzeme-katalogu')) return 'material-catalog'
+  if (pathname.startsWith('/standart-seri-urunler')) return 'standard-series-catalog'
   const seg = pathname.replace(/^\//, '').split('/')[0]
   if (!seg) return DEFAULT_MODULE_ID
   return findModuleIdBySlug(seg) ?? DEFAULT_MODULE_ID

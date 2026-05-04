@@ -12,12 +12,16 @@ import {
   loadFirms,
   loadOverrides,
   loadProjectElements,
+  loadProjectProducts,
+  loadStandardSeriesTemplates,
   loadTemplates,
   saveActiveFirmId,
   saveCounters,
   saveFirms,
   saveOverrides,
   saveProjectElements,
+  saveProjectProducts,
+  saveStandardSeriesTemplates,
   saveTemplates,
 } from '../../elementIdentity/firm/storage'
 import { MOCK_FIRMS, MOCK_PROJECTS } from '../../elementIdentity/firm/mockFirms'
@@ -26,8 +30,11 @@ import type {
   FirmNamingTemplate,
   FirmProfile,
   ProjectElement,
+  ProjectProduct,
   ProjectSequenceCounter,
+  StandardSeriesTemplate,
 } from '../../elementIdentity/types'
+import { buildProjectProductFromTemplate } from '../../standardSeriesCatalog/instantiateTemplate'
 import {
   ElementIdentityContext,
   type ElementIdentityContextValue,
@@ -44,7 +51,11 @@ export function ElementIdentityProvider({ children }: { children: ReactNode }) {
     loadProjectElements(),
   )
   const [counters, setCounters] = useState<ProjectSequenceCounter[]>(() => loadCounters())
-  const [activeProjectId, setActiveProjectId] = useState<string>(MOCK_PROJECTS[0].id)
+  const [projectProducts, setProjectProducts] = useState<ProjectProduct[]>(() => loadProjectProducts())
+  const [standardSeriesTemplates, setStandardSeriesTemplates] = useState<StandardSeriesTemplate[]>(() =>
+    loadStandardSeriesTemplates(loadActiveFirmId(MOCK_FIRMS[0].id)),
+  )
+  const [activeProjectId, setActiveProjectId] = useState<string>(MOCK_PROJECTS[0]?.id ?? '')
   const [overrideTemplateId, setOverrideTemplateId] = useState<string | null>(null)
 
   useEffect(() => saveFirms(firms), [firms])
@@ -53,6 +64,8 @@ export function ElementIdentityProvider({ children }: { children: ReactNode }) {
   useEffect(() => saveActiveFirmId(activeFirmId), [activeFirmId])
   useEffect(() => saveProjectElements(projectElements), [projectElements])
   useEffect(() => saveCounters(counters), [counters])
+  useEffect(() => saveProjectProducts(projectProducts), [projectProducts])
+  useEffect(() => saveStandardSeriesTemplates(standardSeriesTemplates), [standardSeriesTemplates])
 
   const activeFirm = useMemo<FirmProfile>(() => {
     return firms.find((f) => f.id === activeFirmId) ?? firms[0]
@@ -145,12 +158,72 @@ export function ElementIdentityProvider({ children }: { children: ReactNode }) {
     )
   }, [])
 
+  const addProjectProduct = useCallback((row: Omit<ProjectProduct, 'id' | 'createdAt'> & { id?: string }) => {
+    const id = row.id ?? `prd-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const createdAt = new Date().toISOString()
+    const next: ProjectProduct = {
+      ...row,
+      id,
+      createdAt,
+      status: row.status ?? 'active',
+      revision: row.revision ?? 1,
+    }
+    setProjectProducts((prev) => [...prev, next])
+  }, [])
+
+  const removeProjectProduct = useCallback((id: string) => {
+    setProjectProducts((prev) => prev.filter((p) => p.id !== id))
+  }, [])
+
+  const replaceProjectProducts = useCallback((projectId: string, rows: ProjectProduct[]) => {
+    setProjectProducts((prev) => [...prev.filter((p) => p.projectId !== projectId), ...rows])
+  }, [])
+
+  const updateProjectProduct = useCallback((next: ProjectProduct) => {
+    setProjectProducts((prev) => prev.map((p) => (p.id === next.id ? next : p)))
+  }, [])
+
+  const addStandardSeriesTemplate = useCallback(
+    (row: Omit<StandardSeriesTemplate, 'id' | 'updatedAt'> & { id?: string }) => {
+      const id = row.id ?? `sst-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      const updatedAt = new Date().toISOString()
+      const next: StandardSeriesTemplate = {
+        ...row,
+        id,
+        firmId: row.firmId || activeFirm.id,
+        updatedAt,
+      }
+      setStandardSeriesTemplates((prev) => [...prev, next])
+    },
+    [activeFirm.id],
+  )
+
+  const updateStandardSeriesTemplate = useCallback((next: StandardSeriesTemplate) => {
+    setStandardSeriesTemplates((prev) =>
+      prev.map((t) => (t.id === next.id ? { ...next, updatedAt: new Date().toISOString() } : t)),
+    )
+  }, [])
+
+  const removeStandardSeriesTemplate = useCallback((id: string) => {
+    setStandardSeriesTemplates((prev) => prev.filter((t) => t.id !== id))
+  }, [])
+
+  const instantiateStandardTemplateToProject = useCallback(
+    (projectId: string, templateId: string, overrides?: { code?: string; name?: string }) => {
+      const template = standardSeriesTemplates.find((t) => t.id === templateId)
+      if (!template) return
+      addProjectProduct(buildProjectProductFromTemplate(template, projectId, overrides ?? {}))
+    },
+    [standardSeriesTemplates, addProjectProduct],
+  )
+
   const value: ElementIdentityContextValue = {
     firms,
     activeFirmId,
     setActiveFirmId,
     activeFirm,
     templates,
+    firmTemplates,
     activeTemplate,
     setActiveTemplateId,
     overrides,
@@ -169,6 +242,16 @@ export function ElementIdentityProvider({ children }: { children: ReactNode }) {
     allocateNextSequence,
     removeProjectElement,
     clearProjectElements,
+    projectProducts,
+    addProjectProduct,
+    removeProjectProduct,
+    replaceProjectProducts,
+    updateProjectProduct,
+    standardSeriesTemplates,
+    addStandardSeriesTemplate,
+    updateStandardSeriesTemplate,
+    removeStandardSeriesTemplate,
+    instantiateStandardTemplateToProject,
   }
 
   return (

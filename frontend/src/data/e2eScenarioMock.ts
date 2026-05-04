@@ -12,7 +12,7 @@ export type E2eScenarioStep = {
     | 'crm'
     | 'quote'
     | 'project'
-    | 'engineering'
+    | 'element-identity'
     | 'mes'
     | 'quality'
     | 'yard'
@@ -33,11 +33,11 @@ export const e2eScenarioSteps: E2eScenarioStep[] = [
   { id: 4, tier: 'P0', moduleId: 'user-management' },
   { id: 5, tier: 'P1', moduleId: 'profile' },
   { id: 6, tier: 'P0', moduleId: 'crm' },
-  { id: 7, tier: 'P0', moduleId: 'quote' },
-  { id: 8, tier: 'P0', moduleId: 'quote' },
-  { id: 9, tier: 'P1', moduleId: 'quote' },
+  { id: 7, tier: 'P0', moduleId: 'crm' },
+  { id: 8, tier: 'P0', moduleId: 'crm' },
+  { id: 9, tier: 'P1', moduleId: 'crm' },
   { id: 10, tier: 'P0', moduleId: 'project' },
-  { id: 11, tier: 'P0', moduleId: 'engineering' },
+  { id: 11, tier: 'P0', moduleId: 'element-identity' },
   { id: 12, tier: 'P0', moduleId: 'mes' },
   { id: 13, tier: 'P0', moduleId: 'quality' },
   { id: 14, tier: 'P0', moduleId: 'yard' },

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   ChevronsLeftRight,
@@ -20,6 +21,7 @@ import { useFactoryContext } from '../../context/FactoryContext'
 import { useI18n } from '../../i18n/I18nProvider'
 import { CrmNewCustomerModal } from './CrmNewCustomerModal'
 import { NeoSwitch } from '../NeoSwitch'
+import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 
 type Props = {
@@ -39,6 +41,9 @@ const detailTabDefs = [
 ] as const
 
 type DetailTabId = (typeof detailTabDefs)[number]['id']
+
+const crmLocationFieldInputClass =
+  'min-h-[2.5rem] w-full min-w-0 rounded-lg border border-slate-200/80 bg-white/90 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:border-sky-400/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/25 dark:border-slate-600/60 dark:bg-slate-800/40 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus-visible:border-sky-500/50 dark:focus-visible:ring-sky-400/15'
 
 function statusPill(status: CrmCustomer['status']) {
   const base =
@@ -61,12 +66,14 @@ function resolveLocations(customer: CrmCustomer): CrmLocationRow[] {
   ]
 }
 
-export function CrmModuleView({ onNavigate }: Props) {
+export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
+  void _onNavigate
   const { t } = useI18n()
   const navigate = useNavigate()
   const { selectedCodes } = useFactoryContext()
   const filterId = 'crm-fabrika-filtre'
   const detailPanelRef = useRef<HTMLElement | null>(null)
+  const crmDetailTabPanelRef = useRef<HTMLDivElement | null>(null)
   const [rows, setRows] = useState<CrmCustomer[]>(crmCustomers)
 
   const [newOpen, setNewOpen] = useState(false)
@@ -85,6 +92,15 @@ export function CrmModuleView({ onNavigate }: Props) {
   const [isResizerHover, setIsResizerHover] = useState(false)
   const [newLocationName, setNewLocationName] = useState('')
   const [newLocationInfo, setNewLocationInfo] = useState('')
+  const [locationAddOpen, setLocationAddOpen] = useState(false)
+  const [locationPopoverPlacement, setLocationPopoverPlacement] = useState<{
+    top: number
+    left: number
+    width: number
+  } | null>(null)
+  const locationAddTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const locationPopoverPanelRef = useRef<HTMLDivElement | null>(null)
+  const newLocationNameInputRef = useRef<HTMLInputElement | null>(null)
   const listRef = useRef<HTMLUListElement | null>(null)
   const loadMoreSentinelRef = useRef<HTMLLIElement | null>(null)
   const splitRef = useRef<HTMLDivElement | null>(null)
@@ -162,7 +178,73 @@ export function CrmModuleView({ onNavigate }: Props) {
   useEffect(() => {
     setNewLocationName('')
     setNewLocationInfo('')
+    setLocationAddOpen(false)
   }, [selected?.id])
+
+  useEffect(() => {
+    setLocationAddOpen(false)
+  }, [detailTab])
+
+  useEffect(() => {
+    if (!locationAddOpen) return
+    newLocationNameInputRef.current?.focus()
+  }, [locationAddOpen])
+
+  const measureLocationPopover = useCallback(() => {
+    const btn = locationAddTriggerRef.current
+    if (!btn || !locationAddOpen) return
+    const rect = btn.getBoundingClientRect()
+    const width = Math.min(320, Math.max(240, window.innerWidth - 16))
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))
+    setLocationPopoverPlacement({ top: rect.top, left, width })
+  }, [locationAddOpen])
+
+  const cancelLocationAdd = useCallback(() => {
+    setLocationAddOpen(false)
+    setNewLocationName('')
+    setNewLocationInfo('')
+    setLocationPopoverPlacement(null)
+  }, [])
+
+  useLayoutEffect(() => {
+    if (!locationAddOpen) {
+      setLocationPopoverPlacement(null)
+      return
+    }
+    measureLocationPopover()
+    const scrollHost = crmDetailTabPanelRef.current
+    const ro = new ResizeObserver(() => measureLocationPopover())
+    ro.observe(document.documentElement)
+    const onScrollOrResize = () => measureLocationPopover()
+    window.addEventListener('resize', onScrollOrResize)
+    window.addEventListener('scroll', onScrollOrResize, true)
+    scrollHost?.addEventListener('scroll', onScrollOrResize)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', onScrollOrResize)
+      window.removeEventListener('scroll', onScrollOrResize, true)
+      scrollHost?.removeEventListener('scroll', onScrollOrResize)
+    }
+  }, [locationAddOpen, measureLocationPopover])
+
+  useEffect(() => {
+    if (!locationAddOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') cancelLocationAdd()
+    }
+    const onMouseDown = (event: MouseEvent) => {
+      const t = event.target as Node
+      if (locationAddTriggerRef.current?.contains(t)) return
+      if (locationPopoverPanelRef.current?.contains(t)) return
+      cancelLocationAdd()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('mousedown', onMouseDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('mousedown', onMouseDown)
+    }
+  }, [locationAddOpen, cancelLocationAdd])
 
   useEffect(() => {
     if (!filtersOpen) return
@@ -323,6 +405,8 @@ export function CrmModuleView({ onNavigate }: Props) {
     )
     setNewLocationName('')
     setNewLocationInfo('')
+    setLocationAddOpen(false)
+    setLocationPopoverPlacement(null)
   }
 
   const updateSelectedLocation = (locationId: string, patch: Partial<CrmLocationRow>) => {
@@ -392,41 +476,50 @@ export function CrmModuleView({ onNavigate }: Props) {
               className="okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden p-3"
               style={{ width: `calc(${splitRatio}% - 5px)` }}
             >
-              <div className="mb-3 flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-2">
-                <h2 className="min-w-0 text-sm font-semibold text-slate-900 dark:text-slate-50 sm:text-base">
+              <div className="mb-3 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
+                <h2 className="min-w-0 shrink-0 text-sm font-semibold text-slate-900 dark:text-slate-50 sm:text-base">
                   Müşteriler
                 </h2>
-                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFiltersOpen((v) => !v)}
-                    aria-expanded={filtersOpen}
-                    className={[
-                      'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
-                      filtersOpen
-                        ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
-                        : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
-                    ].join(' ')}
-                  >
-                    <Filter className="size-3.5 shrink-0" aria-hidden />
-                    <span>Filtrele</span>
-                    {activeFilterCount > 0 ? (
-                      <span className="rounded-full bg-sky-500/25 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-sky-900 dark:bg-sky-400/20 dark:text-sky-100">
-                        {activeFilterCount}
-                      </span>
-                    ) : null}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={openCreateCustomerDialog}
-                    className={[
-                      'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
-                      'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
-                    ].join(' ')}
-                  >
-                    <Plus className="size-3.5 shrink-0" aria-hidden />
-                    <span>Yeni müşteri</span>
-                  </button>
+                <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
+                  <FilterToolbarSearch
+                    id="crm-list-inline-search"
+                    value={search}
+                    onValueChange={setSearch}
+                    placeholder="Ünvan, kod, vergi no, şehir, kişi…"
+                    ariaLabel="Müşterilerde ara"
+                  />
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFiltersOpen((v) => !v)}
+                      aria-expanded={filtersOpen}
+                      className={[
+                        'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
+                        filtersOpen
+                          ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
+                          : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
+                      ].join(' ')}
+                    >
+                      <Filter className="size-3.5 shrink-0" aria-hidden />
+                      <span>Filtrele</span>
+                      {activeFilterCount > 0 ? (
+                        <span className="rounded-full bg-sky-500/25 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-sky-900 dark:bg-sky-400/20 dark:text-sky-100">
+                          {activeFilterCount}
+                        </span>
+                      ) : null}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={openCreateCustomerDialog}
+                      className={[
+                        'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
+                        'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
+                      ].join(' ')}
+                    >
+                      <Plus className="size-3.5 shrink-0" aria-hidden />
+                      <span>Yeni müşteri</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -568,7 +661,7 @@ export function CrmModuleView({ onNavigate }: Props) {
                         <button
                           type="button"
                           title="Tam müşteri detay sayfası"
-                          onClick={() => navigate(`/musteri-detay/${row.id}`)}
+                          onClick={() => navigate(`/musteri-detay/${row.id}`, { state: { fromCrmList: true } })}
                           className="inline-flex shrink-0 items-center gap-0.5 self-center rounded-md px-1.5 py-1 text-[11px] font-medium leading-none text-slate-500 transition hover:bg-slate-500/10 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100"
                         >
                           Detay
@@ -679,6 +772,7 @@ export function CrmModuleView({ onNavigate }: Props) {
                     </div>
 
                     <div
+                      ref={crmDetailTabPanelRef}
                       key={detailTab}
                       id="crm-detail-panel"
                       role="tabpanel"
@@ -874,76 +968,158 @@ export function CrmModuleView({ onNavigate }: Props) {
                       ) : null}
 
                       {detailTab === 'lokasyonlar' ? (
-                        <div className="flex flex-col gap-4 text-left">
+                        <div className="mx-auto flex w-full max-w-xl flex-col gap-5 text-left">
                           <div className="flex items-start gap-2">
                             <MapPin className="mt-0.5 size-4 shrink-0 text-slate-400" aria-hidden />
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">Lokasyonlar</p>
                               <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                                 Şantiye veya ofis kayıtlarını güncel tutun; proje oluştururken bu liste kullanılır.
                               </p>
                             </div>
                           </div>
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                            <label className="min-w-0 flex-1">
-                              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Lokasyon adı</span>
-                              <input
-                                type="text"
-                                value={newLocationName}
-                                onChange={(event) => setNewLocationName(event.target.value)}
-                                placeholder="Örn. İstanbul şantiyesi"
-                                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
-                              />
-                            </label>
-                            <label className="min-w-0 flex-[1.35]">
-                              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Adres / konum</span>
-                              <input
-                                type="text"
-                                value={newLocationInfo}
-                                onChange={(event) => setNewLocationInfo(event.target.value)}
-                                placeholder="İl, ilçe, açık adres…"
-                                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
-                              />
-                            </label>
+
+                          <div className="self-start">
                             <button
+                              ref={locationAddTriggerRef}
                               type="button"
-                              onClick={addLocationToSelected}
-                              className="shrink-0 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white sm:mb-px"
+                              onClick={() => setLocationAddOpen((open) => !open)}
+                              aria-expanded={locationAddOpen}
+                              aria-haspopup="dialog"
+                              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/70 bg-white/60 px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-white/90 dark:border-slate-600/60 dark:bg-slate-900/40 dark:text-slate-100 dark:hover:bg-slate-900/60"
                             >
-                              Ekle
+                              <Plus className="size-4 shrink-0" aria-hidden />
+                              Lokasyon ekle
                             </button>
                           </div>
+
+                          {locationAddOpen && locationPopoverPlacement
+                            ? createPortal(
+                                <>
+                                  <button
+                                    type="button"
+                                    className="fixed inset-0 z-[96] cursor-default bg-slate-950/25 backdrop-blur-[2px] dark:bg-slate-950/40"
+                                    aria-label="Kapat"
+                                    onMouseDown={(event) => {
+                                      event.preventDefault()
+                                      cancelLocationAdd()
+                                    }}
+                                  />
+                                  <div
+                                    ref={locationPopoverPanelRef}
+                                    role="dialog"
+                                    aria-modal="true"
+                                    aria-labelledby="crm-location-add-title"
+                                    style={{
+                                      top: locationPopoverPlacement.top,
+                                      left: locationPopoverPlacement.left,
+                                      width: locationPopoverPlacement.width,
+                                    }}
+                                    className="fixed z-[100] -translate-y-[calc(100%+0.5rem)] rounded-2xl border border-white/20 bg-white/10 p-3 shadow-xl shadow-slate-900/10 ring-1 ring-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5 dark:shadow-black/30 dark:ring-white/10"
+                                  >
+                                    <div className="flex items-start justify-between gap-2 border-b border-slate-200/40 pb-2.5 dark:border-white/10">
+                                      <p
+                                        id="crm-location-add-title"
+                                        className="text-sm font-semibold tracking-tight text-slate-900 dark:text-slate-50"
+                                      >
+                                        Yeni lokasyon
+                                      </p>
+                                      <button
+                                        type="button"
+                                        onClick={cancelLocationAdd}
+                                        className="rounded-lg p-1 text-slate-500 transition hover:bg-white/50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
+                                        aria-label="Kapat"
+                                      >
+                                        <X className="size-4" aria-hidden />
+                                      </button>
+                                    </div>
+                                    <div className="mt-3 flex flex-col gap-3">
+                                      <label className="block min-w-0">
+                                        <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                                          Lokasyon adı
+                                        </span>
+                                        <input
+                                          ref={newLocationNameInputRef}
+                                          type="text"
+                                          value={newLocationName}
+                                          onChange={(event) => setNewLocationName(event.target.value)}
+                                          placeholder="Örn. İstanbul şantiyesi"
+                                          className={`mt-1 ${crmLocationFieldInputClass}`}
+                                        />
+                                      </label>
+                                      <label className="block min-w-0">
+                                        <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                                          Adres / konum
+                                        </span>
+                                        <input
+                                          type="text"
+                                          value={newLocationInfo}
+                                          onChange={(event) => setNewLocationInfo(event.target.value)}
+                                          placeholder="İl, ilçe, açık adres…"
+                                          className={`mt-1 ${crmLocationFieldInputClass}`}
+                                          onKeyDown={(event) => {
+                                            if (event.key === 'Enter') {
+                                              event.preventDefault()
+                                              addLocationToSelected()
+                                            }
+                                          }}
+                                        />
+                                      </label>
+                                      <div className="flex flex-wrap justify-end gap-2 pt-0.5">
+                                        <button
+                                          type="button"
+                                          onClick={cancelLocationAdd}
+                                          className="okan-liquid-btn-secondary rounded-full px-3 py-2 text-xs font-semibold"
+                                        >
+                                          Vazgeç
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => addLocationToSelected()}
+                                          className="rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+                                        >
+                                          Kaydet
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </>,
+                                document.body,
+                              )
+                            : null}
+
                           {selectedLocations.length > 0 ? (
-                            <ul className="space-y-2" role="list">
+                            <ul
+                              className="divide-y divide-slate-200/30 dark:divide-white/10"
+                              role="list"
+                            >
                               {selectedLocations.map((location) => (
                                 <li
                                   key={location.id}
-                                  className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950/40 sm:flex-row sm:items-center"
+                                  className="grid grid-cols-1 gap-2 py-3 first:pt-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-center sm:gap-x-3"
                                 >
-                                  <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2">
-                                    <input
-                                      type="text"
-                                      value={location.name}
-                                      onChange={(event) =>
-                                        updateSelectedLocation(location.id, { name: event.target.value })
-                                      }
-                                      aria-label="Lokasyon adı"
-                                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
-                                    />
-                                    <input
-                                      type="text"
-                                      value={location.locationInfo}
-                                      onChange={(event) =>
-                                        updateSelectedLocation(location.id, { locationInfo: event.target.value })
-                                      }
-                                      aria-label="Adres"
-                                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
-                                    />
-                                  </div>
+                                  <input
+                                    type="text"
+                                    value={location.name}
+                                    onChange={(event) =>
+                                      updateSelectedLocation(location.id, { name: event.target.value })
+                                    }
+                                    aria-label="Lokasyon adı"
+                                    className={crmLocationFieldInputClass}
+                                  />
+                                  <input
+                                    type="text"
+                                    value={location.locationInfo}
+                                    onChange={(event) =>
+                                      updateSelectedLocation(location.id, { locationInfo: event.target.value })
+                                    }
+                                    aria-label="Adres"
+                                    className={crmLocationFieldInputClass}
+                                  />
                                   <button
                                     type="button"
                                     onClick={() => deleteSelectedLocation(location.id)}
-                                    className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 dark:border-slate-600 dark:hover:border-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-300"
+                                    className="inline-flex size-9 shrink-0 items-center justify-self-end rounded-lg text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-600 sm:justify-self-center dark:hover:text-rose-400"
                                     aria-label="Lokasyonu kaldır"
                                   >
                                     <Trash2 className="size-4" aria-hidden />
@@ -952,7 +1128,9 @@ export function CrmModuleView({ onNavigate }: Props) {
                               ))}
                             </ul>
                           ) : (
-                            <p className="text-xs text-slate-500 dark:text-slate-400">Kayıtlı lokasyon yok.</p>
+                            <p className="rounded-lg border border-dashed border-slate-200/60 px-3 py-6 text-center text-xs text-slate-500 dark:border-slate-600/50 dark:text-slate-400">
+                              Henüz kayıtlı lokasyon yok. «Lokasyon ekle» ile ekleyin.
+                            </p>
                           )}
                         </div>
                       ) : null}
@@ -1000,10 +1178,12 @@ export function CrmModuleView({ onNavigate }: Props) {
                           </ul>
                           <button
                             type="button"
-                            onClick={() => onNavigate('quote')}
+                            onClick={() =>
+                              navigate(`/musteri-detay/${selected.id}`, { state: { fromCrmList: true } })
+                            }
                             className="mt-4 text-center text-sm font-semibold text-sky-700 underline-offset-2 hover:underline dark:text-sky-400"
                           >
-                            Teklif modülüne git
+                            Müşteri detayında teklifleri aç
                           </button>
                         </div>
                       ) : null}
@@ -1041,7 +1221,7 @@ export function CrmModuleView({ onNavigate }: Props) {
                                       {d.name}
                                     </span>
                                     <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
-                                      {d.size} · {d.date}
+                                      {d.size} · {d.uploadedAt}
                                     </span>
                                     <button
                                       type="button"

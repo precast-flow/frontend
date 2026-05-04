@@ -14,6 +14,14 @@ export type ElementCategory =
   | 'substructure'
   | 'industrial'
   | 'architectural'
+  /** Çevre koruma (gürültü / istinat vb.) */
+  | 'environmental_protection'
+  /** Çevre düzenleme (bordür, parke elemanı vb.) */
+  | 'landscaping'
+  /** Enerji nakil (kablo kanalı, hat döşemesi vb.) */
+  | 'energy_carrier'
+  /** Özel imalat */
+  | 'custom_prefab'
 
 export type SourceSystem =
   | 'TEKLA'
@@ -33,6 +41,10 @@ export type IfcClassName =
   | 'IfcMember'
   | 'IfcPlate'
   | 'IfcCovering'
+  | 'IfcPile'
+  | 'IfcPipeSegment'
+  | 'IfcCableCarrierSegment'
+  | 'IfcBuildingElementProxy'
 
 /** IFC 4.3.2 spec'teki (gerekli alt küme) predefined type union */
 export type IfcPredefinedType =
@@ -267,6 +279,132 @@ export type ProjectLike = {
   id: string
   code: string
   name?: string
+}
+
+export type ProjectProductSource = 'MANUAL' | 'IFC' | 'CAD' | 'STANDARD_LIBRARY'
+
+export type ProductLifecycleStatus = 'tasarim' | 'uretim' | 'saha' | 'montaj' | 'tamamlandi'
+
+/** Donatı şekil sınıflandırması (BS 8666 / prefabrik pratik) */
+export type RebarShapeType =
+  | 'straight'
+  | 'stirrup'
+  | 'hook'
+  | 'l_bar'
+  | 'u_bar'
+  | 'crank'
+  | 'custom'
+
+export type ProductMaterialEntry = {
+  id: string
+  /** Malzeme kataloğu tanımı (opsiyonel) */
+  materialDefId?: string
+  category: string
+  name: string
+  specification: string
+  quantity: number
+  unit: string
+}
+
+export type ProductRebarEntry = {
+  id: string
+  position: string
+  diameterMm: number
+  steelGrade: string
+  shape: RebarShapeType
+  developedLengthMm: number
+  count: number
+  totalWeightKg: number
+  notes?: string
+}
+
+export type ProductRebarSummary = {
+  totalWeightKg: number
+  straightBarCount: number
+  shapedBarCount: number
+  totalDevelopedLengthM: number
+}
+
+export type ProductDrawingRevision = {
+  id: string
+  revision: string
+  title: string
+  updatedAt: string
+  updatedBy: string
+  changeNote: string
+  pdfUrl?: string
+  fileName?: string
+}
+
+export type ProductActivity = {
+  id: string
+  at: string
+  text: string
+  by?: string
+}
+
+/** Seri şablonunda / projede assembly satırı (MVP: metin + miktar) */
+export type AssemblyComponentLine = {
+  id: string
+  label: string
+  quantity: number
+  unit: string
+  notes?: string
+}
+
+export type ProjectProduct = {
+  id: string
+  projectId: string
+  name: string
+  code: string
+  elementTypeId?: string
+  typologyId?: string
+  source: ProjectProductSource
+  revision: number
+  status: 'active' | 'superseded'
+  note?: string
+  createdAt: string
+  /** Uzun teknik tanım */
+  definition?: string
+  lifecycleStatus?: ProductLifecycleStatus
+  volumeM3?: number
+  /** Tipoloji identifyingDimensions anahtarları → mm veya adet */
+  dimensions?: Record<string, number>
+  materials?: ProductMaterialEntry[]
+  rebarSchedule?: ProductRebarEntry[]
+  rebarSummary?: ProductRebarSummary
+  drawingRevisions?: ProductDrawingRevision[]
+  activities?: ProductActivity[]
+  /** Şablondan gelen assembly satırları (seri kütüphanesi) */
+  assemblyComponents?: AssemblyComponentLine[]
+}
+
+/**
+ * Firma düzeyinde seri üretim ürün şablonu — projeden bağımsız;
+ * `ProjectProduct` ile uyumlu teknik alanlar ürün sekmelerinde yeniden kullanılır.
+ */
+export type StandardSeriesTemplate = {
+  id: string
+  firmId: string
+  code: string
+  name: string
+  active: boolean
+  description?: string
+  tags?: string[]
+  elementTypeId?: string
+  typologyId?: string
+  note?: string
+  definition?: string
+  lifecycleStatus?: ProductLifecycleStatus
+  volumeM3?: number
+  dimensions?: Record<string, number>
+  materials?: ProductMaterialEntry[]
+  rebarSchedule?: ProductRebarEntry[]
+  rebarSummary?: ProductRebarSummary
+  drawingRevisions?: ProductDrawingRevision[]
+  activities?: ProductActivity[]
+  assemblyComponents?: AssemblyComponentLine[]
+  updatedAt?: string
 }
 
 // ============================================================================

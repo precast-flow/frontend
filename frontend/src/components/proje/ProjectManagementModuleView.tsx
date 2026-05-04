@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Building2, ChevronsLeftRight, ChevronRight, Factory, Filter, GripVertical, Home, Plus, Route, X } from 'lucide-react'
+import {
+  Building2,
+  ChevronsLeftRight,
+  ChevronRight,
+  Factory,
+  Filter,
+  GripVertical,
+  Home,
+  Plus,
+  Route,
+  X,
+} from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   projectManagementActivitiesMock,
@@ -10,6 +21,7 @@ import {
 } from '../../data/projectManagementCardsMock'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 import { useI18n } from '../../i18n/I18nProvider'
+import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 
 function statusLabel(status: ProjectStatus) {
   if (status === 'planlama') return 'Planlama'
@@ -278,7 +290,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
         if (statusFilter.length && !statusFilter.includes(r.status)) return false
         if (ownerFilter.length && !ownerFilter.includes(r.owner)) return false
         if (q) {
-          const haystack = `${r.name} ${r.customer} ${r.code} ${r.owner}`.toLocaleLowerCase('tr-TR')
+          const haystack = `${r.name} ${r.customer} ${r.code} ${r.owner} ${r.location}`.toLocaleLowerCase('tr-TR')
           if (!haystack.includes(q)) return false
         }
         if (dateRange !== 'all') {
@@ -574,41 +586,53 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               className="okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden p-3"
               style={{ width: `calc(${splitRatio}% - 5px)` }}
             >
-              <div className="mb-2 flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-2">
-                <h2 className="min-w-0 text-sm font-semibold text-slate-900 dark:text-slate-50 sm:text-base">
+              <div className="mb-2 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
+                <h2 className="min-w-0 shrink-0 text-sm font-semibold text-slate-900 dark:text-slate-50 sm:text-base">
                   Projeler
                 </h2>
-                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFiltersOpen((v) => !v)}
-                    aria-expanded={filtersOpen}
-                    className={[
-                      'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
-                      filtersOpen
-                        ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
-                        : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
-                    ].join(' ')}
-                  >
-                    <Filter className="size-3.5 shrink-0" aria-hidden />
-                    Filtrele
-                    {activeFilterCount > 0 ? (
-                      <span className="rounded-full bg-sky-500/25 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-sky-900 dark:bg-sky-400/20 dark:text-sky-100">
-                        {activeFilterCount}
-                      </span>
-                    ) : null}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={openCreateDialog}
-                    className={[
-                      'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
-                      'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
-                    ].join(' ')}
-                  >
-                    <Plus className="size-3.5 shrink-0" aria-hidden />
-                    <span>Proje oluştur</span>
-                  </button>
+                <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
+                  <FilterToolbarSearch
+                    id="project-list-inline-search"
+                    value={searchQuery}
+                    onValueChange={(v) => {
+                      setSearchQuery(v)
+                      setListPage(1)
+                    }}
+                    placeholder="Proje adı, kod, müşteri..."
+                    ariaLabel="Projelerde ara"
+                  />
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFiltersOpen((v) => !v)}
+                      aria-expanded={filtersOpen}
+                      className={[
+                        'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
+                        filtersOpen
+                          ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
+                          : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
+                      ].join(' ')}
+                    >
+                      <Filter className="size-3.5 shrink-0" aria-hidden />
+                      Filtrele
+                      {activeFilterCount > 0 ? (
+                        <span className="rounded-full bg-sky-500/25 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-sky-900 dark:bg-sky-400/20 dark:text-sky-100">
+                          {activeFilterCount}
+                        </span>
+                      ) : null}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={openCreateDialog}
+                      className={[
+                        'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
+                        'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
+                      ].join(' ')}
+                    >
+                      <Plus className="size-3.5 shrink-0" aria-hidden />
+                      <span>Proje oluştur</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -636,17 +660,22 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                       </div>
                       <div className="space-y-4">
                         <div>
-                          <label className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                          <label
+                            htmlFor="project-list-panel-search"
+                            className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300"
+                          >
                             Arama
                           </label>
                           <input
-                            type="text"
+                            id="project-list-panel-search"
+                            type="search"
                             value={searchQuery}
                             onChange={(e) => {
                               setSearchQuery(e.target.value)
                               setListPage(1)
                             }}
                             placeholder="Proje adı, kod, müşteri..."
+                            autoComplete="off"
                             className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-950"
                           />
                         </div>
@@ -1101,7 +1130,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     <button type="button" onClick={() => onNavigate('project')} className="okan-liquid-btn-secondary w-full px-4 py-2.5 text-sm font-semibold">
                       Not ekle (mock)
                     </button>
-                    <button type="button" onClick={() => onNavigate('engineering')} className="okan-liquid-btn-secondary w-full px-4 py-2.5 text-sm font-semibold">
+                    <button type="button" onClick={() => onNavigate('planning-hub')} className="okan-liquid-btn-secondary w-full px-4 py-2.5 text-sm font-semibold">
                       Sorumlu ata (mock)
                     </button>
                   </div>

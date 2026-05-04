@@ -1,17 +1,20 @@
+import { Link } from 'react-router-dom'
 import { findNavItem } from '../data/navigation'
 import { useI18n } from '../i18n/I18nProvider'
+import { AppModuleBreadcrumb } from './shared/AppModuleBreadcrumb'
+import { mainCanvasBreadcrumbSegments } from './shared/mainCanvasBreadcrumb'
 import { CrmModuleView } from './crm/CrmModuleView'
-import { EngineeringIntegrationOkanPage } from './muhendislikOkan/EngineeringIntegrationOkanPage'
-import { ManualPieceTemplateStudioModule } from './manualPieceTemplateStudio/ManualPieceTemplateStudioModule'
 import { ElementIdentityModuleView } from './elementIdentity/ElementIdentityModuleView'
 import { ProjectManagementModuleView } from './proje/ProjectManagementModuleView'
 import { PlanningHubView } from './planlama/PlanningHubView'
 import { PlanningDesignView } from './planlama/PlanningDesignView'
-import { QuoteModuleView } from './teklif/QuoteModuleView'
 import { StartWorkWizardView } from './satis/StartWorkWizardView'
 import { ApprovalFlowDesignerView } from './onay/ApprovalFlowDesignerView'
 import { RolesAndPermissionsView } from './rbac/RolesAndPermissionsView'
 import { UserManagementView } from './users/UserManagementView'
+import { MaterialCatalogProvider } from './materialCatalog/MaterialCatalogContext'
+import { MaterialCatalogModuleView } from './materialCatalog/MaterialCatalogModuleView'
+import { StandardSeriesCatalogModuleView } from './standardSeriesCatalog/StandardSeriesCatalogModuleView'
 
 type Props = {
   activeId: string
@@ -20,24 +23,32 @@ type Props = {
 
 export function MainCanvas({ activeId, onNavigate }: Props) {
   const { t } = useI18n()
+  const breadcrumbSegments = mainCanvasBreadcrumbSegments(activeId)
   const item = findNavItem(activeId)
   const title = item ? t(item.labelKey) : t('main.moduleFallback')
   const isCrm = activeId === 'crm'
-  const isQuote = activeId === 'quote'
   const isWorkStart = activeId === 'work-start'
   const isProject = activeId === 'project'
   const isPlanningHub = activeId === 'planning-hub'
-  const isEngineering = activeId === 'engineering'
-  const isManualPieceStudio = activeId === 'manual-piece-studio'
   const isConfigurationCenter = activeId === 'configuration-center'
   const isElementIdentity = activeId === 'element-identity'
+  const isMaterialCatalog = activeId === 'material-catalog'
+  const isStandardSeriesCatalog = activeId === 'standard-series-catalog'
   const isPlanningDesign = activeId === 'planning-design'
   const isApprovalFlow = activeId === 'approval-flow'
   const isRolesPermissions = activeId === 'roles-permissions'
   const isUserManagement = activeId === 'user-management'
 
   const fullBleedInMainModule = isPlanningDesign
-  const okanSplitHeadingAlign = isProject || isCrm || isQuote || isPlanningDesign
+  const okanSplitHeadingAlign =
+    isProject ||
+    isCrm ||
+    isPlanningDesign ||
+    isMaterialCatalog ||
+    isStandardSeriesCatalog ||
+    isApprovalFlow ||
+    isRolesPermissions ||
+    isUserManagement
 
   return (
     <div
@@ -46,15 +57,14 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
           ? 'gm-glass-main-canvas gm-glass-main-canvas--full gm-glass-main-canvas--okan-liquid flex min-h-0 flex-1 flex-col overflow-hidden'
           : [
               `gm-glass-main-canvas flex min-h-0 flex-1 flex-col rounded-3xl ${
-                isProject || isCrm || isQuote ? 'px-0 py-1 md:px-1 md:py-2' : 'p-5 md:p-6'
+                isProject || isCrm || isMaterialCatalog || isStandardSeriesCatalog || isApprovalFlow || isRolesPermissions || isUserManagement
+                  ? 'px-0 py-1 md:px-1 md:py-2'
+                  : 'p-5 md:p-6'
               }`,
-              isProject || isCrm || isQuote
+              isProject || isCrm || isMaterialCatalog || isStandardSeriesCatalog || isApprovalFlow || isRolesPermissions || isUserManagement
                 ? 'gm-glass-main-canvas--okan-liquid h-[calc(100dvh-12.5rem)] min-h-[calc(100dvh-12.5rem)] max-h-[calc(100dvh-12.5rem)]'
-                : isEngineering ||
-                    isManualPieceStudio ||
-                    isPlanningHub ||
-                    isConfigurationCenter ||
-                    isElementIdentity
+                : isPlanningHub ||
+                    isConfigurationCenter || isElementIdentity
                   ? 'gm-glass-main-canvas--okan-liquid min-h-[min(100%,42rem)]'
                   : 'bg-pf-surface shadow-neo-out',
             ].join(' ')
@@ -71,37 +81,65 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
         <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-50 md:text-2xl">
           {title}
         </h1>
+        {breadcrumbSegments ? (
+          <div className="mt-1.5">
+            <AppModuleBreadcrumb segments={breadcrumbSegments} />
+          </div>
+        ) : null}
       </div>
 
       {isCrm ? (
         <CrmModuleView onNavigate={onNavigate} />
-      ) : isQuote ? (
-        <QuoteModuleView onNavigate={onNavigate} />
       ) : isPlanningHub ? (
         <PlanningHubView />
       ) : isWorkStart ? (
         <StartWorkWizardView onNavigate={onNavigate} />
       ) : isProject ? (
         <ProjectManagementModuleView onNavigate={onNavigate} />
-      ) : isEngineering ? (
-        <EngineeringIntegrationOkanPage onCloseModule={() => onNavigate('project')} />
-      ) : isManualPieceStudio ? (
-        <ManualPieceTemplateStudioModule onCloseModule={() => onNavigate('project')} />
       ) : isConfigurationCenter ? (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           <button
             type="button"
             onClick={() => onNavigate('element-identity')}
             className="rounded-2xl border border-slate-200/70 bg-white/70 p-4 text-left transition hover:bg-white dark:border-slate-700/70 dark:bg-slate-900/40 dark:hover:bg-slate-900/60"
           >
-            <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">Eleman Kimlik ve İsimlendirme</p>
-            <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
-              Firma kodları, tipoloji eşleme, IFC içe alma ve isimlendirme şablonlarını yönetin.
-            </p>
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{t('definitions.hub.elementIdentityTitle')}</p>
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{t('definitions.hub.elementIdentityDesc')}</p>
           </button>
+          <button
+            type="button"
+            onClick={() => onNavigate('material-catalog')}
+            className="rounded-2xl border border-slate-200/70 bg-white/70 p-4 text-left transition hover:bg-white dark:border-slate-700/70 dark:bg-slate-900/40 dark:hover:bg-slate-900/60"
+          >
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{t('definitions.hub.materialCatalogTitle')}</p>
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{t('definitions.hub.materialCatalogDesc')}</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => onNavigate('standard-series-catalog')}
+            className="rounded-2xl border border-slate-200/70 bg-white/70 p-4 text-left transition hover:bg-white dark:border-slate-700/70 dark:bg-slate-900/40 dark:hover:bg-slate-900/60"
+          >
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{t('definitions.hub.standardSeriesTitle')}</p>
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{t('definitions.hub.standardSeriesDesc')}</p>
+          </button>
+          <div className="flex flex-col justify-between gap-2 rounded-2xl border border-dashed border-slate-300/60 bg-white/40 p-4 dark:border-slate-600/50 dark:bg-slate-900/25">
+            <p className="text-xs text-slate-600 dark:text-slate-400">{t('definitions.hub.legacyLink')}</p>
+            <Link
+              to="/eleman-kimlik?legacy=1"
+              className="text-sm font-semibold text-sky-700 underline-offset-2 hover:underline dark:text-sky-300"
+            >
+              /eleman-kimlik?legacy=1
+            </Link>
+          </div>
         </div>
       ) : isElementIdentity ? (
         <ElementIdentityModuleView />
+      ) : isMaterialCatalog ? (
+        <MaterialCatalogProvider>
+          <MaterialCatalogModuleView />
+        </MaterialCatalogProvider>
+      ) : isStandardSeriesCatalog ? (
+        <StandardSeriesCatalogModuleView />
       ) : isPlanningDesign ? (
         <PlanningDesignView />
       ) : isApprovalFlow ? (

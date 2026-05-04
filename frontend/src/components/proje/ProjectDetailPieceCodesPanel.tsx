@@ -1,6 +1,8 @@
 import { ChevronsLeftRight, Filter, GripVertical, Package, X } from 'lucide-react'
+import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { TYPOLOGIES_BY_ID } from '../../elementIdentity/catalog/typologies'
+import type { RebarShapeType } from '../../elementIdentity/types'
 import { useI18n } from '../../i18n/I18nProvider'
 import {
   getPartLifecycleBarStyles,
@@ -10,7 +12,6 @@ import {
   projectDetailPartFamilyOrder,
   type PartDrawingRevision,
   type PartLifecycleStatus,
-  type RebarShapeType,
 } from './projectDetailPartCodesMock'
 import { resolveTypologyDimensionRows } from './projectDetailPartDimensionUtils'
 
@@ -22,10 +23,25 @@ function buildEmbeddedPdfUrl(pdfUrl: string): string {
 }
 
 function rebarShapeLabel(shape: RebarShapeType, locale: 'tr' | 'en'): string {
-  if (locale === 'en') {
-    return shape === 'straight' ? 'Straight bar' : 'Bent bar (stirrup / hook etc.)'
+  const en: Record<RebarShapeType, string> = {
+    straight: 'Straight bar',
+    stirrup: 'Stirrup / link',
+    hook: 'Hooked bar',
+    l_bar: 'L-bar',
+    u_bar: 'U-bar',
+    crank: 'Cranked bar',
+    custom: 'Custom shape',
   }
-  return shape === 'straight' ? 'Düz donatı' : 'Bükülmüş donatı (etriye / kanca vb.)'
+  const tr: Record<RebarShapeType, string> = {
+    straight: 'Düz donatı',
+    stirrup: 'Etriye / korse',
+    hook: 'Kancalı',
+    l_bar: 'L çubuk',
+    u_bar: 'U çubuk',
+    crank: 'Kırımlı',
+    custom: 'Özel şekil',
+  }
+  return locale === 'en' ? en[shape] : tr[shape]
 }
 
 export function ProjectDetailPieceCodesPanel() {
@@ -249,22 +265,34 @@ export function ProjectDetailPieceCodesPanel() {
         className="okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden p-3"
         style={{ width: `calc(${splitRatio}% - 5px)` }}
       >
-        <div className="mb-2 flex shrink-0 items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Ürün listesi</h3>
-          <button
-            type="button"
-            onClick={() => setIsFilterOpen((prev) => !prev)}
-            aria-expanded={isFilterOpen}
-            className={[
-              'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition',
-              isFilterOpen
-                ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 hover:bg-sky-100 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100 dark:hover:bg-sky-900/45'
-                : 'border-slate-200/70 bg-white/70 text-slate-700 hover:bg-white dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200 dark:hover:bg-slate-900',
-            ].join(' ')}
-          >
-            <Filter className="size-3.5" aria-hidden />
-            Filtrele
-          </button>
+        <div className="mb-2 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
+          <h3 className="shrink-0 text-sm font-semibold text-slate-900 dark:text-slate-50">Ürün listesi</h3>
+          <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
+            <FilterToolbarSearch
+              id="project-piece-codes-inline-search"
+              value={filterQuery}
+              onValueChange={(v) => {
+                setFilterQuery(v)
+                setPage(1)
+              }}
+              placeholder={locale === 'en' ? 'Code, type, family…' : 'Kod, tip, aile…'}
+              ariaLabel={locale === 'en' ? 'Search parts' : 'Parça ara'}
+            />
+            <button
+              type="button"
+              onClick={() => setIsFilterOpen((prev) => !prev)}
+              aria-expanded={isFilterOpen}
+              className={[
+                'inline-flex shrink-0 items-center gap-1.5 self-center rounded-lg border px-2 py-1.5 text-xs font-semibold transition',
+                isFilterOpen
+                  ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 hover:bg-sky-100 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100 dark:hover:bg-sky-900/45'
+                  : 'border-slate-200/70 bg-white/70 text-slate-700 hover:bg-white dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200 dark:hover:bg-slate-900',
+              ].join(' ')}
+            >
+              <Filter className="size-3.5" aria-hidden />
+              Filtrele
+            </button>
+          </div>
         </div>
         <div className="mb-3 shrink-0" />
         <div className="relative min-h-0 flex-1 overflow-hidden">
@@ -831,7 +859,7 @@ export function ProjectDetailPieceCodesPanel() {
                           <td className="px-2 py-2 text-right text-xs text-slate-600 dark:text-slate-400">
                             {locale === 'en' ? 'bars' : 'çubuk'}{' '}
                             <span className="tabular-nums">
-                              {selected.rebarSummary.straightBarCount + selected.rebarSummary.bentBarCount}
+                              {selected.rebarSummary.straightBarCount + selected.rebarSummary.shapedBarCount}
                             </span>
                           </td>
                           <td className="px-2 py-2 text-right font-mono tabular-nums text-slate-900 dark:text-slate-50">
@@ -868,8 +896,8 @@ export function ProjectDetailPieceCodesPanel() {
                     </ul>
                     <p className="mt-3 text-[11px] text-slate-500 dark:text-slate-400">
                       {locale === 'en'
-                        ? `Straight pieces: ${selected.rebarSummary.straightBarCount} · Bent pieces: ${selected.rebarSummary.bentBarCount}`
-                        : `Düz parça sayısı: ${selected.rebarSummary.straightBarCount} · Bükülmüş parça sayısı: ${selected.rebarSummary.bentBarCount}`}
+                        ? `Straight pieces: ${selected.rebarSummary.straightBarCount} · Shaped pieces: ${selected.rebarSummary.shapedBarCount}`
+                        : `Düz parça sayısı: ${selected.rebarSummary.straightBarCount} · Şekilli parça sayısı: ${selected.rebarSummary.shapedBarCount}`}
                     </p>
                   </div>
                 </div>

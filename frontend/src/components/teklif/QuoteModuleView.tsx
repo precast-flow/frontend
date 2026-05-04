@@ -9,10 +9,17 @@ import {
   type QuoteStatus,
 } from '../../data/quotesMock'
 import { useI18n } from '../../i18n/I18nProvider'
+import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 
 type Props = {
-  onNavigate: (moduleId: string) => void
+  onNavigate?: (moduleId: string) => void
+  /** Müşteri detayında: üst breadcrumb ve dış yuvarlak kaldırılır */
+  embedded?: boolean
+  /** Doluysa yalnızca bu müşteri adına ait teklifler listelenir */
+  customerName?: string | null
+  /** Örn. crm:detail:c1:quotes — split, seçim ve filtre durumu */
+  storageKeyPrefix?: string
 }
 
 const QUOTE_LIST_PAGE_SIZE = 8
@@ -62,32 +69,85 @@ function totalFromLines(quote: Quote) {
   return sum
 }
 
-export function QuoteModuleView({ onNavigate: _onNavigate }: Props) {
+type QuotePersist = {
+  selectedId?: string
+  splitRatio?: number
+  pageSize?: number
+  detailTab?: DetailTabId
+  statusFilter?: QuoteStatus[]
+  searchQuery?: string
+  filtersOpen?: boolean
+  listPage?: number
+}
+
+export function QuoteModuleView({
+  onNavigate: _onNavigate,
+  embedded = false,
+  customerName = null,
+  storageKeyPrefix,
+}: Props) {
   void _onNavigate
   const { t } = useI18n()
   const navigate = useNavigate()
   const detailPanelRef = useRef<HTMLElement | null>(null)
-  const rows = useMemo(() => allQuotes, [])
+  const persistKey = storageKeyPrefix ? `${storageKeyPrefix}:state` : null
 
-  const [selectedId, setSelectedId] = useState(allQuotes[0]!.id)
+  const rows = useMemo(() => {
+    if (!customerName) return allQuotes
+    return allQuotes.filter((q) => q.customer === customerName)
+  }, [customerName])
+
+  const firstId = rows[0]?.id ?? allQuotes[0]!.id
+
+  const [selectedId, setSelectedId] = useState(firstId)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState<QuoteStatus[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
   const [detailTab, setDetailTab] = useState<DetailTabId>('ozet')
   const [listPage, setListPage] = useState(1)
   const [pageSize, setPageSize] = useState(QUOTE_LIST_PAGE_SIZE)
   const [splitRatio, setSplitRatio] = useState(40)
   const [isResizing, setIsResizing] = useState(false)
   const [isResizerHover, setIsResizerHover] = useState(false)
+  const [persistHydrated, setPersistHydrated] = useState(!persistKey)
   const listRef = useRef<HTMLUListElement | null>(null)
   const loadMoreSentinelRef = useRef<HTMLLIElement | null>(null)
   const splitRef = useRef<HTMLDivElement | null>(null)
 
-  const activeFilterCount = statusFilter.length
+  useEffect(() => {
+    if (!persistKey) {
+      setPersistHydrated(true)
+      return
+    }
+    try {
+      const raw = sessionStorage.getItem(persistKey)
+      if (raw) {
+        const p = JSON.parse(raw) as QuotePersist
+        if (typeof p.splitRatio === 'number') setSplitRatio(Math.min(55, Math.max(30, p.splitRatio)))
+        if (typeof p.pageSize === 'number' && p.pageSize > 0) setPageSize(p.pageSize)
+        if (p.detailTab && detailTabDefs.some((d) => d.id === p.detailTab)) setDetailTab(p.detailTab)
+        if (Array.isArray(p.statusFilter)) setStatusFilter(p.statusFilter)
+        if (typeof p.searchQuery === 'string') setSearchQuery(p.searchQuery)
+        if (typeof p.filtersOpen === 'boolean') setFiltersOpen(p.filtersOpen)
+        if (typeof p.listPage === 'number' && p.listPage > 0) setListPage(p.listPage)
+        if (typeof p.selectedId === 'string') setSelectedId(p.selectedId)
+      }
+    } catch {
+      /* ignore */
+    }
+    setPersistHydrated(true)
+  }, [persistKey])
+
+  const activeFilterCount = statusFilter.length + (searchQuery.trim() ? 1 : 0)
 
   const filtered = useMemo(() => {
-    if (!statusFilter.length) return rows
-    return rows.filter((r) => statusFilter.includes(r.status))
-  }, [rows, statusFilter])
+    const base = !statusFilter.length ? rows : rows.filter((r) => statusFilter.includes(r.status))
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return base
+    return base.filter((r) =>
+      `${r.number} ${r.customer} ${r.project} ${r.id}`.toLowerCase().includes(q),
+    )
+  }, [rows, statusFilter, searchQuery])
 
   const listTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const safeListPage = Math.min(listPage, listTotalPages)
@@ -98,8 +158,39 @@ export function QuoteModuleView({ onNavigate: _onNavigate }: Props) {
   const listPageEnd = Math.min(filtered.length, safeListPage * pageSize)
 
   useEffect(() => {
+    if (!persistKey || !persistHydrated) return
+    const p: QuotePersist = {
+      selectedId,
+      splitRatio,
+      pageSize,
+      detailTab,
+      statusFilter,
+      searchQuery,
+      filtersOpen,
+      listPage: safeListPage,
+    }
+    sessionStorage.setItem(persistKey, JSON.stringify(p))
+  }, [
+    persistHydrated,
+    persistKey,
+    selectedId,
+    splitRatio,
+    pageSize,
+    detailTab,
+    statusFilter,
+    searchQuery,
+    filtersOpen,
+    safeListPage,
+  ])
+
+  useEffect(() => {
+    if (!rows.length) return
+    setSelectedId((prev) => (rows.some((r) => r.id === prev) ? prev : rows[0]!.id))
+  }, [rows])
+
+  useEffect(() => {
     setListPage(1)
-  }, [statusFilter, pageSize])
+  }, [statusFilter, searchQuery, pageSize])
 
   useEffect(() => {
     setListPage((p) => Math.min(p, listTotalPages))
@@ -180,63 +271,106 @@ export function QuoteModuleView({ onNavigate: _onNavigate }: Props) {
   }, [safeListPage, listTotalPages, listPageSlice.length, filtersOpen])
 
   const toggleStatus = (s: QuoteStatus) => {
+    setListPage(1)
     setStatusFilter((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
   }
 
-  return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-[1.25rem]">
-      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-2">
-        <div className="px-[0.6875rem] py-1">
-          <nav aria-label={t('project.breadcrumbAria')} className="mb-0">
-            <ol className="flex flex-wrap items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-              <li>
-                <Link
-                  to="/planlama"
-                  className="font-medium text-slate-600 underline-offset-2 transition hover:text-sky-600 hover:underline dark:text-slate-300 dark:hover:text-sky-400"
-                >
-                  {t('nav.sidebar.section.planning')}
-                </Link>
-              </li>
-              <li className="flex items-center gap-1" aria-hidden>
-                <ChevronRight className="size-3.5 shrink-0 opacity-70" />
-              </li>
-              <li className="font-semibold text-slate-800 dark:text-slate-100" aria-current="page">
-                {t('nav.quote')}
-              </li>
-            </ol>
-          </nav>
-        </div>
+  const breadcrumbNav = !embedded ? (
+    <div className="px-[0.6875rem] py-1">
+      <nav aria-label={t('project.breadcrumbAria')} className="mb-0">
+        <ol className="flex flex-wrap items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+          <li>
+            <Link
+              to="/planlama"
+              className="font-medium text-slate-600 underline-offset-2 transition hover:text-sky-600 hover:underline dark:text-slate-300 dark:hover:text-sky-400"
+            >
+              {t('nav.sidebar.section.planning')}
+            </Link>
+          </li>
+          <li className="flex items-center gap-1" aria-hidden>
+            <ChevronRight className="size-3.5 shrink-0 opacity-70" />
+          </li>
+          <li className="font-semibold text-slate-800 dark:text-slate-100" aria-current="page">
+            {t('nav.quote')}
+          </li>
+        </ol>
+      </nav>
+    </div>
+  ) : null
 
-        <div ref={splitRef} className="min-h-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+  if (rows.length === 0) {
+    return (
+      <div
+        className={`flex min-h-0 flex-1 flex-col overflow-hidden ${embedded ? 'h-full justify-center' : 'gap-2 rounded-[1.25rem]'}`}
+      >
+        {breadcrumbNav}
+        <p className="rounded-xl border border-slate-200/50 bg-white/55 px-4 py-6 text-center text-sm text-slate-600 dark:border-slate-700/50 dark:bg-slate-900/35 dark:text-slate-300">
+          {customerName
+            ? 'Bu müşteri için teklif listesinde kayıt yok (mock).'
+            : 'Teklif listesi boş (mock).'}
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className={`flex min-h-0 flex-1 flex-col overflow-hidden ${embedded ? 'h-full min-h-0 gap-0' : 'gap-2 rounded-[1.25rem]'}`}
+    >
+      <div
+        className={`grid min-h-0 flex-1 ${embedded ? 'grid-rows-[minmax(0,1fr)]' : 'grid-rows-[auto_minmax(0,1fr)]'} gap-2`}
+      >
+        {breadcrumbNav}
+
+        <div
+          ref={splitRef}
+          className={
+            embedded
+              ? 'flex h-full min-h-0 flex-1 flex-col overflow-hidden'
+              : 'min-h-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5'
+          }
+        >
           <div className="relative flex h-full min-h-0 min-w-0 overflow-hidden gap-0">
             <section
               className="okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden p-3"
               style={{ width: `calc(${splitRatio}% - 5px)` }}
             >
-              <div className="mb-3 flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-2">
-                <h2 className="min-w-0 text-sm font-semibold text-slate-900 dark:text-slate-50 sm:text-base">
-                  Teklif & Keşif
+              <div className="mb-3 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
+                <h2 className="min-w-0 shrink-0 text-sm font-semibold text-slate-900 dark:text-slate-50 sm:text-base">
+                  {embedded ? 'Teklif listesi' : 'Teklif & Keşif'}
                 </h2>
-                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFiltersOpen((v) => !v)}
-                    aria-expanded={filtersOpen}
-                    className={[
-                      'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
-                      filtersOpen
-                        ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
-                        : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
-                    ].join(' ')}
-                  >
-                    <Filter className="size-3.5 shrink-0" aria-hidden />
-                    <span>Filtrele</span>
-                    {activeFilterCount > 0 ? (
-                      <span className="rounded-full bg-sky-500/25 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-sky-900 dark:bg-sky-400/20 dark:text-sky-100">
-                        {activeFilterCount}
-                      </span>
-                    ) : null}
-                  </button>
+                <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
+                  <FilterToolbarSearch
+                    id="quote-list-inline-search"
+                    value={searchQuery}
+                    onValueChange={(v) => {
+                      setSearchQuery(v)
+                      setListPage(1)
+                    }}
+                    placeholder="Teklif no, müşteri, proje..."
+                    ariaLabel="Tekliflerde ara"
+                  />
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFiltersOpen((v) => !v)}
+                      aria-expanded={filtersOpen}
+                      className={[
+                        'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
+                        filtersOpen
+                          ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
+                          : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
+                      ].join(' ')}
+                    >
+                      <Filter className="size-3.5 shrink-0" aria-hidden />
+                      <span>Filtrele</span>
+                      {activeFilterCount > 0 ? (
+                        <span className="rounded-full bg-sky-500/25 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-sky-900 dark:bg-sky-400/20 dark:text-sky-100">
+                          {activeFilterCount}
+                        </span>
+                      ) : null}
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -260,6 +394,22 @@ export function QuoteModuleView({ onNavigate: _onNavigate }: Props) {
                     </button>
                   </div>
                   <div className="space-y-3">
+                    <label className="block">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                        Arama
+                      </span>
+                      <input
+                        type="search"
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value)
+                          setListPage(1)
+                        }}
+                        placeholder="Teklif no, müşteri, proje..."
+                        autoComplete="off"
+                        className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-950"
+                      />
+                    </label>
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
                       Durum
                     </p>
@@ -278,10 +428,14 @@ export function QuoteModuleView({ onNavigate: _onNavigate }: Props) {
                         </button>
                       ))}
                     </div>
-                    {statusFilter.length > 0 ? (
+                    {statusFilter.length > 0 || searchQuery.trim() ? (
                       <button
                         type="button"
-                        onClick={() => setStatusFilter([])}
+                        onClick={() => {
+                          setStatusFilter([])
+                          setSearchQuery('')
+                          setListPage(1)
+                        }}
                         className="okan-liquid-btn-secondary w-full px-3 py-2 text-sm font-semibold sm:w-auto"
                       >
                         Tüm durumlar

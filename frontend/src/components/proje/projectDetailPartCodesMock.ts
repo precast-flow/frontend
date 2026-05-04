@@ -1,6 +1,7 @@
 /** Proje detay — Parça kodları sekmesi için hiyerarşik mock veri */
 
 import type { Locale } from '../../i18n/I18nProvider'
+import type { RebarShapeType } from '../../elementIdentity/types'
 
 export type ProjectPartActivity = { id: string; at: string; text: string }
 
@@ -15,8 +16,6 @@ export type PartMaterialRow = {
   quantity: number
   unit: string
 }
-
-export type RebarShapeType = 'straight' | 'bent'
 
 export type RebarScheduleRow = {
   id: string
@@ -36,7 +35,8 @@ export type RebarScheduleRow = {
 export type RebarScheduleSummary = {
   totalWeightKg: number
   straightBarCount: number
-  bentBarCount: number
+  /** straight dışındaki parçalar */
+  shapedBarCount: number
   totalDevelopedLengthM: number
 }
 
@@ -189,11 +189,11 @@ export const projectDetailPartCodesMock: ProjectPartCode[] = [
     ],
     rebarSchedule: [
       { id: 'r1', position: '101', diameterMm: 16, steelGrade: 'B500C', shape: 'straight', developedLengthMm: 4850, count: 8, totalWeightKg: 61.2 },
-      { id: 'r2', position: '102', diameterMm: 14, steelGrade: 'B500C', shape: 'bent', developedLengthMm: 2100, count: 12, totalWeightKg: 35.8 },
-      { id: 'r3', position: '103', diameterMm: 12, steelGrade: 'B500C', shape: 'bent', developedLengthMm: 1650, count: 24, totalWeightKg: 35.0 },
+      { id: 'r2', position: '102', diameterMm: 14, steelGrade: 'B500C', shape: 'stirrup', developedLengthMm: 2100, count: 12, totalWeightKg: 35.8 },
+      { id: 'r3', position: '103', diameterMm: 12, steelGrade: 'B500C', shape: 'stirrup', developedLengthMm: 1650, count: 24, totalWeightKg: 35.0 },
       { id: 'r4', position: '104', diameterMm: 10, steelGrade: 'B500C', shape: 'straight', developedLengthMm: 3980, count: 4, totalWeightKg: 9.8 },
     ],
-    rebarSummary: { totalWeightKg: 141.8, straightBarCount: 12, bentBarCount: 36, totalDevelopedLengthM: 102.6 },
+    rebarSummary: { totalWeightKg: 141.8, straightBarCount: 12, shapedBarCount: 36, totalDevelopedLengthM: 102.6 },
     pdfPreviewUrl: DEMO_PDF,
     activities: [
       { id: 'a1', at: '14.04 09:10', text: 'Çizim R2 olarak yeniden yayınlandı.' },
@@ -225,9 +225,9 @@ export const projectDetailPartCodesMock: ProjectPartCode[] = [
     ],
     rebarSchedule: [
       { id: 'r1', position: '201', diameterMm: 20, steelGrade: 'B500C', shape: 'straight', developedLengthMm: 4350, count: 12, totalWeightKg: 128.4 },
-      { id: 'r2', position: '202', diameterMm: 14, steelGrade: 'B500C', shape: 'bent', developedLengthMm: 1880, count: 16, totalWeightKg: 45.2 },
+      { id: 'r2', position: '202', diameterMm: 14, steelGrade: 'B500C', shape: 'stirrup', developedLengthMm: 1880, count: 16, totalWeightKg: 45.2 },
     ],
-    rebarSummary: { totalWeightKg: 173.6, straightBarCount: 12, bentBarCount: 16, totalDevelopedLengthM: 82.2 },
+    rebarSummary: { totalWeightKg: 173.6, straightBarCount: 12, shapedBarCount: 16, totalDevelopedLengthM: 82.2 },
     pdfPreviewUrl: DEMO_PDF,
     activities: [{ id: 'a1', at: '13.04 14:22', text: 'Statik onay bekleniyor.' }],
   },
@@ -261,10 +261,10 @@ export const projectDetailPartCodesMock: ProjectPartCode[] = [
     ],
     rebarSchedule: [
       { id: 'r1', position: 'T01', diameterMm: 22, steelGrade: 'B500C', shape: 'straight', developedLengthMm: 11850, count: 6, totalWeightKg: 214.0 },
-      { id: 'r2', position: 'T02', diameterMm: 14, steelGrade: 'B500C', shape: 'bent', developedLengthMm: 3200, count: 18, totalWeightKg: 79.5 },
-      { id: 'r3', position: 'T03', diameterMm: 12, steelGrade: 'B500C', shape: 'bent', developedLengthMm: 1450, count: 32, totalWeightKg: 51.2 },
+      { id: 'r2', position: 'T02', diameterMm: 14, steelGrade: 'B500C', shape: 'stirrup', developedLengthMm: 3200, count: 18, totalWeightKg: 79.5 },
+      { id: 'r3', position: 'T03', diameterMm: 12, steelGrade: 'B500C', shape: 'stirrup', developedLengthMm: 1450, count: 32, totalWeightKg: 51.2 },
     ],
-    rebarSummary: { totalWeightKg: 344.7, straightBarCount: 6, bentBarCount: 50, totalDevelopedLengthM: 178.4 },
+    rebarSummary: { totalWeightKg: 344.7, straightBarCount: 6, shapedBarCount: 50, totalDevelopedLengthM: 178.4 },
     pdfPreviewUrl: DEMO_PDF,
     activities: [
       { id: 'a1', at: '14.04 08:30', text: 'Kalıp-donatı PDF birleştirildi.' },
@@ -298,9 +298,9 @@ export const projectDetailPartCodesMock: ProjectPartCode[] = [
     materials: [{ id: 'm1', category: 'Bağlantı', name: 'Ankraj', specification: 'Kimyasal dübel M16', quantity: 6, unit: 'ad' }],
     rebarSchedule: [
       { id: 'r1', position: 'L01', diameterMm: 18, steelGrade: 'B500C', shape: 'straight', developedLengthMm: 8850, count: 4, totalWeightKg: 71.0 },
-      { id: 'r2', position: 'L02', diameterMm: 12, steelGrade: 'B500C', shape: 'bent', developedLengthMm: 980, count: 20, totalWeightKg: 17.4 },
+      { id: 'r2', position: 'L02', diameterMm: 12, steelGrade: 'B500C', shape: 'stirrup', developedLengthMm: 980, count: 20, totalWeightKg: 17.4 },
     ],
-    rebarSummary: { totalWeightKg: 88.4, straightBarCount: 4, bentBarCount: 20, totalDevelopedLengthM: 55.0 },
+    rebarSummary: { totalWeightKg: 88.4, straightBarCount: 4, shapedBarCount: 20, totalDevelopedLengthM: 55.0 },
     pdfPreviewUrl: DEMO_PDF,
     activities: [{ id: 'a1', at: '09.04 10:00', text: 'İlk çizim yüklendi (taslak).' }],
   },
@@ -330,7 +330,7 @@ export const projectDetailPartCodesMock: ProjectPartCode[] = [
       { id: 'r1', position: 'HC-1', diameterMm: 12, steelGrade: 'St1570/1770', shape: 'straight', developedLengthMm: 7950, count: 12, totalWeightKg: 84.2, notes: 'Ön gerilme teli (mock)' },
       { id: 'r2', position: 'HC-2', diameterMm: 8, steelGrade: 'B500C', shape: 'straight', developedLengthMm: 1180, count: 48, totalWeightKg: 17.8, notes: 'Üst çelik hasır' },
     ],
-    rebarSummary: { totalWeightKg: 102.0, straightBarCount: 60, bentBarCount: 0, totalDevelopedLengthM: 152.0 },
+    rebarSummary: { totalWeightKg: 102.0, straightBarCount: 60, shapedBarCount: 0, totalDevelopedLengthM: 152.0 },
     pdfPreviewUrl: DEMO_PDF,
     activities: [
       { id: 'a1', at: '13.04 09:45', text: 'R3: çekirdek aralığı güncellendi.' },
@@ -362,9 +362,9 @@ export const projectDetailPartCodesMock: ProjectPartCode[] = [
     ],
     rebarSchedule: [
       { id: 'r1', position: 'P01', diameterMm: 10, steelGrade: 'B500C', shape: 'straight', developedLengthMm: 5950, count: 64, totalWeightKg: 118.0 },
-      { id: 'r2', position: 'P02', diameterMm: 8, steelGrade: 'B500C', shape: 'bent', developedLengthMm: 820, count: 90, totalWeightKg: 36.2 },
+      { id: 'r2', position: 'P02', diameterMm: 8, steelGrade: 'B500C', shape: 'stirrup', developedLengthMm: 820, count: 90, totalWeightKg: 36.2 },
     ],
-    rebarSummary: { totalWeightKg: 154.2, straightBarCount: 64, bentBarCount: 90, totalDevelopedLengthM: 454.6 },
+    rebarSummary: { totalWeightKg: 154.2, straightBarCount: 64, shapedBarCount: 90, totalDevelopedLengthM: 454.6 },
     pdfPreviewUrl: DEMO_PDF,
     activities: [
       { id: 'a1', at: '14.04 07:55', text: 'Cephe hizası QC onayı alındı.' },
@@ -395,9 +395,9 @@ export const projectDetailPartCodesMock: ProjectPartCode[] = [
     ],
     rebarSchedule: [
       { id: 'r1', position: 'PR1', diameterMm: 8, steelGrade: 'B500C', shape: 'straight', developedLengthMm: 4100, count: 36, totalWeightKg: 29.1 },
-      { id: 'r2', position: 'PR2', diameterMm: 8, steelGrade: 'B500C', shape: 'bent', developedLengthMm: 650, count: 24, totalWeightKg: 6.1 },
+      { id: 'r2', position: 'PR2', diameterMm: 8, steelGrade: 'B500C', shape: 'stirrup', developedLengthMm: 650, count: 24, totalWeightKg: 6.1 },
     ],
-    rebarSummary: { totalWeightKg: 35.2, straightBarCount: 36, bentBarCount: 24, totalDevelopedLengthM: 163.2 },
+    rebarSummary: { totalWeightKg: 35.2, straightBarCount: 36, shapedBarCount: 24, totalDevelopedLengthM: 163.2 },
     pdfPreviewUrl: DEMO_PDF,
     activities: [{ id: 'a1', at: '11.04 13:40', text: 'Sevkiyat grubu B olarak etiketlendi.' }],
   },
@@ -431,10 +431,10 @@ export const projectDetailPartCodesMock: ProjectPartCode[] = [
       { id: 'm2', category: 'Geçiş / dolgu', name: 'PVC sleeve', specification: 'Ø40', quantity: 2, unit: 'ad' },
     ],
     rebarSchedule: [
-      { id: 'r1', position: 'S01', diameterMm: 12, steelGrade: 'B500C', shape: 'bent', developedLengthMm: 2850, count: 14, totalWeightKg: 42.0 },
+      { id: 'r1', position: 'S01', diameterMm: 12, steelGrade: 'B500C', shape: 'stirrup', developedLengthMm: 2850, count: 14, totalWeightKg: 42.0 },
       { id: 'r2', position: 'S02', diameterMm: 10, steelGrade: 'B500C', shape: 'straight', developedLengthMm: 1180, count: 22, totalWeightKg: 16.0 },
     ],
-    rebarSummary: { totalWeightKg: 58.0, straightBarCount: 22, bentBarCount: 14, totalDevelopedLengthM: 65.8 },
+    rebarSummary: { totalWeightKg: 58.0, straightBarCount: 22, shapedBarCount: 14, totalDevelopedLengthM: 65.8 },
     pdfPreviewUrl: DEMO_PDF,
     activities: [{ id: 'a1', at: '06.04 11:30', text: 'Saha montaj sırası 3. blok.' }],
   },

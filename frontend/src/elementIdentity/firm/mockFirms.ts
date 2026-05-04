@@ -1,4 +1,5 @@
 import type { FirmCodeOverride, FirmNamingTemplate, FirmProfile } from '../types'
+import { projectManagementCardsMock } from '../../data/projectManagementCardsMock'
 
 const NOW = '2026-04-01T00:00:00.000Z'
 
@@ -148,8 +149,10 @@ export const MOCK_OVERRIDES: FirmCodeOverride[] = [
   // Cemre — override yok (sadece template farklı)
 ]
 
-export const MOCK_PROJECTS = [
-  { id: 'prj-2026-014', code: 'PRJ-2026-014', name: 'Sanayi Yapısı 14' },
-  { id: 'prj-2026-007', code: 'PRJ-2026-007', name: 'Lojistik Depo' },
-  { id: 'prj-2025-122', code: 'PRJ-2025-122', name: 'Otopark Kompleksi' },
-]
+/** Proje yönetimi mock kartları ile aynı id — detay ve eleman kimlik rotaları hizalı */
+export const MOCK_PROJECTS = projectManagementCardsMock.map((p) => ({
+  id: p.id,
+  code: p.code,
+  name: p.name,
+  customer: p.customer,
+}))

@@ -909,6 +909,16 @@ html[data-ui-template='glass']:not(.dark) {
     color: var(--glass-text-primary);
   }
 
+  html[data-ui-template='glass'] .gm-glass-footer-host footer .focus-visible\:ring-offset-gray-100,
+  html[data-ui-template='glass'] .gm-glass-footer-host footer .dark\:ring-offset-gray-900 {
+    --tw-ring-offset-color: transparent !important;
+  }
+
+  html[data-ui-template='glass'] .gm-glass-footer-host footer .focus-visible\:ring-gray-400,
+  html[data-ui-template='glass'] .gm-glass-footer-host footer .focus\:ring-gray-400 {
+    --tw-ring-color: color-mix(in srgb, var(--glass-accent-primary) 55%, white) !important;
+  }
+
   /* Fabrika özeti drawer */
   html[data-ui-template='glass'] .gm-glass-drawer-backdrop {
     background-color: rgb(15 23 42 / 0.45) !important;

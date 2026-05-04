@@ -3,8 +3,11 @@ import type {
   FirmNamingTemplate,
   FirmProfile,
   ProjectElement,
+  ProjectProduct,
   ProjectSequenceCounter,
+  StandardSeriesTemplate,
 } from '../types'
+import { defaultStandardSeriesTemplates } from '../../standardSeriesCatalog/defaultTemplates'
 import { MOCK_FIRMS, MOCK_OVERRIDES, MOCK_TEMPLATES } from './mockFirms'
 
 const KEY_FIRMS = 'precast.elementIdentity.firms'
@@ -13,6 +16,8 @@ const KEY_OVERRIDES = 'precast.elementIdentity.overrides'
 const KEY_ACTIVE_FIRM = 'precast.elementIdentity.activeFirmId'
 const KEY_ELEMENTS = 'precast.elementIdentity.projectElements'
 const KEY_COUNTERS = 'precast.elementIdentity.sequenceCounters'
+const KEY_PRODUCTS = 'precast.elementIdentity.projectProducts'
+const KEY_STANDARD_SERIES = 'standart-seri-urunler-v1'
 
 function readJson<T>(key: string, fallback: T): T {
   try {
@@ -80,6 +85,27 @@ export function saveCounters(c: ProjectSequenceCounter[]): void {
   writeJson(KEY_COUNTERS, c)
 }
 
+// Project products (mock ürün envanteri) ------------------------------------
+export function loadProjectProducts(): ProjectProduct[] {
+  return readJson<ProjectProduct[]>(KEY_PRODUCTS, [])
+}
+export function saveProjectProducts(rows: ProjectProduct[]): void {
+  writeJson(KEY_PRODUCTS, rows)
+}
+
+// Standart seri ürün şablonları (firma kataloğu) --------------------------------
+export function loadStandardSeriesTemplates(fallbackFirmId: string): StandardSeriesTemplate[] {
+  const rows = readJson<StandardSeriesTemplate[]>(KEY_STANDARD_SERIES, [])
+  if (rows.length === 0) {
+    return defaultStandardSeriesTemplates(fallbackFirmId)
+  }
+  return rows
+}
+
+export function saveStandardSeriesTemplates(rows: StandardSeriesTemplate[]): void {
+  writeJson(KEY_STANDARD_SERIES, rows)
+}
+
 export function allocateSequence(
   counters: ProjectSequenceCounter[],
   projectId: string,
@@ -110,6 +136,8 @@ export function resetAll(): void {
     localStorage.removeItem(KEY_ACTIVE_FIRM)
     localStorage.removeItem(KEY_ELEMENTS)
     localStorage.removeItem(KEY_COUNTERS)
+    localStorage.removeItem(KEY_PRODUCTS)
+    localStorage.removeItem(KEY_STANDARD_SERIES)
   } catch {
     /* ignore */
   }

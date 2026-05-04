@@ -49,14 +49,14 @@ export const demoFlowSteps: DemoFlowStep[] = [
   },
   {
     step: 4,
-    moduleId: 'engineering',
-    title: 'Mühendislik — üretime hazır',
-    screen: 'Mühendislik Entegrasyonu · hazırlık / checklist',
-    control: 'Hazırlık skoru; akıllı üretim emri modalı (mock)',
-    surfaceNote: 'Okan liquid paneller; checklist ve risk özeti.',
+    moduleId: 'element-identity',
+    title: 'Eleman kimlik — proje detayı',
+    screen: 'Eleman Kimlik · proje listesi / dört sekme',
+    control: 'Ürün ekleme; IFC toplu içe aktarma sihirbazı; kod ve etiket sekmeleri (mock)',
+    surfaceNote: 'Cam kart + pill sekmeler; split liste–detay.',
     tailwindLine:
-      'Modal kabı: `shadow-neo-out rounded-2xl`; form alanları: `shadow-neo-in rounded-xl`.',
-    emptyOrErrorInset: 'Kilit çakışması: inset uyarı + kırmızı metin (00b).',
+      'Liste: `okan-project-split-list`; aktif satır: `okan-project-list-row--active`.',
+    emptyOrErrorInset: 'Proje yoksa: inset kısa bilgi + Tanımlar’a dönüş.',
   },
   {
     step: 5,
