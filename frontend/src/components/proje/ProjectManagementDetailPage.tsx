@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { projectManagementActivitiesMock, projectManagementCardsMock } from '../../data/projectManagementCardsMock'
 import { useI18n } from '../../i18n/I18nProvider'
+import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 import { ProjectDetailPieceCodesPanel } from './ProjectDetailPieceCodesPanel'
 
@@ -750,23 +751,36 @@ export function ProjectManagementDetailPage() {
                     className="okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden p-3"
                     style={{ width: `calc(${docSplitRatio}% - 5px)` }}
                   >
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
+                      <p className="shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         Döküman listesi
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => setIsDocFilterOpen((prev) => !prev)}
-                        className={[
-                          'inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition',
-                          isDocFilterOpen
-                            ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
-                            : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
-                        ].join(' ')}
-                      >
-                        <Filter className="size-3" aria-hidden />
-                        Filtrele
-                      </button>
+                      <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
+                        <FilterToolbarSearch
+                          id="project-detail-doc-inline-search"
+                          value={docQuery}
+                          onValueChange={(v) => {
+                            setDocQuery(v)
+                            setDocPage(1)
+                          }}
+                          placeholder="ad, yükleyen, not..."
+                          ariaLabel="Dökümanlarda ara"
+                          className="min-w-0 sm:max-w-[14rem]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setIsDocFilterOpen((prev) => !prev)}
+                          className={[
+                            'inline-flex shrink-0 items-center gap-1 self-center rounded-lg border px-2 py-1 text-[11px] font-semibold transition',
+                            isDocFilterOpen
+                              ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
+                              : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
+                          ].join(' ')}
+                        >
+                          <Filter className="size-3" aria-hidden />
+                          Filtrele
+                        </button>
+                      </div>
                     </div>
                     <div className="relative min-h-0 flex-1 overflow-hidden">
                       <aside

@@ -6,6 +6,8 @@ import { useFactoryContext } from '../../context/FactoryContext'
 import { AppFooter } from '../../components/AppFooter'
 import { FactorySummaryDrawer } from '../../components/FactorySummaryDrawer'
 import { AppTopNav } from '../../components/AppTopNav'
+import { ElementIdentityProvider } from '../../components/elementIdentity/ElementIdentityContext'
+import { GlassFooter } from './GlassFooter'
 import { GlassHeader } from './GlassHeader'
 import { GlassLayout } from './GlassLayout'
 
@@ -26,12 +28,20 @@ function GlassAppShellInner() {
   const outletContext: AppShellOutletContext = { onNavigate: select }
 
   const topBarLeftPadding = '0px'
-  const contentColStart = 'md:col-start-1'
   /** Proje/CRM/Teklif (alt path dahil) + Üretim planlama: üst boşluk `pt-14 md:pt-16`, outlet padding 0 — navbar–başlık hizası */
   const isOkanPlanSplitPage =
     location.pathname.startsWith('/proje') ||
     location.pathname.startsWith('/crm') ||
+    location.pathname.startsWith('/musteri-detay') ||
     location.pathname.startsWith('/teklif') ||
+    location.pathname.startsWith('/eleman-kimlik') ||
+    location.pathname.startsWith('/malzeme-katalogu') ||
+    location.pathname.startsWith('/standart-seri-urunler') ||
+    location.pathname.startsWith('/kullanicilar') ||
+    location.pathname.startsWith('/roller-izinler') ||
+    location.pathname.startsWith('/onay-akisi') ||
+    location.pathname === '/profile' ||
+    location.pathname === '/settings' ||
     effectiveActiveId === 'planning-design'
 
   return (
@@ -39,8 +49,7 @@ function GlassAppShellInner() {
       <div className="flex min-h-dvh w-full min-w-0 flex-col gap-3 p-3 text-[var(--glass-text-primary)] md:gap-4 md:p-5">
         <div
           className={[
-            'relative z-0 flex min-h-0 min-w-0 flex-1 flex-col gap-3 md:min-h-0 md:grid md:grid-cols-1 md:gap-x-4 md:gap-y-4',
-            'md:grid-rows-[minmax(0,1fr)_auto]',
+            'relative z-0 flex min-h-0 min-w-0 flex-1 flex-col gap-3 pb-[var(--gm-footer-clear)] md:min-h-0 md:gap-4',
             isOkanPlanSplitPage ? 'pt-14 md:pt-16' : 'pt-20 md:pt-24',
           ].join(' ')}
         >
@@ -50,7 +59,6 @@ function GlassAppShellInner() {
               `gm-motion relative z-0 flex min-h-0 flex-1 flex-col overflow-visible rounded-2xl ${
                 isOkanPlanSplitPage ? 'p-0 md:p-0' : 'p-1'
               } md:min-h-0 md:rounded-3xl`,
-              ['order-1', contentColStart, 'md:row-start-1'].join(' '),
             ].join(' ')}
             aria-label="Modül içeriği"
           >
@@ -61,20 +69,19 @@ function GlassAppShellInner() {
                 isOkanPlanSplitPage ? 'p-0 md:p-0' : 'p-2 md:p-3',
               ].join(' ')}
             >
-              <Outlet context={outletContext} />
+              <ElementIdentityProvider>
+                <Outlet context={outletContext} />
+              </ElementIdentityProvider>
             </div>
           </main>
+        </div>
+      </div>
 
-          <div
-            className={[
-              'gm-glass-footer-host gm-glass-panel-l2 gm-motion rounded-2xl md:rounded-3xl',
-              ['order-2', contentColStart, 'md:row-start-2'].join(' '),
-            ].join(' ')}
-          >
-            <div className="[&>footer]:rounded-2xl [&>footer]:bg-transparent [&>footer]:shadow-none md:[&>footer]:rounded-3xl">
-              <AppFooter />
-            </div>
-          </div>
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[92] pb-[env(safe-area-inset-bottom,0px)]">
+        <div className="pointer-events-auto w-full min-w-0">
+          <GlassFooter>
+            <AppFooter />
+          </GlassFooter>
         </div>
       </div>
 

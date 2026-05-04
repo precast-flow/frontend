@@ -7,9 +7,7 @@ import { NavItemIcon } from '../sidebarNavIcons'
 
 const DESC_KEY_BY_MODULE: Record<string, string> = {
   crm: 'main.desc.crm',
-  quote: 'main.desc.quote',
   project: 'main.desc.project',
-  engineering: 'main.desc.engineering',
   'planning-design': 'main.desc.planningDesign',
 }
 

@@ -294,3 +294,80 @@ html[data-ui-template='glass']:not(.dark) .gm-topnav-header-accent {
     transparent
   );
 }
+
+/* —— Alt şerit (GlassFooter) — üst menü ile aynı cam / okan token’ları, alta yapışık flush —— */
+html[data-ui-template='glass']:not(.dark) .gm-glass-footer-host.gm-glass-footer-okan {
+  border-color: rgb(255 255 255 / 0.55);
+  background-color: rgb(255 255 255 / 0.42);
+  background-image: linear-gradient(
+    145deg,
+    rgb(224 242 254 / 0.65) 0%,
+    rgb(238 242 255 / 0.5) 45%,
+    rgb(250 245 255 / 0.55) 100%
+  );
+  box-shadow:
+    0 4px 24px rgb(15 23 42 / 0.06),
+    0 12px 40px rgb(15 23 42 / 0.04),
+    inset 0 1px 0 rgb(255 255 255 / 0.72);
+  backdrop-filter: blur(24px) saturate(1.35);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+}
+
+html[data-ui-template='glass'].dark .gm-glass-footer-host.gm-glass-footer-okan {
+  border-color: rgb(255 255 255 / 0.12);
+  background-color: rgb(255 255 255 / 0.07);
+  background-image: linear-gradient(160deg, rgb(15 23 42 / 0.88) 0%, rgb(30 27 75 / 0.5) 55%, rgb(15 23 42 / 0.92) 100%);
+  box-shadow:
+    0 8px 32px rgb(0 0 0 / 0.4),
+    inset 0 1px 0 rgb(255 255 255 / 0.1);
+  backdrop-filter: blur(24px) saturate(1.35);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+}
+
+/* Alta yapışık: yüzen kart gölgesi yok; üst kenar çizgisi + iç highlight (üst şeridin altı ile simetri) */
+html[data-ui-template='glass']:not(.dark) .gm-glass-footer-host.gm-glass-footer-okan.gm-glass-footer-flush {
+  border-radius: 0;
+  border-width: 1px 0 0;
+  border-style: solid;
+  border-color: rgb(15 23 42 / 0.08);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55);
+}
+
+html[data-ui-template='glass'].dark .gm-glass-footer-host.gm-glass-footer-okan.gm-glass-footer-flush {
+  border-radius: 0;
+  border-width: 1px 0 0;
+  border-style: solid;
+  border-color: rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+
+html[data-ui-template='glass']:not(.dark) .gm-footer-strip-accent {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(14 165 233 / 0.35) 35%,
+    rgb(99 102 241 / 0.28) 65%,
+    transparent
+  );
+}
+
+html[data-ui-template='glass'].dark .gm-footer-strip-accent {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(125 211 252 / 0.22) 35%,
+    rgb(99 102 241 / 0.18) 65%,
+    transparent
+  );
+}
+
+/* Sabit alt şerit için içerik alt boşluğu (yüklenici + güvenli alan) */
+html[data-ui-template='glass'] {
+  --gm-footer-clear: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  html[data-ui-template='glass'] {
+    --gm-footer-clear: calc(3.85rem + env(safe-area-inset-bottom, 0px));
+  }
+}

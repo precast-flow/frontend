@@ -242,7 +242,7 @@ export function CrmNewCustomerModal({
                   value={newLocationName}
                   onChange={(event) => setNewLocationName(event.target.value)}
                   placeholder="Örn. Merkez ofis"
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+                  className="mt-1 w-full rounded-lg border border-slate-300/90 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:border-sky-400/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/25 dark:border-slate-600/70 dark:bg-slate-800/35 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus-visible:border-sky-500/50 dark:focus-visible:ring-sky-400/15"
                 />
               </label>
               <label className="min-w-0 flex-[1.35]">
@@ -252,7 +252,7 @@ export function CrmNewCustomerModal({
                   value={newLocationInfo}
                   onChange={(event) => setNewLocationInfo(event.target.value)}
                   placeholder="İl, ilçe, açık adres…"
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+                  className="mt-1 w-full rounded-lg border border-slate-300/90 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:border-sky-400/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/25 dark:border-slate-600/70 dark:bg-slate-800/35 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus-visible:border-sky-500/50 dark:focus-visible:ring-sky-400/15"
                 />
               </label>
               <button
@@ -264,11 +264,14 @@ export function CrmNewCustomerModal({
               </button>
             </div>
             {draft.locations.length > 0 ? (
-              <ul className="mt-3 space-y-2" role="list">
+              <ul
+                className="mt-3 divide-y divide-slate-200/30 dark:divide-white/10"
+                role="list"
+              >
                 {draft.locations.map((location) => (
                   <li
                     key={location.id}
-                    className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950/40 sm:flex-row sm:items-center"
+                    className="flex flex-col gap-2 py-3 first:pt-0 sm:flex-row sm:items-end sm:gap-3"
                   >
                     <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2">
                       <input
@@ -276,20 +279,20 @@ export function CrmNewCustomerModal({
                         value={location.name}
                         onChange={(event) => updateLocation(location.id, { name: event.target.value })}
                         aria-label="Lokasyon adı"
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+                        className="w-full rounded-lg border border-slate-200/80 bg-white/90 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:border-sky-400/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/25 dark:border-slate-600/60 dark:bg-slate-800/40 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus-visible:border-sky-500/50 dark:focus-visible:ring-sky-400/15"
                       />
                       <input
                         type="text"
                         value={location.locationInfo}
                         onChange={(event) => updateLocation(location.id, { locationInfo: event.target.value })}
                         aria-label="Adres"
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+                        className="w-full rounded-lg border border-slate-200/80 bg-white/90 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:border-sky-400/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/25 dark:border-slate-600/60 dark:bg-slate-800/40 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus-visible:border-sky-500/50 dark:focus-visible:ring-sky-400/15"
                       />
                     </div>
                     <button
                       type="button"
                       onClick={() => removeLocation(location.id)}
-                      className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 dark:border-slate-600 dark:hover:border-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-300"
+                      className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400"
                       aria-label="Lokasyonu kaldır"
                     >
                       <Trash2 className="size-4" aria-hidden />

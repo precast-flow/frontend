@@ -4,7 +4,7 @@ import { useI18n } from '../i18n/I18nProvider'
 export function AppFooter() {
   const { t } = useI18n()
   return (
-    <footer className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-pf-surface px-4 py-2.5 text-xs text-gray-500 shadow-neo-in dark:text-gray-400 md:px-5">
+    <footer className="relative z-0 flex flex-wrap items-center justify-between gap-x-2 gap-y-2 px-2 py-1.5 text-xs text-gray-500 dark:text-gray-400 md:gap-x-3 md:px-3 md:py-2">
       <span className="text-gray-600 dark:text-gray-300">
         {t('footer.version')}{' '}
         <strong className="font-medium text-gray-800 dark:text-gray-100">0.1.0-proto</strong>

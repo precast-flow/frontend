@@ -1,8 +1,12 @@
-import { GitMerge, Globe, Mail, MapPin, Phone, StickyNote, User } from 'lucide-react'
+import { ChevronRight, Globe, Mail, MapPin, Phone, StickyNote, User } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { crmCustomers, statusLabel, type CrmCustomer } from '../../data/crmCustomers'
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { crmCustomers } from '../../data/crmCustomers'
 import { useI18n } from '../../i18n/I18nProvider'
+import { CustomerProjectsCommercialPanel } from './CustomerProjectsCommercialPanel'
+import { DocumentExplorerSplit } from '../shared/DocumentExplorerSplit'
+import type { ExplorerDocument } from '../shared/documentExplorerTypes'
+import { QuoteModuleView } from '../teklif/QuoteModuleView'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 
 const detailTabs = [
@@ -16,414 +20,310 @@ const detailTabs = [
 
 type DetailTabId = (typeof detailTabs)[number]['id']
 
-function statusPill(status: CrmCustomer['status']) {
-  const base =
-    'inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-gray-300/90 dark:ring-gray-600/80'
-  if (status === 'aktif') return `${base} bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100`
-  if (status === 'beklemede') return `${base} bg-gray-50 text-gray-700 dark:bg-gray-950/90 dark:text-gray-200`
-  if (status === 'potansiyel')
-    return `${base} bg-amber-50 text-amber-900 ring-amber-200/90 dark:bg-amber-950/50 dark:text-amber-100 dark:ring-amber-800/80`
-  return `${base} bg-gray-200/80 text-gray-700 dark:bg-gray-700/80 dark:text-gray-200`
-}
-
 export function CrmCustomerDetailPage() {
   const { t } = useI18n()
   const navigate = useNavigate()
+  const location = useLocation()
   const { customerId } = useParams<{ customerId: string }>()
   const [detailTab, setDetailTab] = useState<DetailTabId>('genel')
 
+  const cameFromList = Boolean((location.state as { fromCrmList?: boolean } | null)?.fromCrmList)
+
   const customer = useMemo(() => crmCustomers.find((c) => c.id === customerId) ?? null, [customerId])
+
+  const explorerDocs: ExplorerDocument[] = useMemo(
+    () =>
+      (customer?.dokumanlar ?? []).map((d) => ({
+        id: d.id,
+        type: d.type,
+        name: d.name,
+        size: d.size,
+        ext: d.ext,
+        uploadedAt: d.uploadedAt,
+        uploadedBy: d.uploadedBy,
+        revision: d.revision,
+        note: d.note,
+        previewUrl: d.previewUrl,
+      })),
+    [customer?.dokumanlar],
+  )
+
+  const docPersistKey = `crm:detail:${customerId ?? 'unknown'}:docs`
 
   if (!customer) {
     return <Navigate to="/crm" replace />
   }
 
-  const panelClass = 'okan-liquid-panel'
-  const nestedPanelClass = 'okan-liquid-panel-nested'
-  const crmTitle = t('nav.crm')
+  if (!cameFromList) {
+    return <Navigate to="/crm" replace />
+  }
+
+  const tabScrollClass =
+    detailTab === 'dokumanlar' || detailTab === 'teklifler' || detailTab === 'projeler'
+      ? 'min-h-0 flex-1 flex flex-col overflow-hidden'
+      : 'min-h-0 flex-1 overflow-y-auto text-sm text-slate-700 dark:text-slate-200'
 
   return (
-    <div className="okan-liquid-root flex min-h-0 flex-1 flex-col gap-4 overflow-hidden rounded-[1.25rem]">
-      <div className="okan-liquid-blobs" aria-hidden>
-        <div className="okan-liquid-blob okan-liquid-blob--a" />
-        <div className="okan-liquid-blob okan-liquid-blob--b" />
-      </div>
-
-      <div className="okan-liquid-content relative z-[1] flex min-h-0 flex-1 flex-col gap-4">
-        <nav
-          className="rounded-2xl border border-white/25 bg-white/25 px-4 py-2 text-xs text-slate-700 backdrop-blur-md dark:border-white/15 dark:bg-white/10 dark:text-slate-200"
-          aria-label="Breadcrumb"
-        >
-          <ol className="flex flex-wrap items-center gap-1.5">
-            <li>
-              <button
-                type="button"
-                onClick={() => navigate('/')}
-                className="font-medium text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-slate-50"
-              >
-                Ana Sayfa
-              </button>
-            </li>
-            <li className="text-slate-400">/</li>
-            <li>
-              <button
-                type="button"
-                onClick={() => navigate('/crm')}
-                className="font-medium text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-slate-50"
-              >
-                {crmTitle}
-              </button>
-            </li>
-            <li className="text-slate-400">/</li>
-            <li className="max-w-[min(100%,28rem)] truncate font-semibold text-slate-900 dark:text-slate-50" title={customer.name}>
-              Müşteri detayı · {customer.name}
-            </li>
-          </ol>
-        </nav>
-
-        <section className={`${panelClass} flex min-h-0 flex-1 flex-col p-4`} aria-label="Müşteri detayı">
-          <div className="mb-3 border-b border-white/20 pb-3 dark:border-white/10">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-50">{customer.name}</h1>
-              <span className={statusPill(customer.status)}>{statusLabel(customer.status)}</span>
-            </div>
-            <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">
-              {customer.code} · {customer.city} · Satış: {customer.owner}
-            </p>
-            {customer.tags.length > 0 ? (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {customer.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full bg-indigo-500/20 px-2.5 py-0.5 text-[11px] font-semibold text-slate-800 dark:text-slate-100"
-                  >
-                    {tag}
-                  </span>
-                ))}
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">· P1 etiket (mock)</span>
-              </div>
-            ) : null}
+    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-[1.25rem]">
+      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-2">
+        <div className="px-[0.6875rem] py-1">
+          <div className="mb-2 pb-2">
+            <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-50 md:text-2xl">
+              {customer.name} Müşteri Detayı
+            </h1>
           </div>
+          <nav aria-label={t('project.breadcrumbAria')} className="mb-0">
+            <ol className="flex flex-wrap items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+              <li>
+                <Link
+                  to="/planlama"
+                  className="font-medium text-slate-600 underline-offset-2 transition hover:text-sky-600 hover:underline dark:text-slate-300 dark:hover:text-sky-400"
+                >
+                  {t('nav.sidebar.section.planning')}
+                </Link>
+              </li>
+              <li className="flex items-center gap-1" aria-hidden>
+                <ChevronRight className="size-3.5 shrink-0 opacity-70" />
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => navigate('/crm')}
+                  className="font-medium text-slate-600 underline-offset-2 transition hover:text-sky-600 hover:underline dark:text-slate-300 dark:hover:text-sky-400"
+                >
+                  {t('nav.crm')}
+                </button>
+              </li>
+              <li className="flex items-center gap-1" aria-hidden>
+                <ChevronRight className="size-3.5 shrink-0 opacity-70" />
+              </li>
+              <li className="max-w-[40ch] truncate font-semibold text-slate-800 dark:text-slate-100" aria-current="page">
+                {customer.name} Müşteri Detayı
+              </li>
+            </ol>
+          </nav>
+        </div>
 
-          <div
-            className="mb-4 okan-liquid-pill-track flex flex-wrap gap-1 rounded-full p-1"
-            role="tablist"
-            aria-label="Detay sekmeleri"
-          >
-            {detailTabs.map((tab) => {
-              const on = detailTab === tab.id
-              return (
+        <div className="min-h-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+          <div className="flex h-full min-h-0 flex-col gap-3 px-1 sm:px-2">
+            <div className="flex shrink-0 gap-1 overflow-x-auto" role="tablist" aria-label="Müşteri detay sekmeleri">
+              {detailTabs.map((tab) => (
                 <button
                   key={tab.id}
                   type="button"
                   role="tab"
-                  aria-selected={on}
+                  aria-selected={detailTab === tab.id}
                   onClick={() => setDetailTab(tab.id)}
-                  className={`rounded-full px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 ${
-                    on
-                      ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
-                      : 'text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100'
+                  className={`shrink-0 rounded-full border px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
+                    detailTab === tab.id
+                      ? 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
+                      : 'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
                   }`}
                 >
                   {tab.label}
                 </button>
-              )
-            })}
-          </div>
+              ))}
+            </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto text-sm text-slate-700 dark:text-slate-200">
-            {detailTab === 'genel' ? (
-              <div className="space-y-4">
-                <dl className="grid gap-2 sm:grid-cols-2">
-                  <div className={`${nestedPanelClass} p-3`}>
-                    <dt className="text-xs font-semibold text-slate-600 dark:text-slate-300">Vergi no</dt>
-                    <dd className="mt-1 font-medium text-slate-900 dark:text-slate-50">{customer.taxId}</dd>
-                  </div>
-                  <div className={`${nestedPanelClass} p-3`}>
-                    <dt className="text-xs font-semibold text-slate-600 dark:text-slate-300">Kayit tarihi</dt>
-                    <dd className="mt-1 font-medium text-slate-900 dark:text-slate-50">{customer.createdAt}</dd>
-                  </div>
-                  <div className={`${nestedPanelClass} p-3`}>
-                    <dt className="text-xs font-semibold text-slate-600 dark:text-slate-300">Sektor</dt>
-                    <dd className="mt-1 font-medium text-slate-900 dark:text-slate-50">{customer.sector}</dd>
-                  </div>
-                  <div className={`${nestedPanelClass} p-3`}>
-                    <dt className="text-xs font-semibold text-slate-600 dark:text-slate-300">Ilgili kisi</dt>
-                    <dd className="mt-1 font-medium text-slate-900 dark:text-slate-50">{customer.contactPerson}</dd>
-                  </div>
-                </dl>
-                <div>
-                  <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
-                    Son aktivite
-                  </h2>
-                  <div className={`${nestedPanelClass} p-3`}>
-                    <ol className="space-y-3 border-l-2 border-white/30 pl-4 dark:border-white/20">
+            <div className={tabScrollClass}>
+              {detailTab === 'genel' ? (
+                <div className="space-y-4">
+                  <dl className="grid gap-2 sm:grid-cols-2">
+                    {[
+                      ['Vergi no', customer.taxId],
+                      ['Kayıt tarihi', customer.createdAt],
+                      ['Sektör', customer.sector],
+                      ['İlgili kişi', customer.contactPerson],
+                    ].map(([label, value]) => (
+                      <div key={String(label)} className="rounded-xl border border-slate-200/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5">
+                        <dt className="text-xs font-semibold text-slate-600 dark:text-slate-300">{label}</dt>
+                        <dd className="mt-1 font-medium text-slate-900 dark:text-slate-50">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <section className="rounded-xl border border-slate-200/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Son aktivite</p>
+                    <ol className="mt-4 space-y-3 border-l-2 border-slate-200/60 pl-4 dark:border-slate-600/60">
                       <li className="relative">
-                        <span className="absolute -left-[21px] top-1.5 size-2.5 rounded-full bg-white ring-4 ring-white/40 dark:bg-white/30 dark:ring-white/10" />
-                        <p className="font-medium text-slate-900 dark:text-slate-50">Teklif taslagi guncellendi</p>
-                        <p className="text-xs text-slate-600 dark:text-slate-300">Bugun 09:14 · Teklif #T-441</p>
+                        <span className="absolute -left-[21px] top-1.5 size-2.5 rounded-full bg-sky-500 ring-4 ring-sky-500/20 dark:ring-sky-400/20" />
+                        <p className="font-medium text-slate-900 dark:text-slate-50">Teklif taslağı güncellendi</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">Bugün 09:14 · Teklif #T-441</p>
                       </li>
                       <li className="relative">
-                        <span className="absolute -left-[21px] top-1.5 size-2.5 rounded-full bg-slate-400 ring-4 ring-white/40 dark:ring-white/10" />
-                        <p className="font-medium text-slate-900 dark:text-slate-50">Arama kaydi</p>
-                        <p className="text-xs text-slate-600 dark:text-slate-300">Dun · 12 dk</p>
+                        <span className="absolute -left-[21px] top-1.5 size-2.5 rounded-full bg-slate-400 ring-4 ring-slate-400/15 dark:bg-slate-500" />
+                        <p className="font-medium text-slate-900 dark:text-slate-50">Arama kaydı</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">Dün · 12 dk</p>
                       </li>
                       <li className="relative">
-                        <span className="absolute -left-[21px] top-1.5 size-2.5 rounded-full bg-slate-400 ring-4 ring-white/40 dark:ring-white/10" />
-                        <p className="font-medium text-slate-900 dark:text-slate-50">Toplanti notu eklendi</p>
+                        <span className="absolute -left-[21px] top-1.5 size-2.5 rounded-full bg-slate-400 ring-4 ring-slate-400/15 dark:bg-slate-500" />
+                        <p className="font-medium text-slate-900 dark:text-slate-50">Toplantı notu eklendi</p>
                         <p className="text-xs text-slate-600 dark:text-slate-300">15 Mar · {customer.owner}</p>
                       </li>
                     </ol>
-                  </div>
+                  </section>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
 
-            {detailTab === 'iletisim' ? (
-              <div className="space-y-4">
-                <div>
-                  <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
-                    Şirket iletişimi
-                  </h2>
-                  <dl className="grid gap-2 sm:grid-cols-2">
-                    <div className={`${nestedPanelClass} flex gap-3 p-3`}>
-                      <MapPin className="mt-0.5 size-4 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden />
-                      <div className="min-w-0">
-                        <dt className="text-xs font-semibold text-slate-600 dark:text-slate-300">Şehir</dt>
-                        <dd className="mt-1 font-medium text-slate-900 dark:text-slate-50">{customer.city}</dd>
-                        {customer.iletisim.adresNotu ? (
-                          <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{customer.iletisim.adresNotu}</p>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className={`${nestedPanelClass} flex gap-3 p-3`}>
-                      <Phone className="mt-0.5 size-4 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden />
-                      <div>
-                        <dt className="text-xs font-semibold text-slate-600 dark:text-slate-300">Sabit hat</dt>
-                        <dd className="mt-1">
-                          <a
-                            href={`tel:${customer.iletisim.sabitHat.replace(/\s/g, '')}`}
-                            className="font-medium text-slate-900 underline-offset-2 hover:underline dark:text-slate-50"
-                          >
-                            {customer.iletisim.sabitHat}
-                          </a>
-                        </dd>
-                      </div>
-                    </div>
-                    {customer.iletisim.faks ? (
-                      <div className={`${nestedPanelClass} flex gap-3 p-3`}>
-                        <Phone className="mt-0.5 size-4 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden />
-                        <div>
-                          <dt className="text-xs font-semibold text-slate-600 dark:text-slate-300">Faks</dt>
-                          <dd className="mt-1 font-medium text-slate-900 dark:text-slate-50">{customer.iletisim.faks}</dd>
+              {detailTab === 'iletisim' ? (
+                <div className="space-y-4">
+                  <section>
+                    <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Şirket iletişimi</h2>
+                    <dl className="grid gap-2 sm:grid-cols-2">
+                      <div className="rounded-xl border border-slate-200/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5 flex gap-3">
+                        <MapPin className="mt-0.5 size-4 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden />
+                        <div className="min-w-0">
+                          <dt className="text-xs font-semibold text-slate-600 dark:text-slate-300">Şehir</dt>
+                          <dd className="mt-1 font-medium text-slate-900 dark:text-slate-50">{customer.city}</dd>
+                          {customer.iletisim.adresNotu ? (
+                            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{customer.iletisim.adresNotu}</p>
+                          ) : null}
                         </div>
                       </div>
-                    ) : null}
-                    <div className={`${nestedPanelClass} flex gap-3 p-3`}>
-                      <Mail className="mt-0.5 size-4 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden />
-                      <div className="min-w-0">
-                        <dt className="text-xs font-semibold text-slate-600 dark:text-slate-300">Genel e-posta</dt>
-                        <dd className="mt-1">
-                          <a
-                            href={`mailto:${customer.iletisim.infoEmail}`}
-                            className="break-all font-medium text-slate-900 underline-offset-2 hover:underline dark:text-slate-50"
-                          >
-                            {customer.iletisim.infoEmail}
-                          </a>
-                        </dd>
-                      </div>
-                    </div>
-                    {customer.iletisim.web ? (
-                      <div className={`${nestedPanelClass} flex gap-3 p-3 sm:col-span-2`}>
-                        <Globe className="mt-0.5 size-4 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden />
-                        <div className="min-w-0">
-                          <dt className="text-xs font-semibold text-slate-600 dark:text-slate-300">Web</dt>
+                      <div className="rounded-xl border border-slate-200/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5 flex gap-3">
+                        <Phone className="mt-0.5 size-4 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden />
+                        <div>
+                          <dt className="text-xs font-semibold text-slate-600 dark:text-slate-300">Sabit hat</dt>
                           <dd className="mt-1">
                             <a
-                              href={`https://${customer.iletisim.web.replace(/^https?:\/\//, '')}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="break-all font-medium text-slate-900 underline-offset-2 hover:underline dark:text-slate-50"
+                              href={`tel:${customer.iletisim.sabitHat.replace(/\s/g, '')}`}
+                              className="font-medium text-slate-900 underline-offset-2 hover:underline dark:text-slate-50"
                             >
-                              {customer.iletisim.web}
+                              {customer.iletisim.sabitHat}
                             </a>
                           </dd>
                         </div>
                       </div>
-                    ) : null}
-                  </dl>
-                </div>
+                      {customer.iletisim.faks ? (
+                        <div className="rounded-xl border border-slate-200/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5 flex gap-3">
+                          <Phone className="mt-0.5 size-4 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden />
+                          <div>
+                            <dt className="text-xs font-semibold text-slate-600 dark:text-slate-300">Faks</dt>
+                            <dd className="mt-1 font-medium text-slate-900 dark:text-slate-50">{customer.iletisim.faks}</dd>
+                          </div>
+                        </div>
+                      ) : null}
+                      <div className="rounded-xl border border-slate-200/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5 flex gap-3">
+                        <Mail className="mt-0.5 size-4 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden />
+                        <div className="min-w-0">
+                          <dt className="text-xs font-semibold text-slate-600 dark:text-slate-300">Genel e-posta</dt>
+                          <dd className="mt-1">
+                            <a
+                              href={`mailto:${customer.iletisim.infoEmail}`}
+                              className="break-all font-medium text-slate-900 underline-offset-2 hover:underline dark:text-slate-50"
+                            >
+                              {customer.iletisim.infoEmail}
+                            </a>
+                          </dd>
+                        </div>
+                      </div>
+                      {customer.iletisim.web ? (
+                        <div className="rounded-xl border border-slate-200/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5 flex gap-3 sm:col-span-2">
+                          <Globe className="mt-0.5 size-4 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden />
+                          <div className="min-w-0">
+                            <dt className="text-xs font-semibold text-slate-600 dark:text-slate-300">Web</dt>
+                            <dd className="mt-1">
+                              <a
+                                href={`https://${customer.iletisim.web.replace(/^https?:\/\//, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="break-all font-medium text-slate-900 underline-offset-2 hover:underline dark:text-slate-50"
+                              >
+                                {customer.iletisim.web}
+                              </a>
+                            </dd>
+                          </div>
+                        </div>
+                      ) : null}
+                    </dl>
+                  </section>
 
-                <div>
-                  <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
-                    İlgili kişiler
-                  </h2>
-                  <div className={`${nestedPanelClass} overflow-x-auto`}>
-                    <table className="w-full min-w-[520px] border-collapse text-left text-sm">
-                      <thead>
-                        <tr className="okan-liquid-table-thead text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
-                          <th className="px-3 py-2.5">Ad soyad</th>
-                          <th className="px-3 py-2.5">Görev</th>
-                          <th className="px-3 py-2.5">Cep</th>
-                          <th className="px-3 py-2.5">E-posta</th>
-                          <th className="whitespace-nowrap px-3 py-2.5 text-center">Not</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {customer.iletisim.kisiler.map((k, idx) => (
-                          <tr
-                            key={k.id}
-                            className={`okan-liquid-table-row border-b ${
-                              idx % 2 === 1 ? 'bg-white/10 dark:bg-white/5' : ''
-                            }`}
-                          >
-                            <td className="px-3 py-2.5">
-                              <span className="inline-flex items-center gap-2 font-medium text-slate-900 dark:text-slate-50">
-                                <User className="size-3.5 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden />
-                                {k.adSoyad}
-                              </span>
-                            </td>
-                            <td className="px-3 py-2.5 text-slate-700 dark:text-slate-200">{k.gorev}</td>
-                            <td className="whitespace-nowrap px-3 py-2.5">
-                              <a
-                                href={`tel:${k.cep.replace(/\s/g, '')}`}
-                                className="text-slate-800 underline-offset-2 hover:underline dark:text-slate-100"
-                              >
-                                {k.cep}
-                              </a>
-                            </td>
-                            <td className="max-w-[14rem] px-3 py-2.5">
-                              <a
-                                href={`mailto:${k.email}`}
-                                className="break-all text-slate-800 underline-offset-2 hover:underline dark:text-slate-100"
-                              >
-                                {k.email}
-                              </a>
-                            </td>
-                            <td className="px-3 py-2.5 text-center">
-                              {k.birincil ? (
-                                <span className="inline-flex rounded-full bg-sky-500/20 px-2 py-0.5 text-[10px] font-semibold text-sky-900 dark:bg-sky-400/15 dark:text-sky-100">
-                                  Birincil
-                                </span>
-                              ) : (
-                                <span className="text-slate-400">—</span>
-                              )}
-                            </td>
+                  <section>
+                    <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">İlgili kişiler</h2>
+                    <div className="overflow-x-auto rounded-xl border border-slate-200/40 bg-white/40 dark:border-white/10 dark:bg-white/5">
+                      <table className="w-full min-w-[520px] border-collapse text-left text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-200/50 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:border-slate-700/50 dark:text-slate-300">
+                            <th className="px-3 py-2.5">Ad soyad</th>
+                            <th className="px-3 py-2.5">Görev</th>
+                            <th className="px-3 py-2.5">Cep</th>
+                            <th className="px-3 py-2.5">E-posta</th>
+                            <th className="whitespace-nowrap px-3 py-2.5 text-center">Not</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
-                    Liste CRM mock verisidir; ERP senkronu yoktur.
-                  </p>
+                        </thead>
+                        <tbody>
+                          {customer.iletisim.kisiler.map((k, idx) => (
+                            <tr key={k.id} className={`border-b border-slate-200/40 dark:border-slate-700/40 ${idx % 2 === 1 ? 'bg-slate-50/50 dark:bg-slate-900/25' : ''}`}>
+                              <td className="px-3 py-2.5">
+                                <span className="inline-flex items-center gap-2 font-medium text-slate-900 dark:text-slate-50">
+                                  <User className="size-3.5 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden />
+                                  {k.adSoyad}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2.5 text-slate-700 dark:text-slate-200">{k.gorev}</td>
+                              <td className="whitespace-nowrap px-3 py-2.5">
+                                <a href={`tel:${k.cep.replace(/\s/g, '')}`} className="text-slate-800 underline-offset-2 hover:underline dark:text-slate-100">
+                                  {k.cep}
+                                </a>
+                              </td>
+                              <td className="max-w-[14rem] px-3 py-2.5">
+                                <a href={`mailto:${k.email}`} className="break-all text-slate-800 underline-offset-2 hover:underline dark:text-slate-100">
+                                  {k.email}
+                                </a>
+                              </td>
+                              <td className="px-3 py-2.5 text-center">
+                                {k.birincil ? (
+                                  <span className="inline-flex rounded-full bg-sky-500/20 px-2 py-0.5 text-[10px] font-semibold text-sky-900 dark:bg-sky-400/15 dark:text-sky-100">
+                                    Birincil
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400">—</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">Liste CRM mock verisidir; ERP senkronu yoktur.</p>
+                  </section>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
 
-            {detailTab === 'projeler' ? (
-              <div className={`${nestedPanelClass} overflow-x-auto`}>
-                <table className="w-full min-w-[400px] text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-white/20 text-xs uppercase text-slate-500 dark:border-white/10 dark:text-slate-400">
-                      <th className="px-3 py-2 font-semibold">Proje</th>
-                      <th className="px-3 py-2 font-semibold">Aşama</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {customer.projeler.map((p) => (
-                      <tr key={p.id} className="border-b border-gray-200/80 dark:border-gray-700/80">
-                        <td className="px-3 py-2.5 font-medium text-slate-900 dark:text-slate-50">{p.name}</td>
-                        <td className="px-3 py-2.5 text-slate-600 dark:text-slate-300">{p.phase}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <p className="border-t border-white/20 px-3 py-2 text-xs text-slate-500 dark:border-white/10 dark:text-slate-400">
-                  Mock: 2 satır (mvp-05).
-                </p>
-              </div>
-            ) : null}
+              {detailTab === 'projeler' ? <CustomerProjectsCommercialPanel customerId={customer.id} /> : null}
 
-            {detailTab === 'teklifler' ? (
-              <div className="space-y-2">
-                <div className={`${nestedPanelClass} overflow-x-auto`}>
-                  <table className="w-full min-w-[520px] text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-white/20 text-xs uppercase text-slate-500 dark:border-white/10 dark:text-slate-400">
-                        <th className="px-3 py-2 font-semibold">Teklif no</th>
-                        <th className="px-3 py-2 font-semibold">Tarih</th>
-                        <th className="px-3 py-2 font-semibold">Tutar</th>
-                        <th className="px-3 py-2 font-semibold">Durum</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {customer.teklifler.map((t) => (
-                        <tr key={t.id} className="border-b border-gray-200/80 dark:border-gray-700/80">
-                          <td className="px-3 py-2.5 font-mono text-xs text-slate-800 dark:text-slate-100">{t.no}</td>
-                          <td className="whitespace-nowrap px-3 py-2.5 text-slate-600 dark:text-slate-300">{t.date}</td>
-                          <td className="px-3 py-2.5 tabular-nums text-slate-800 dark:text-slate-100">{t.amount}</td>
-                          <td className="px-3 py-2.5 text-slate-700 dark:text-slate-200">{t.status}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              {detailTab === 'teklifler' ? (
+                <div className="min-h-0 flex-1 overflow-hidden">
+                  <QuoteModuleView
+                    embedded
+                    customerName={customer.name}
+                    storageKeyPrefix={`crm:detail:${customer.id}:quotes`}
+                  />
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Mock: 3 satır · Teklif modülü: </p>
-                <button
-                  type="button"
-                  onClick={() => navigate('/teklif')}
-                  className="text-sm font-semibold text-slate-900 underline-offset-2 hover:underline dark:text-slate-50"
-                >
-                  Teklif oluştur (kısayol)
-                </button>
-              </div>
-            ) : null}
+              ) : null}
 
-            {detailTab === 'notlar' ? (
-              <div className={`${nestedPanelClass} p-4`}>
-                <div className="flex items-start gap-2">
-                  <StickyNote className="size-5 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden />
-                  <p className="text-slate-700 dark:text-slate-200">{customer.notes || 'Not yok.'}</p>
+              {detailTab === 'notlar' ? (
+                <div className="space-y-4">
+                  <section>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Notlar</p>
+                    <div className="mt-2 flex items-start gap-2 rounded-xl border border-slate-200/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5">
+                      <StickyNote className="size-5 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden />
+                      <p className="text-slate-700 dark:text-slate-200">{customer.notes || 'Not yok.'}</p>
+                    </div>
+                  </section>
+                  <textarea
+                    rows={3}
+                    placeholder="Yeni not ekle... (mock)"
+                    className="okan-liquid-input w-full resize-none border-0 px-3 py-2.5 text-sm shadow-none focus:outline-none"
+                  />
                 </div>
-              </div>
-            ) : null}
+              ) : null}
 
-            {detailTab === 'dokumanlar' ? (
-              <div className={`${nestedPanelClass}`}>
-                {customer.dokumanlar.length === 0 ? (
-                  <p className="p-4 text-slate-600 dark:text-slate-300">Henuz dokuman yok (mock).</p>
-                ) : (
-                  <ul className="divide-y divide-white/20 dark:divide-white/10">
-                    {customer.dokumanlar.map((d) => (
-                      <li
-                        key={d.id}
-                        className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm"
-                      >
-                        <span className="font-medium text-slate-900 dark:text-slate-50">{d.name}</span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">
-                          {d.size} · {d.date}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <p className="border-t border-white/20 px-4 py-2 text-xs text-slate-500 dark:border-white/10 dark:text-slate-400">
-                  P1 — Dosya satırları (indirme yok, prototip).
-                </p>
-              </div>
-            ) : null}
+              {detailTab === 'dokumanlar' ? (
+                <DocumentExplorerSplit documents={explorerDocs} persistKey={docPersistKey} listAriaLabel="Müşteri döküman listesi" />
+              ) : null}
+            </div>
           </div>
-
-          <div className="mt-4 flex gap-2 rounded-xl border border-dashed border-white/30 bg-white/10 p-3 text-xs text-slate-600 dark:border-white/20 dark:bg-white/5 dark:text-slate-400">
-            <GitMerge className="size-4 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden />
-            <p>
-              <strong className="text-slate-800 dark:text-slate-200">P2 — Musteri birlestirme (wireframe):</strong>{' '}
-              Tehlikeli akış; kaynak kayıtlar seçilir, hedef müşteri ve çakışan vergi no uyarısı, çift kayıtlar arşivlenir.
-              Üretimde ayrı onay ve denetim izi gerekir — burada yalnızca not.
-            </p>
-          </div>
-        </section>
+        </div>
       </div>
     </div>
   )

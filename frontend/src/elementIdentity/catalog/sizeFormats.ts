@@ -237,3 +237,12 @@ export const SIZE_FORMATS: SizeFormat[] = [
 export const SIZE_FORMATS_BY_ID: Record<string, SizeFormat> = Object.fromEntries(
   SIZE_FORMATS.map((f) => [f.id, f]),
 )
+
+/** Tablolarda gösterilecek kısa format kodu (katalog `id` türevi). */
+export function sizeFormatCatalogCode(formatId: string): string {
+  if (!formatId) return '—'
+  return formatId
+    .split('_')
+    .map((seg) => (seg[0] ? seg[0].toUpperCase() : ''))
+    .join('')
+}

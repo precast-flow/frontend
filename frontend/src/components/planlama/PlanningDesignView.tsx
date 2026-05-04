@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 import { useI18n } from '../../i18n/I18nProvider'
+import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import {
   CONCRETE_RECIPES_MOCK,
   INITIAL_PLAN_ITEMS,
@@ -735,6 +736,14 @@ export function PlanningDesignView() {
                       </span>
                     ) : null}
                   </button>
+                  <FilterToolbarSearch
+                    id="planning-design-toolbar-search"
+                    value={search}
+                    onValueChange={setSearch}
+                    placeholder="Ürün / emir / proje…"
+                    ariaLabel={t('planningDesign.toolbarSearchAria')}
+                    className="min-w-[12rem] flex-1 basis-[14rem] sm:max-w-xs sm:flex-initial"
+                  />
                   <button
                     type="button"
                     onClick={() => {

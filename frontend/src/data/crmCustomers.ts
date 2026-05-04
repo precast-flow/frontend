@@ -1,8 +1,21 @@
 export type CrmCustomerStatus = 'aktif' | 'beklemede' | 'pasif' | 'potansiyel'
 
-export type CrmProjectRow = { id: string; name: string; phase: string }
+/** Proje yönetimi kartı [projectManagementCardsMock](projectManagementCardsMock.ts) ile bağlantı */
+export type CrmProjectRow = { id: string; projectCardId: string; name: string; phase: string }
 export type CrmQuoteRow = { id: string; no: string; date: string; amount: string; status: string }
-export type CrmDocRow = { id: string; name: string; size: string; date: string }
+export type CrmDocType = 'Sözleşme' | 'Çizim' | 'Model' | 'Kalite' | 'Rapor'
+export type CrmDocRow = {
+  id: string
+  type: CrmDocType
+  name: string
+  size: string
+  ext: string
+  uploadedAt: string
+  uploadedBy: string
+  revision: string
+  note: string
+  previewUrl: string
+}
 export type CrmLocationRow = { id: string; name: string; locationInfo: string }
 
 /** Müşteri detay — İletişim sekmesi (mock) */
@@ -99,8 +112,8 @@ export const crmCustomers: CrmCustomer[] = [
     tags: ['VIP', 'Uzun vadeli'],
     factories: ['IST-HAD', 'KOC-01'],
     projeler: [
-      { id: 'p1', name: 'Köprü ayakları C blok', phase: 'Üretim' },
-      { id: 'p2', name: 'Hadımköy depo genişletme', phase: 'Keşif' },
+      { id: 'p1', projectCardId: 'pm-1', name: 'Köprü ayakları C blok', phase: 'Üretim' },
+      { id: 'p2', projectCardId: 'pm-2', name: 'Hadımköy depo genişletme', phase: 'Keşif' },
     ],
     teklifler: [
       { id: 't1', no: 'T-2025-441', date: '20.03.2025', amount: '₺ 2,4M', status: 'Onay bekliyor' },
@@ -108,8 +121,30 @@ export const crmCustomers: CrmCustomer[] = [
       { id: 't3', no: 'T-2024-901', date: '12.11.2024', amount: '₺ 1,1M', status: 'Kapalı' },
     ],
     dokumanlar: [
-      { id: 'd1', name: 'Çerçeve_sözleşme.pdf', size: '1,2 MB', date: '10.03.2025' },
-      { id: 'd2', name: 'Teknik_ek_R2.dwg', size: '8,4 MB', date: '18.02.2025' },
+      {
+        id: 'd1',
+        type: 'Sözleşme',
+        name: 'Çerçeve_sözleşme.pdf',
+        size: '1,2 MB',
+        ext: 'PDF',
+        uploadedAt: '10.03.2025 09:15',
+        uploadedBy: 'Selin Güler',
+        revision: 'B',
+        note: 'Çerçeve sözleşme mock.',
+        previewUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
+      },
+      {
+        id: 'd2',
+        type: 'Çizim',
+        name: 'Teknik_ek_R2.dwg',
+        size: '8,4 MB',
+        ext: 'DWG',
+        uploadedAt: '18.02.2025 14:20',
+        uploadedBy: 'Mühendislik',
+        revision: 'R2',
+        note: 'Teknik ek çizim (önizleme PDF ile simüle).',
+        previewUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
+      },
     ],
   },
   {
@@ -153,15 +188,28 @@ export const crmCustomers: CrmCustomer[] = [
     tags: ['Kamu'],
     factories: ['ANK-01'],
     projeler: [
-      { id: 'p3', name: 'Metro hat lot 4', phase: 'Planlama' },
-      { id: 'p4', name: 'Viyadük kirişleri', phase: 'Teklif' },
+      { id: 'p3', projectCardId: 'pm-3', name: 'Metro hat lot 4', phase: 'Planlama' },
+      { id: 'p4', projectCardId: 'pm-4', name: 'Viyadük kirişleri', phase: 'Teklif' },
     ],
     teklifler: [
       { id: 't4', no: 'T-2025-201', date: '14.02.2025', amount: '₺ 3,1M', status: 'Taslak' },
       { id: 't5', no: 'T-2024-778', date: '05.12.2024', amount: '₺ 450K', status: 'Red' },
       { id: 't6', no: 'T-2024-701', date: '22.10.2024', amount: '₺ 2,0M', status: 'Kapalı' },
     ],
-    dokumanlar: [{ id: 'd3', name: 'KVKK_izin.pdf', size: '240 KB', date: '03.02.2023' }],
+    dokumanlar: [
+      {
+        id: 'd3',
+        type: 'Kalite',
+        name: 'KVKK_izin.pdf',
+        size: '240 KB',
+        ext: 'PDF',
+        uploadedAt: '03.02.2023 11:00',
+        uploadedBy: 'Hukuk',
+        revision: 'A',
+        note: 'KVKK bilgilendirme.',
+        previewUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
+      },
+    ],
   },
   {
     id: 'c3',
@@ -197,8 +245,8 @@ export const crmCustomers: CrmCustomer[] = [
     tags: ['Hızlı karar'],
     factories: ['IST-HAD'],
     projeler: [
-      { id: 'p5', name: 'Fabrika çatı elemanları', phase: 'Üretim' },
-      { id: 'p6', name: 'Depo raf kolonları', phase: 'Duraklatıldı' },
+      { id: 'p5', projectCardId: 'pm-5', name: 'Fabrika çatı elemanları', phase: 'Üretim' },
+      { id: 'p6', projectCardId: 'pm-6', name: 'Depo raf kolonları', phase: 'Duraklatıldı' },
     ],
     teklifler: [
       { id: 't7', no: 'T-2025-512', date: '18.03.2025', amount: '₺ 760K', status: 'Revizyon' },
@@ -206,8 +254,30 @@ export const crmCustomers: CrmCustomer[] = [
       { id: 't9', no: 'T-2024-990', date: '20.12.2024', amount: '₺ 2,2M', status: 'Kapalı' },
     ],
     dokumanlar: [
-      { id: 'd4', name: 'Kapasite_teyit.xlsx', size: '88 KB', date: '12.03.2025' },
-      { id: 'd5', name: 'Foto_saha.zip', size: '42 MB', date: '08.03.2025' },
+      {
+        id: 'd4',
+        type: 'Kalite',
+        name: 'Kapasite_teyit.xlsx',
+        size: '88 KB',
+        ext: 'XLSX',
+        uploadedAt: '12.03.2025 16:30',
+        uploadedBy: 'Planlama',
+        revision: 'A',
+        note: 'Kapasite teyit tablosu.',
+        previewUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
+      },
+      {
+        id: 'd5',
+        type: 'Rapor',
+        name: 'Foto_saha.zip',
+        size: '42 MB',
+        ext: 'ZIP',
+        uploadedAt: '08.03.2025 10:05',
+        uploadedBy: 'Saha',
+        revision: '1',
+        note: 'Saha foto arşivi (önizleme PDF).',
+        previewUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
+      },
     ],
   },
   {
@@ -243,8 +313,8 @@ export const crmCustomers: CrmCustomer[] = [
     tags: [],
     factories: ['IST-HAD'],
     projeler: [
-      { id: 'p7', name: 'Site A blok', phase: 'İptal' },
-      { id: 'p8', name: 'Site B blok', phase: 'İptal' },
+      { id: 'p7', projectCardId: 'pm-7', name: 'Site A blok', phase: 'İptal' },
+      { id: 'p8', projectCardId: 'pm-8', name: 'Site B blok', phase: 'İptal' },
     ],
     teklifler: [
       { id: 't10', no: 'T-2024-120', date: '02.12.2024', amount: '₺ 5,0M', status: 'Kapalı' },
@@ -294,8 +364,8 @@ export const crmCustomers: CrmCustomer[] = [
     tags: ['Yeni', 'Sıcak'],
     factories: ['KOC-01'],
     projeler: [
-      { id: 'p9', name: 'Trafo binası (ön değerlendirme)', phase: 'Ön keşif' },
-      { id: 'p10', name: 'Kompresör temeli', phase: 'Fikir aşaması' },
+      { id: 'p9', projectCardId: 'pm-9', name: 'Trafo binası (ön değerlendirme)', phase: 'Ön keşif' },
+      { id: 'p10', projectCardId: 'pm-10', name: 'Kompresör temeli', phase: 'Fikir aşaması' },
     ],
     teklifler: [
       { id: 't13', no: '—', date: '—', amount: '—', status: 'Yok' },
@@ -344,15 +414,28 @@ export const crmCustomers: CrmCustomer[] = [
     tags: ['Teknik zor'],
     factories: ['IST-HAD', 'ANK-01'],
     projeler: [
-      { id: 'p11', name: 'Köprü korkuluk modülleri', phase: 'Üretim' },
-      { id: 'p12', name: 'Rıhtım paneli', phase: 'Lojistik' },
+      { id: 'p11', projectCardId: 'pm-11', name: 'Köprü korkuluk modülleri', phase: 'Üretim' },
+      { id: 'p12', projectCardId: 'pm-12', name: 'Rıhtım paneli', phase: 'Lojistik' },
     ],
     teklifler: [
       { id: 't16', no: 'T-2025-600', date: '19.03.2025', amount: '₺ 4,2M', status: 'Onay bekliyor' },
       { id: 't17', no: 'T-2025-410', date: '28.02.2025', amount: '₺ 1,0M', status: 'Kapalı' },
       { id: 't18', no: 'T-2024-850', date: '10.09.2024', amount: '₺ 600K', status: 'Kapalı' },
     ],
-    dokumanlar: [{ id: 'd6', name: 'Saha_ölçü.pdf', size: '3,1 MB', date: '12.03.2025' }],
+    dokumanlar: [
+      {
+        id: 'd6',
+        type: 'Çizim',
+        name: 'Saha_ölçü.pdf',
+        size: '3,1 MB',
+        ext: 'PDF',
+        uploadedAt: '12.03.2025 08:40',
+        uploadedBy: 'Saha',
+        revision: 'R1',
+        note: 'Saha ölçü raporu.',
+        previewUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
+      },
+    ],
   },
   {
     id: 'c7',
@@ -396,8 +479,8 @@ export const crmCustomers: CrmCustomer[] = [
     tags: ['Çok proje', 'VIP'],
     factories: ['IST-HAD'],
     projeler: [
-      { id: 'p13', name: 'Blok 1–4 kolonlar', phase: 'Üretim' },
-      { id: 'p14', name: 'Sosyal tesis çatı', phase: 'Keşif' },
+      { id: 'p13', projectCardId: 'pm-13', name: 'Blok 1–4 kolonlar', phase: 'Üretim' },
+      { id: 'p14', projectCardId: 'pm-14', name: 'Sosyal tesis çatı', phase: 'Keşif' },
     ],
     teklifler: [
       { id: 't19', no: 'T-2025-700', date: '21.03.2025', amount: '₺ 8,5M', status: 'Onay bekliyor' },
@@ -405,8 +488,30 @@ export const crmCustomers: CrmCustomer[] = [
       { id: 't21', no: 'T-2025-580', date: '01.03.2025', amount: '₺ 1,2M', status: 'Kapalı' },
     ],
     dokumanlar: [
-      { id: 'd7', name: 'Hakediş_şablon.xlsx', size: '120 KB', date: '05.03.2025' },
-      { id: 'd8', name: 'Sözleşme_taslak.docx', size: '95 KB', date: '01.03.2025' },
+      {
+        id: 'd7',
+        type: 'Rapor',
+        name: 'Hakediş_şablon.xlsx',
+        size: '120 KB',
+        ext: 'XLSX',
+        uploadedAt: '05.03.2025 14:00',
+        uploadedBy: 'Muhasebe',
+        revision: 'A',
+        note: 'Hakediş şablonu.',
+        previewUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
+      },
+      {
+        id: 'd8',
+        type: 'Sözleşme',
+        name: 'Sözleşme_taslak.docx',
+        size: '95 KB',
+        ext: 'DOCX',
+        uploadedAt: '01.03.2025 09:30',
+        uploadedBy: 'Hukuk',
+        revision: 'T0',
+        note: 'Sözleşme taslağı.',
+        previewUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
+      },
     ],
   },
   {
@@ -443,15 +548,28 @@ export const crmCustomers: CrmCustomer[] = [
     tags: ['Uzak saha'],
     factories: ['ANK-01'],
     projeler: [
-      { id: 'p15', name: 'Dalga kıran blokları', phase: 'Teklif' },
-      { id: 'p16', name: 'Depo perde duvar', phase: 'Planlama' },
+      { id: 'p15', projectCardId: 'pm-15', name: 'Dalga kıran blokları', phase: 'Teklif' },
+      { id: 'p16', projectCardId: 'pm-16', name: 'Depo perde duvar', phase: 'Planlama' },
     ],
     teklifler: [
       { id: 't22', no: 'T-2025-520', date: '10.03.2025', amount: '₺ 6,0M', status: 'Taslak' },
       { id: 't23', no: 'T-2025-500', date: '25.02.2025', amount: '₺ 2,8M', status: 'Revizyon' },
       { id: 't24', no: 'T-2024-400', date: '12.11.2024', amount: '₺ 900K', status: 'Kapalı' },
     ],
-    dokumanlar: [{ id: 'd9', name: 'Liman_ruhsat.pdf', size: '2,0 MB', date: '20.01.2025' }],
+    dokumanlar: [
+      {
+        id: 'd9',
+        type: 'Sözleşme',
+        name: 'Liman_ruhsat.pdf',
+        size: '2,0 MB',
+        ext: 'PDF',
+        uploadedAt: '20.01.2025 11:20',
+        uploadedBy: 'İdari işler',
+        revision: 'A',
+        note: 'Liman ruhsat belgesi.',
+        previewUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
+      },
+    ],
   },
 ]
 
