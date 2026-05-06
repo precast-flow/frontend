@@ -16,6 +16,7 @@ import { MaterialCatalogProvider } from './materialCatalog/MaterialCatalogContex
 import { MaterialCatalogModuleView } from './materialCatalog/MaterialCatalogModuleView'
 import { StandardSeriesCatalogModuleView } from './standardSeriesCatalog/StandardSeriesCatalogModuleView'
 import { AdminElementIdentityModuleView } from './admin/elementIdentity/AdminElementIdentityModuleView'
+import { UnitWorkQueueModuleView } from './workQueue/UnitWorkQueueModuleView'
 
 type Props = {
   activeId: string
@@ -31,6 +32,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
   const isWorkStart = activeId === 'work-start'
   const isProject = activeId === 'project'
   const isPlanningHub = activeId === 'planning-hub'
+  const isUnitWorkQueue = activeId === 'unit-work-queue'
   const isConfigurationCenter = activeId === 'configuration-center'
   const isElementIdentity = activeId === 'element-identity'
   const isElementIdentityAdmin = activeId === 'element-identity-admin'
@@ -51,7 +53,8 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
     isApprovalFlow ||
     isRolesPermissions ||
     isUserManagement ||
-    isElementIdentityAdmin
+    isElementIdentityAdmin ||
+    isUnitWorkQueue
 
   return (
     <div
@@ -60,11 +63,11 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
           ? 'gm-glass-main-canvas gm-glass-main-canvas--full gm-glass-main-canvas--okan-liquid flex min-h-0 flex-1 flex-col overflow-hidden'
           : [
               `gm-glass-main-canvas flex min-h-0 flex-1 flex-col rounded-3xl ${
-                isProject || isCrm || isMaterialCatalog || isStandardSeriesCatalog || isApprovalFlow || isRolesPermissions || isUserManagement || isElementIdentityAdmin
+                isProject || isCrm || isMaterialCatalog || isStandardSeriesCatalog || isApprovalFlow || isRolesPermissions || isUserManagement || isElementIdentityAdmin || isUnitWorkQueue
                   ? 'px-0 py-1 md:px-1 md:py-2'
                   : 'p-5 md:p-6'
               }`,
-              isProject || isCrm || isMaterialCatalog || isStandardSeriesCatalog || isApprovalFlow || isRolesPermissions || isUserManagement || isElementIdentityAdmin
+              isProject || isCrm || isMaterialCatalog || isStandardSeriesCatalog || isApprovalFlow || isRolesPermissions || isUserManagement || isElementIdentityAdmin || isUnitWorkQueue
                 ? 'gm-glass-main-canvas--okan-liquid h-[calc(100dvh-12.5rem)] min-h-[calc(100dvh-12.5rem)] max-h-[calc(100dvh-12.5rem)]'
                 : isPlanningHub ||
                     isConfigurationCenter || isElementIdentity
@@ -95,6 +98,8 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
         <CrmModuleView onNavigate={onNavigate} />
       ) : isPlanningHub ? (
         <PlanningHubView />
+      ) : isUnitWorkQueue ? (
+        <UnitWorkQueueModuleView onNavigate={onNavigate} />
       ) : isWorkStart ? (
         <StartWorkWizardView onNavigate={onNavigate} />
       ) : isProject ? (

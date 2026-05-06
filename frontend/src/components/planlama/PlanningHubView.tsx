@@ -6,6 +6,7 @@ import { useI18n } from '../../i18n/I18nProvider'
 import { NavItemIcon } from '../sidebarNavIcons'
 
 const DESC_KEY_BY_MODULE: Record<string, string> = {
+  'unit-work-queue': 'main.desc.unitWorkQueue',
   crm: 'main.desc.crm',
   project: 'main.desc.project',
   'planning-design': 'main.desc.planningDesign',

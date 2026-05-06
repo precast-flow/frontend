@@ -41,6 +41,7 @@ function GlassAppShellInner() {
     location.pathname.startsWith('/kullanicilar') ||
     location.pathname.startsWith('/roller-izinler') ||
     location.pathname.startsWith('/onay-akisi') ||
+    location.pathname.startsWith('/birim-is-kuyrugu') ||
     location.pathname === '/profile' ||
     location.pathname === '/settings' ||
     effectiveActiveId === 'planning-design'

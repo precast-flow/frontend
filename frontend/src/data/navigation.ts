@@ -24,6 +24,7 @@ export const navGroups: NavGroup[] = [
     titleKey: 'nav.sidebar.section.planning',
     items: [
       { id: 'planning-hub', labelKey: 'nav.planningHub', slug: 'planlama' },
+      { id: 'unit-work-queue', labelKey: 'nav.unitWorkQueue', slug: 'birim-is-kuyrugu' },
       { id: 'crm', labelKey: 'nav.crm', slug: 'crm' },
       { id: 'project', labelKey: 'nav.project', slug: 'proje' },
       { id: 'planning-design', labelKey: 'nav.planningDesign', slug: 'planlama-tasarim' },
