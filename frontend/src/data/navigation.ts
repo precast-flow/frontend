@@ -68,6 +68,17 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
+    id: 'admin',
+    titleKey: 'nav.sidebar.section.admin',
+    items: [
+      {
+        id: 'element-identity-admin',
+        labelKey: 'nav.elementIdentityAdmin',
+        slug: 'admin/eleman-kimlik',
+      },
+    ],
+  },
+  {
     id: 'account',
     titleKey: 'nav.sidebar.section.account',
     items: [
@@ -121,6 +132,7 @@ export function activeModuleIdFromPathname(pathname: string): string {
   if (pathname === '/') return DEFAULT_MODULE_ID
   if (pathname.startsWith('/musteri-detay/')) return 'crm'
   if (pathname === '/teklif' || pathname.startsWith('/teklif/')) return 'crm'
+  if (pathname.startsWith('/admin/eleman-kimlik')) return 'element-identity-admin'
   if (pathname.startsWith('/eleman-kimlik')) return 'element-identity'
   if (pathname.startsWith('/malzeme-katalogu')) return 'material-catalog'
   if (pathname.startsWith('/standart-seri-urunler')) return 'standard-series-catalog'

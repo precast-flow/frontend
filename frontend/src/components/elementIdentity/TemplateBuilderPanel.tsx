@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n/I18nProvider'
-import { SIZE_FORMATS } from '../../elementIdentity/catalog/sizeFormats'
 import { resolveInstanceMark } from '../../elementIdentity/firm/nameResolver'
 import type {
   FirmNamingTemplate,
@@ -88,6 +87,7 @@ export function TemplateBuilderPanel({ layout = 'full' }: TemplateBuilderPanelPr
     templates,
     setActiveTemplateId,
     addTemplate,
+    sizeFormatsData,
   } = useElementIdentity()
 
   const [draft, setDraft] = useState<FirmNamingTemplate>(activeTemplate)
@@ -443,7 +443,7 @@ export function TemplateBuilderPanel({ layout = 'full' }: TemplateBuilderPanelPr
               className="rounded-lg bg-gray-50 px-2 py-1 text-[11px] shadow-neo-in focus:outline-none dark:bg-gray-900/80 dark:text-gray-100"
             >
               <option value="">Auto (typology)</option>
-              {SIZE_FORMATS.map((sf) => (
+              {sizeFormatsData.map((sf) => (
                 <option key={sf.id} value={sf.id}>
                   {sf.id}
                 </option>

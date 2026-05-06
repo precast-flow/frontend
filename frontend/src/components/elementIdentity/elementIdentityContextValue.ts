@@ -1,12 +1,17 @@
 import { createContext, useContext } from 'react'
 import type {
+  ElementTypeCatalogEntry,
   FirmCodeOverride,
   FirmNamingTemplate,
   FirmProfile,
+  IdentifyingDimension,
+  IfcMappingRule,
   ProjectElement,
   ProjectProduct,
   ProjectSequenceCounter,
+  SizeFormat,
   StandardSeriesTemplate,
+  Typology,
 } from '../../elementIdentity/types'
 
 export type ProjectLite = { id: string; code: string; name?: string; customer?: string }
@@ -31,7 +36,10 @@ export type ElementIdentityContextValue = {
   removeOverride: (id: string) => void
   updateTemplate: (next: FirmNamingTemplate) => void
   addTemplate: (next: FirmNamingTemplate) => void
+  removeTemplate: (id: string) => void
+  addFirm: (next: FirmProfile) => void
   updateFirm: (next: FirmProfile) => void
+  removeFirm: (id: string) => void
   addProjectElements: (els: ProjectElement[]) => void
   allocateNextSequence: (projectId: string, scopeKey: string) => number
   removeProjectElement: (id: string) => void
@@ -50,6 +58,28 @@ export type ElementIdentityContextValue = {
     templateId: string,
     overrides?: { code?: string; name?: string },
   ) => void
+
+  // --- Sistem kataloğu (admin tarafından düzenlenebilir; mock + localStorage)
+  elementTypesData: ElementTypeCatalogEntry[]
+  addElementType: (row: ElementTypeCatalogEntry) => void
+  updateElementType: (row: ElementTypeCatalogEntry) => void
+  removeElementType: (id: string) => void
+  typologiesData: Typology[]
+  addTypology: (row: Typology) => void
+  updateTypology: (row: Typology) => void
+  removeTypology: (id: string) => void
+  dimensionsData: IdentifyingDimension[]
+  addDimension: (row: IdentifyingDimension) => void
+  updateDimension: (row: IdentifyingDimension) => void
+  removeDimension: (id: string) => void
+  sizeFormatsData: SizeFormat[]
+  addSizeFormat: (row: SizeFormat) => void
+  updateSizeFormat: (row: SizeFormat) => void
+  removeSizeFormat: (id: string) => void
+  ifcMappingRulesData: IfcMappingRule[]
+  addIfcMappingRule: (row: IfcMappingRule) => void
+  updateIfcMappingRule: (row: IfcMappingRule) => void
+  removeIfcMappingRule: (id: string) => void
 }
 
 export const ElementIdentityContext = createContext<ElementIdentityContextValue | null>(null)

@@ -15,6 +15,7 @@ import { UserManagementView } from './users/UserManagementView'
 import { MaterialCatalogProvider } from './materialCatalog/MaterialCatalogContext'
 import { MaterialCatalogModuleView } from './materialCatalog/MaterialCatalogModuleView'
 import { StandardSeriesCatalogModuleView } from './standardSeriesCatalog/StandardSeriesCatalogModuleView'
+import { AdminElementIdentityModuleView } from './admin/elementIdentity/AdminElementIdentityModuleView'
 
 type Props = {
   activeId: string
@@ -32,6 +33,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
   const isPlanningHub = activeId === 'planning-hub'
   const isConfigurationCenter = activeId === 'configuration-center'
   const isElementIdentity = activeId === 'element-identity'
+  const isElementIdentityAdmin = activeId === 'element-identity-admin'
   const isMaterialCatalog = activeId === 'material-catalog'
   const isStandardSeriesCatalog = activeId === 'standard-series-catalog'
   const isPlanningDesign = activeId === 'planning-design'
@@ -48,7 +50,8 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
     isStandardSeriesCatalog ||
     isApprovalFlow ||
     isRolesPermissions ||
-    isUserManagement
+    isUserManagement ||
+    isElementIdentityAdmin
 
   return (
     <div
@@ -57,11 +60,11 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
           ? 'gm-glass-main-canvas gm-glass-main-canvas--full gm-glass-main-canvas--okan-liquid flex min-h-0 flex-1 flex-col overflow-hidden'
           : [
               `gm-glass-main-canvas flex min-h-0 flex-1 flex-col rounded-3xl ${
-                isProject || isCrm || isMaterialCatalog || isStandardSeriesCatalog || isApprovalFlow || isRolesPermissions || isUserManagement
+                isProject || isCrm || isMaterialCatalog || isStandardSeriesCatalog || isApprovalFlow || isRolesPermissions || isUserManagement || isElementIdentityAdmin
                   ? 'px-0 py-1 md:px-1 md:py-2'
                   : 'p-5 md:p-6'
               }`,
-              isProject || isCrm || isMaterialCatalog || isStandardSeriesCatalog || isApprovalFlow || isRolesPermissions || isUserManagement
+              isProject || isCrm || isMaterialCatalog || isStandardSeriesCatalog || isApprovalFlow || isRolesPermissions || isUserManagement || isElementIdentityAdmin
                 ? 'gm-glass-main-canvas--okan-liquid h-[calc(100dvh-12.5rem)] min-h-[calc(100dvh-12.5rem)] max-h-[calc(100dvh-12.5rem)]'
                 : isPlanningHub ||
                     isConfigurationCenter || isElementIdentity
@@ -134,6 +137,8 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
         </div>
       ) : isElementIdentity ? (
         <ElementIdentityModuleView />
+      ) : isElementIdentityAdmin ? (
+        <AdminElementIdentityModuleView />
       ) : isMaterialCatalog ? (
         <MaterialCatalogProvider>
           <MaterialCatalogModuleView />

@@ -9,30 +9,45 @@ import {
   allocateSequence,
   loadActiveFirmId,
   loadCounters,
+  loadDimensions,
+  loadElementTypes,
   loadFirms,
+  loadIfcMappingRules,
   loadOverrides,
   loadProjectElements,
   loadProjectProducts,
+  loadSizeFormats,
   loadStandardSeriesTemplates,
   loadTemplates,
+  loadTypologies,
   saveActiveFirmId,
   saveCounters,
+  saveDimensions,
+  saveElementTypes,
   saveFirms,
+  saveIfcMappingRules,
   saveOverrides,
   saveProjectElements,
   saveProjectProducts,
+  saveSizeFormats,
   saveStandardSeriesTemplates,
   saveTemplates,
+  saveTypologies,
 } from '../../elementIdentity/firm/storage'
 import { MOCK_FIRMS, MOCK_PROJECTS } from '../../elementIdentity/firm/mockFirms'
 import type {
+  ElementTypeCatalogEntry,
   FirmCodeOverride,
   FirmNamingTemplate,
   FirmProfile,
+  IdentifyingDimension,
+  IfcMappingRule,
   ProjectElement,
   ProjectProduct,
   ProjectSequenceCounter,
+  SizeFormat,
   StandardSeriesTemplate,
+  Typology,
 } from '../../elementIdentity/types'
 import { buildProjectProductFromTemplate } from '../../standardSeriesCatalog/instantiateTemplate'
 import {
@@ -58,6 +73,17 @@ export function ElementIdentityProvider({ children }: { children: ReactNode }) {
   const [activeProjectId, setActiveProjectId] = useState<string>(MOCK_PROJECTS[0]?.id ?? '')
   const [overrideTemplateId, setOverrideTemplateId] = useState<string | null>(null)
 
+  // Admin sayfasında düzenlenebilen sistem kataloğu (mock + localStorage)
+  const [elementTypesData, setElementTypesData] = useState<ElementTypeCatalogEntry[]>(() =>
+    loadElementTypes(),
+  )
+  const [typologiesData, setTypologiesData] = useState<Typology[]>(() => loadTypologies())
+  const [dimensionsData, setDimensionsData] = useState<IdentifyingDimension[]>(() => loadDimensions())
+  const [sizeFormatsData, setSizeFormatsData] = useState<SizeFormat[]>(() => loadSizeFormats())
+  const [ifcMappingRulesData, setIfcMappingRulesData] = useState<IfcMappingRule[]>(() =>
+    loadIfcMappingRules(),
+  )
+
   useEffect(() => saveFirms(firms), [firms])
   useEffect(() => saveTemplates(templates), [templates])
   useEffect(() => saveOverrides(overrides), [overrides])
@@ -66,6 +92,11 @@ export function ElementIdentityProvider({ children }: { children: ReactNode }) {
   useEffect(() => saveCounters(counters), [counters])
   useEffect(() => saveProjectProducts(projectProducts), [projectProducts])
   useEffect(() => saveStandardSeriesTemplates(standardSeriesTemplates), [standardSeriesTemplates])
+  useEffect(() => saveElementTypes(elementTypesData), [elementTypesData])
+  useEffect(() => saveTypologies(typologiesData), [typologiesData])
+  useEffect(() => saveDimensions(dimensionsData), [dimensionsData])
+  useEffect(() => saveSizeFormats(sizeFormatsData), [sizeFormatsData])
+  useEffect(() => saveIfcMappingRules(ifcMappingRulesData), [ifcMappingRulesData])
 
   const activeFirm = useMemo<FirmProfile>(() => {
     return firms.find((f) => f.id === activeFirmId) ?? firms[0]
@@ -124,8 +155,71 @@ export function ElementIdentityProvider({ children }: { children: ReactNode }) {
     setTemplates((prev) => [...prev, next])
   }, [])
 
+  const removeTemplate = useCallback((id: string) => {
+    setTemplates((prev) => prev.filter((t) => t.id !== id))
+  }, [])
+
+  const addFirm = useCallback((next: FirmProfile) => {
+    setFirms((prev) => [...prev, next])
+  }, [])
+
   const updateFirm = useCallback((next: FirmProfile) => {
     setFirms((prev) => prev.map((f) => (f.id === next.id ? next : f)))
+  }, [])
+
+  const removeFirm = useCallback((id: string) => {
+    setFirms((prev) => prev.filter((f) => f.id !== id))
+  }, [])
+
+  // Sistem kataloğu CRUD action'ları (admin sayfası için)
+  const addElementType = useCallback((row: ElementTypeCatalogEntry) => {
+    setElementTypesData((prev) => [...prev, row])
+  }, [])
+  const updateElementType = useCallback((row: ElementTypeCatalogEntry) => {
+    setElementTypesData((prev) => prev.map((r) => (r.id === row.id ? row : r)))
+  }, [])
+  const removeElementType = useCallback((id: string) => {
+    setElementTypesData((prev) => prev.filter((r) => r.id !== id))
+  }, [])
+
+  const addTypology = useCallback((row: Typology) => {
+    setTypologiesData((prev) => [...prev, row])
+  }, [])
+  const updateTypology = useCallback((row: Typology) => {
+    setTypologiesData((prev) => prev.map((r) => (r.id === row.id ? row : r)))
+  }, [])
+  const removeTypology = useCallback((id: string) => {
+    setTypologiesData((prev) => prev.filter((r) => r.id !== id))
+  }, [])
+
+  const addDimension = useCallback((row: IdentifyingDimension) => {
+    setDimensionsData((prev) => [...prev, row])
+  }, [])
+  const updateDimension = useCallback((row: IdentifyingDimension) => {
+    setDimensionsData((prev) => prev.map((r) => (r.id === row.id ? row : r)))
+  }, [])
+  const removeDimension = useCallback((id: string) => {
+    setDimensionsData((prev) => prev.filter((r) => r.id !== id))
+  }, [])
+
+  const addSizeFormat = useCallback((row: SizeFormat) => {
+    setSizeFormatsData((prev) => [...prev, row])
+  }, [])
+  const updateSizeFormat = useCallback((row: SizeFormat) => {
+    setSizeFormatsData((prev) => prev.map((r) => (r.id === row.id ? row : r)))
+  }, [])
+  const removeSizeFormat = useCallback((id: string) => {
+    setSizeFormatsData((prev) => prev.filter((r) => r.id !== id))
+  }, [])
+
+  const addIfcMappingRule = useCallback((row: IfcMappingRule) => {
+    setIfcMappingRulesData((prev) => [...prev, row])
+  }, [])
+  const updateIfcMappingRule = useCallback((row: IfcMappingRule) => {
+    setIfcMappingRulesData((prev) => prev.map((r) => (r.id === row.id ? row : r)))
+  }, [])
+  const removeIfcMappingRule = useCallback((id: string) => {
+    setIfcMappingRulesData((prev) => prev.filter((r) => r.id !== id))
   }, [])
 
   const allocateNextSequence = useCallback(
@@ -237,7 +331,10 @@ export function ElementIdentityProvider({ children }: { children: ReactNode }) {
     removeOverride,
     updateTemplate,
     addTemplate,
+    removeTemplate,
+    addFirm,
     updateFirm,
+    removeFirm,
     addProjectElements,
     allocateNextSequence,
     removeProjectElement,
@@ -252,6 +349,26 @@ export function ElementIdentityProvider({ children }: { children: ReactNode }) {
     updateStandardSeriesTemplate,
     removeStandardSeriesTemplate,
     instantiateStandardTemplateToProject,
+    elementTypesData,
+    addElementType,
+    updateElementType,
+    removeElementType,
+    typologiesData,
+    addTypology,
+    updateTypology,
+    removeTypology,
+    dimensionsData,
+    addDimension,
+    updateDimension,
+    removeDimension,
+    sizeFormatsData,
+    addSizeFormat,
+    updateSizeFormat,
+    removeSizeFormat,
+    ifcMappingRulesData,
+    addIfcMappingRule,
+    updateIfcMappingRule,
+    removeIfcMappingRule,
   }
 
   return (
