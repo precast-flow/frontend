@@ -35,11 +35,13 @@ function GlassAppShellInner() {
     location.pathname.startsWith('/musteri-detay') ||
     location.pathname.startsWith('/teklif') ||
     location.pathname.startsWith('/eleman-kimlik') ||
+    location.pathname.startsWith('/admin/eleman-kimlik') ||
     location.pathname.startsWith('/malzeme-katalogu') ||
     location.pathname.startsWith('/standart-seri-urunler') ||
     location.pathname.startsWith('/kullanicilar') ||
     location.pathname.startsWith('/roller-izinler') ||
     location.pathname.startsWith('/onay-akisi') ||
+    location.pathname.startsWith('/birim-is-kuyrugu') ||
     location.pathname === '/profile' ||
     location.pathname === '/settings' ||
     effectiveActiveId === 'planning-design'

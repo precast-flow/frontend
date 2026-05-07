@@ -1,14 +1,17 @@
 import { useMemo, useState } from 'react'
 import { useI18n } from '../../i18n/I18nProvider'
-import { ELEMENT_TYPES } from '../../elementIdentity/catalog/elementTypes'
-import { TYPOLOGIES } from '../../elementIdentity/catalog/typologies'
-import { SIZE_FORMATS } from '../../elementIdentity/catalog/sizeFormats'
 import {
   resolveCode,
   resolveSizeFormatId,
   hasActiveOverride,
 } from '../../elementIdentity/firm/codeResolver'
-import type { FirmCodeOverride, UnitSystem } from '../../elementIdentity/types'
+import type {
+  ElementTypeCatalogEntry,
+  FirmCodeOverride,
+  SizeFormat,
+  Typology,
+  UnitSystem,
+} from '../../elementIdentity/types'
 import { useElementIdentity } from './elementIdentityContextValue'
 import { LivePreview } from './LivePreview'
 
@@ -25,6 +28,9 @@ export function FirmSettingsPanel() {
     activeProject,
     updateFirm,
     templates,
+    elementTypesData,
+    typologiesData,
+    sizeFormatsData,
   } = useElementIdentity()
 
   const [key, setKey] = useState<SidebarKey>('elementTypes')
@@ -71,6 +77,7 @@ export function FirmSettingsPanel() {
             removeOverride={removeOverride}
             locale={locale}
             t={t}
+            elementTypes={elementTypesData}
           />
         )}
         {key === 'typologies' && (
@@ -83,6 +90,8 @@ export function FirmSettingsPanel() {
             setFilter={setTypologyFilter}
             locale={locale}
             t={t}
+            elementTypes={elementTypesData}
+            typologies={typologiesData}
           />
         )}
         {key === 'sizeFormats' && (
@@ -93,6 +102,8 @@ export function FirmSettingsPanel() {
             removeOverride={removeOverride}
             locale={locale}
             t={t}
+            typologies={typologiesData}
+            sizeFormats={sizeFormatsData}
           />
         )}
         {key === 'firmProfile' && (
@@ -124,6 +135,7 @@ function ElementTypesTable({
   removeOverride,
   locale,
   t,
+  elementTypes,
 }: {
   firmId: string
   overrides: FirmCodeOverride[]
@@ -131,6 +143,7 @@ function ElementTypesTable({
   removeOverride: (id: string) => void
   locale: 'tr' | 'en'
   t: (k: string) => string
+  elementTypes: ElementTypeCatalogEntry[]
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -150,7 +163,7 @@ function ElementTypesTable({
             </tr>
           </thead>
           <tbody>
-            {ELEMENT_TYPES.map((et) => {
+            {elementTypes.map((et) => {
               const effective =
                 resolveCode('element_type', et.id, firmId, overrides) ?? et.defaultCode
               const isOv = hasActiveOverride('element_type', et.id, firmId, overrides)
@@ -241,6 +254,8 @@ function TypologiesTable({
   setFilter,
   locale,
   t,
+  elementTypes,
+  typologies,
 }: {
   firmId: string
   overrides: FirmCodeOverride[]
@@ -250,10 +265,12 @@ function TypologiesTable({
   setFilter: (v: string) => void
   locale: 'tr' | 'en'
   t: (k: string) => string
+  elementTypes: ElementTypeCatalogEntry[]
+  typologies: Typology[]
 }) {
   const filtered = useMemo(
-    () => (filter === 'all' ? TYPOLOGIES : TYPOLOGIES.filter((ty) => ty.elementTypeId === filter)),
-    [filter],
+    () => (filter === 'all' ? typologies : typologies.filter((ty) => ty.elementTypeId === filter)),
+    [filter, typologies],
   )
 
   return (
@@ -263,7 +280,7 @@ function TypologiesTable({
       </h3>
       <div className="flex flex-wrap gap-2">
         <FilterChip active={filter === 'all'} onClick={() => setFilter('all')} label="Tümü" />
-        {ELEMENT_TYPES.map((et) => (
+        {elementTypes.map((et) => (
           <FilterChip
             key={et.id}
             active={filter === et.id}
@@ -286,7 +303,7 @@ function TypologiesTable({
           </thead>
           <tbody>
             {filtered.map((ty) => {
-              const et = ELEMENT_TYPES.find((e) => e.id === ty.elementTypeId)!
+              const et = elementTypes.find((e) => e.id === ty.elementTypeId)!
               const ovRec = overrides.find(
                 (o) =>
                   o.firmId === firmId &&
@@ -395,6 +412,8 @@ function SizeFormatsTable({
   removeOverride,
   locale,
   t,
+  typologies,
+  sizeFormats,
 }: {
   firmId: string
   overrides: FirmCodeOverride[]
@@ -402,6 +421,8 @@ function SizeFormatsTable({
   removeOverride: (id: string) => void
   locale: 'tr' | 'en'
   t: (k: string) => string
+  typologies: Typology[]
+  sizeFormats: SizeFormat[]
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -419,7 +440,7 @@ function SizeFormatsTable({
             </tr>
           </thead>
           <tbody>
-            {TYPOLOGIES.map((ty) => {
+            {typologies.map((ty) => {
               const defaultId = ty.defaultSizeFormatId
               const effectiveId = resolveSizeFormatId(ty.id, firmId, overrides) ?? defaultId
               const ovRec = overrides.find(
@@ -464,7 +485,7 @@ function SizeFormatsTable({
                       }}
                       className="rounded-lg bg-gray-50 px-2 py-1 text-xs shadow-neo-in focus:outline-none dark:bg-gray-900/80 dark:text-gray-100"
                     >
-                      {SIZE_FORMATS.map((sf) => (
+                      {sizeFormats.map((sf) => (
                         <option key={sf.id} value={sf.id}>
                           {sf.id} — {locale === 'en' ? sf.nameEn : sf.nameTr}
                         </option>

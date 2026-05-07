@@ -13,6 +13,10 @@ const CONFIG_PAGE_KEY: Record<string, string> = {
   'standard-series-catalog': 'nav.standardSeriesCatalog',
 }
 
+const ADMIN_PAGE_KEY: Record<string, string> = {
+  'element-identity-admin': 'nav.elementIdentityAdmin',
+}
+
 /** MainCanvas’ta yalnızca başlık olan modüller için üst breadcrumb (CRM/Proje kendi içinde çizer). */
 export function mainCanvasBreadcrumbSegments(activeId: string): BreadcrumbSegment[] | null {
   const sys = SYSTEM_PAGE_KEY[activeId]
@@ -25,6 +29,10 @@ export function mainCanvasBreadcrumbSegments(activeId: string): BreadcrumbSegmen
       { labelKey: 'nav.configurationCenter', to: moduleIdToPath('configuration-center') },
       { labelKey: cfg },
     ]
+  }
+  const admin = ADMIN_PAGE_KEY[activeId]
+  if (admin) {
+    return [{ labelKey: 'nav.sidebar.section.admin' }, { labelKey: admin }]
   }
   return null
 }
