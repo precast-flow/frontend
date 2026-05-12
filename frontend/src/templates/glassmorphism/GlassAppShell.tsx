@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import type { AppShellOutletContext } from '../../appShellOutletContext'
 import { activeModuleIdFromPathname, moduleIdToPath, navGroups, startNavItems } from '../../data/navigation'
 import { useFactoryContext } from '../../context/FactoryContext'
+import { useThemeMode } from '../../theme/ThemeProvider'
 import { AppFooter } from '../../components/AppFooter'
 import { FactorySummaryDrawer } from '../../components/FactorySummaryDrawer'
 import { AppTopNav } from '../../components/AppTopNav'
@@ -14,6 +15,7 @@ import { GlassLayout } from './GlassLayout'
 function GlassAppShellInner() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { mode } = useThemeMode()
   const { selectedFactory, factoryDrawerOpen, closeFactoryDrawer } = useFactoryContext()
 
   const effectiveActiveId = useMemo(() => activeModuleIdFromPathname(location.pathname), [location.pathname])
@@ -28,6 +30,12 @@ function GlassAppShellInner() {
   const outletContext: AppShellOutletContext = { onNavigate: select }
 
   const topBarLeftPadding = '0px'
+
+  /**
+   * Açık tema: tüm cam kabukta mor/cyan gradyan ve renkli blob yok — düz nötr zemin (`GlassLayout`).
+   */
+  const useNeutralGlassBackdrop = mode === 'light'
+
   /** Proje/CRM/Teklif (alt path dahil) + Üretim planlama: üst boşluk `pt-14 md:pt-16`, outlet padding 0 — navbar–başlık hizası */
   const isOkanPlanSplitPage =
     location.pathname.startsWith('/proje') ||
@@ -47,7 +55,7 @@ function GlassAppShellInner() {
     effectiveActiveId === 'planning-design'
 
   return (
-    <GlassLayout>
+    <GlassLayout backdrop={useNeutralGlassBackdrop ? 'neutral-grid' : 'blobs'}>
       <div className="flex min-h-dvh w-full min-w-0 flex-col gap-3 p-3 text-[var(--glass-text-primary)] md:gap-4 md:p-5">
         <div
           className={[

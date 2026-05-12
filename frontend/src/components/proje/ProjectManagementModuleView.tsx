@@ -11,7 +11,8 @@ import {
   Route,
   X,
 } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { activeModuleIdFromPathname } from '../../data/navigation'
 import {
   projectManagementActivitiesMock,
   projectManagementCardsMock,
@@ -21,7 +22,9 @@ import {
 } from '../../data/projectManagementCardsMock'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 import { useI18n } from '../../i18n/I18nProvider'
+import { useThemeMode } from '../../theme/ThemeProvider'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
+import './projectManagementGlassLight.css'
 
 function statusLabel(status: ProjectStatus) {
   if (status === 'planlama') return 'Planlama'
@@ -63,32 +66,17 @@ function getProjectStatusProgress(status: ProjectStatus): number {
 }
 
 function getProjectStatusBarClasses(status: ProjectStatus): { track: string; fill: string; text: string } {
+  const neutral = {
+    track: 'bg-slate-200/75 dark:bg-slate-800/50',
+    fill: 'bg-slate-500 dark:bg-slate-500',
+    text: 'text-slate-700 dark:text-slate-300',
+  }
   const map: Record<ProjectStatus, { track: string; fill: string; text: string }> = {
-    planlama: {
-      track: 'bg-violet-200/70 dark:bg-violet-950/45',
-      fill: 'bg-violet-500 dark:bg-violet-400',
-      text: 'text-violet-800 dark:text-violet-200',
-    },
-    devam: {
-      track: 'bg-sky-200/70 dark:bg-sky-950/45',
-      fill: 'bg-sky-500 dark:bg-sky-400',
-      text: 'text-sky-900 dark:text-sky-200',
-    },
-    riskli: {
-      track: 'bg-rose-200/70 dark:bg-rose-950/45',
-      fill: 'bg-rose-500 dark:bg-rose-400',
-      text: 'text-rose-900 dark:text-rose-200',
-    },
-    beklemede: {
-      track: 'bg-amber-200/70 dark:bg-amber-950/45',
-      fill: 'bg-amber-500 dark:bg-amber-400',
-      text: 'text-amber-900 dark:text-amber-200',
-    },
-    tamamlandi: {
-      track: 'bg-emerald-200/70 dark:bg-emerald-950/45',
-      fill: 'bg-emerald-500 dark:bg-emerald-400',
-      text: 'text-emerald-900 dark:text-emerald-200',
-    },
+    planlama: neutral,
+    devam: neutral,
+    riskli: neutral,
+    beklemede: neutral,
+    tamamlandi: neutral,
   }
   return map[status]
 }
@@ -135,7 +123,11 @@ function toTrDate(isoDate: string): string {
 
 export function ProjectManagementModuleView({ onNavigate }: Props) {
   const { t } = useI18n()
+  const { mode } = useThemeMode()
+  const gl = mode === 'light'
   const navigate = useNavigate()
+  const location = useLocation()
+  const neutralShell = activeModuleIdFromPathname(location.pathname) === 'project'
   const detailPanelRef = useRef<HTMLElement | null>(null)
   const splitRef = useRef<HTMLDivElement | null>(null)
   const listRef = useRef<HTMLUListElement | null>(null)
@@ -551,7 +543,10 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
   }, [dateRange, detailTab, ownerFilter, pageSize, safeListPage, searchQuery, selectedId, sortMode, splitRatio, statusFilter])
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-[1.25rem]">
+    <div
+      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl"
+      data-neutral-shell={neutralShell ? 'true' : undefined}
+    >
       <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-2">
         <div className="px-[0.6875rem] py-1">
           <nav
@@ -562,7 +557,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               <li>
                 <Link
                   to="/planlama"
-                  className="font-medium text-slate-600 underline-offset-2 transition hover:text-sky-600 hover:underline dark:text-slate-300 dark:hover:text-sky-400"
+                  className={
+                    gl || neutralShell
+                      ? 'font-medium text-slate-600 underline-offset-2 transition hover:text-slate-900 hover:underline dark:text-slate-300 dark:hover:text-slate-100'
+                      : 'font-medium text-slate-600 underline-offset-2 transition hover:text-sky-600 hover:underline dark:text-slate-300 dark:hover:text-sky-400'
+                  }
                 >
                   {t('nav.sidebar.section.planning')}
                 </Link>
@@ -577,13 +576,28 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
           </nav>
         </div>
 
-        <div className="min-h-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+        <div
+          className={[
+            'min-h-0 overflow-hidden',
+            gl
+              ? 'flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl bg-transparent p-1 md:p-1.5'
+              : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
+          ].join(' ')}
+        >
           <div
             ref={splitRef}
-            className="relative flex h-full min-h-0 min-w-0 overflow-hidden gap-0"
+            className={[
+              'relative flex h-full min-h-0 min-w-0 overflow-hidden',
+              gl ? 'gap-3 rounded-3xl lg:gap-4' : 'gap-0',
+            ].join(' ')}
           >
             <section
-              className="okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden p-3"
+              className={[
+                'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden',
+                gl
+                  ? 'glass-card glass-card--static project-mgmt-split-panel min-h-0'
+                  : 'p-3',
+              ].join(' ')}
               style={{ width: `calc(${splitRatio}% - 5px)` }}
             >
               <div className="mb-2 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
@@ -600,23 +614,46 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     }}
                     placeholder="Proje adı, kod, müşteri..."
                     ariaLabel="Projelerde ara"
+                    className={gl ? 'project-mgmt-toolbar-search' : ''}
+                    inputClassName={gl ? 'glass-input' : ''}
                   />
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setFiltersOpen((v) => !v)}
                       aria-expanded={filtersOpen}
-                      className={[
-                        'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
-                        filtersOpen
-                          ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
-                          : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
-                      ].join(' ')}
+                      className={
+                        gl
+                          ? [
+                              'glass-btn',
+                              'small',
+                              'inline-flex',
+                              'items-center',
+                              'gap-1.5',
+                              filtersOpen ? 'outline' : 'secondary',
+                            ].join(' ')
+                          : [
+                              'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40',
+                              filtersOpen
+                                ? neutralShell
+                                  ? 'border-slate-400/70 bg-slate-200/80 text-slate-900 dark:border-slate-500/60 dark:bg-slate-800/45 dark:text-slate-100'
+                                  : 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
+                                : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
+                            ].join(' ')
+                      }
                     >
                       <Filter className="size-3.5 shrink-0" aria-hidden />
                       Filtrele
                       {activeFilterCount > 0 ? (
-                        <span className="rounded-full bg-sky-500/25 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-sky-900 dark:bg-sky-400/20 dark:text-sky-100">
+                        <span
+                          className={
+                            gl
+                              ? 'rounded-full bg-white/50 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-slate-800'
+                              : neutralShell
+                                ? 'rounded-full bg-slate-400/25 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-slate-900 dark:bg-slate-500/25 dark:text-slate-100'
+                                : 'rounded-full bg-sky-500/25 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-sky-900 dark:bg-sky-400/20 dark:text-sky-100'
+                          }
+                        >
                           {activeFilterCount}
                         </span>
                       ) : null}
@@ -624,10 +661,14 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     <button
                       type="button"
                       onClick={openCreateDialog}
-                      className={[
-                        'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
-                        'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
-                      ].join(' ')}
+                      className={
+                        gl
+                          ? ['glass-btn', 'primary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
+                          : [
+                              'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
+                              'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
+                            ].join(' ')
+                      }
                     >
                       <Plus className="size-3.5 shrink-0" aria-hidden />
                       <span>Proje oluştur</span>
@@ -639,7 +680,10 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               <div className="relative min-h-0 flex-1 overflow-hidden">
                     <aside
                       className={[
-                        'absolute inset-y-0 left-0 z-20 w-72 overflow-y-auto rounded-xl border border-slate-200/70 bg-white/95 p-3 shadow-xl backdrop-blur-sm transition-transform dark:border-slate-700/70 dark:bg-slate-900/95',
+                        'absolute inset-y-0 left-0 z-20 w-72 overflow-y-auto shadow-xl backdrop-blur-sm transition-transform',
+                        gl
+                          ? 'glass-card glass-card--static project-mgmt-split-panel'
+                          : 'rounded-xl border border-slate-200/70 bg-white/95 p-3 dark:border-slate-700/70 dark:bg-slate-900/95',
                         filtersOpen ? 'translate-x-0' : '-translate-x-[105%]',
                       ].join(' ')}
                       aria-hidden={!filtersOpen}
@@ -652,7 +696,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                         <button
                           type="button"
                           onClick={() => setFiltersOpen(false)}
-                          className="inline-flex size-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                          className={
+                            gl
+                              ? 'card-button inline-flex size-7 items-center justify-center p-0'
+                              : 'inline-flex size-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
+                          }
                           aria-label="Filtreyi kapat"
                         >
                           <X className="size-3.5" aria-hidden />
@@ -676,7 +724,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                             }}
                             placeholder="Proje adı, kod, müşteri..."
                             autoComplete="off"
-                            className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-950"
+                            className={
+                              gl
+                                ? 'glass-input mt-2 w-full'
+                                : 'mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-950'
+                            }
                           />
                         </div>
                         <div>
@@ -693,7 +745,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                               setSortMode(e.target.value as ProjectSortMode)
                               setListPage(1)
                             }}
-                            className="okan-liquid-select mt-2 w-full rounded-lg border-0 px-3 py-2.5 text-sm shadow-none"
+                            className={
+                              gl
+                                ? 'glass-input mt-2 w-full'
+                                : 'okan-liquid-select mt-2 w-full rounded-lg border-0 px-3 py-2.5 text-sm shadow-none'
+                            }
                           >
                             <option value="updated-desc">Son güncelleme (yeni-eski)</option>
                             <option value="due-asc">Termin (yakın-uzak)</option>
@@ -712,12 +768,20 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                                   key={s}
                                   type="button"
                                   onClick={() => toggleStatus(s)}
-                                  className={[
-                                    'rounded-full px-3 py-2 text-left text-sm font-semibold leading-snug transition',
-                                    statusFilter.includes(s)
-                                      ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
-                                      : 'okan-liquid-btn-secondary',
-                                  ].join(' ')}
+                                  className={
+                                    gl
+                                      ? [
+                                          'glass-btn',
+                                          'small',
+                                          statusFilter.includes(s) ? 'primary' : 'secondary',
+                                        ].join(' ')
+                                      : [
+                                          'rounded-full px-3 py-2 text-left text-sm font-semibold leading-snug transition',
+                                          statusFilter.includes(s)
+                                            ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
+                                            : 'okan-liquid-btn-secondary',
+                                        ].join(' ')
+                                  }
                                 >
                                   {statusLabel(s)}
                                 </button>
@@ -735,12 +799,22 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                                 key={o}
                                 type="button"
                                 onClick={() => toggleOwner(o)}
-                                className={[
-                                  'max-w-full truncate rounded-full px-3 py-2 text-sm font-semibold transition',
-                                  ownerFilter.includes(o)
-                                    ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
-                                    : 'okan-liquid-btn-secondary',
-                                ].join(' ')}
+                                className={
+                                  gl
+                                    ? [
+                                        'glass-btn',
+                                        'small',
+                                        'max-w-full',
+                                        'truncate',
+                                        ownerFilter.includes(o) ? 'primary' : 'secondary',
+                                      ].join(' ')
+                                    : [
+                                        'max-w-full truncate rounded-full px-3 py-2 text-sm font-semibold transition',
+                                        ownerFilter.includes(o)
+                                          ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
+                                          : 'okan-liquid-btn-secondary',
+                                      ].join(' ')
+                                }
                                 title={o}
                               >
                                 {o}
@@ -762,7 +836,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                               setDateRange(e.target.value as 'all' | '7' | '30')
                               setListPage(1)
                             }}
-                            className="okan-liquid-select mt-2 w-full rounded-lg border-0 px-3 py-2.5 text-sm shadow-none"
+                            className={
+                              gl
+                                ? 'glass-input mt-2 w-full'
+                                : 'okan-liquid-select mt-2 w-full rounded-lg border-0 px-3 py-2.5 text-sm shadow-none'
+                            }
                           >
                             <option value="all">Tum tarihler</option>
                             <option value="7">7 gun icinde teslim</option>
@@ -781,7 +859,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                             clearListFilters()
                             setFiltersOpen(false)
                           }}
-                          className="rounded-md border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+                          className={
+                            gl
+                              ? ['glass-btn', 'secondary', 'small'].join(' ')
+                              : 'rounded-md border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800'
+                          }
                         >
                           Temizle
                         </button>
@@ -806,7 +888,18 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                           <li
                             key={row.id}
                             className={[
-                              'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-slate-200/50 bg-white/70 px-2 py-1.5 dark:border-slate-700/50 dark:bg-slate-900/35',
+                              gl
+                                ? [
+                                    'glass-card',
+                                    'glass-card--static',
+                                    'project-mgmt-list-row-card',
+                                    'flex',
+                                    'min-h-0',
+                                    'shrink-0',
+                                    'items-stretch',
+                                    'gap-1.5',
+                                  ].join(' ')
+                                : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-slate-200/50 bg-white/70 px-2 py-1.5 dark:border-slate-700/50 dark:bg-slate-900/35',
                               selected?.id === row.id ? 'okan-project-list-row--active' : '',
                             ].join(' ')}
                           >
@@ -839,34 +932,69 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                                     },
                                   })
                                 }
-                                className="inline-flex items-center justify-end gap-0.5 rounded-md px-1.5 py-1 text-[11px] font-medium leading-none text-slate-500 transition hover:bg-slate-500/10 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100"
+                                className={
+                                  gl
+                                    ? 'card-button ml-auto inline-flex items-center gap-0.5 py-1 pl-2 pr-2 text-[11px] font-medium leading-none'
+                                    : 'inline-flex items-center justify-end gap-0.5 rounded-md px-1.5 py-1 text-[11px] font-medium leading-none text-slate-500 transition hover:bg-slate-500/10 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100'
+                                }
                               >
                                 Detay
                                 <ChevronRight className="size-3 opacity-70" strokeWidth={2} aria-hidden />
                               </button>
-                              <div
-                                role="progressbar"
-                                aria-valuemin={0}
-                                aria-valuemax={100}
-                                aria-valuenow={statusPct}
-                                aria-valuetext={statusLabel(row.status)}
-                                className={['h-1.5 w-full overflow-hidden rounded-full', statusUi.track].join(' ')}
-                              >
-                                <span
-                                  className={['block h-full rounded-full transition-all', statusUi.fill].join(' ')}
-                                  style={{ width: `${statusPct}%` }}
-                                />
-                              </div>
-                              <span className={['text-right text-[11px] font-semibold leading-none', statusUi.text].join(' ')}>
-                                {statusLabel(row.status)}
-                              </span>
+                              {gl ? (
+                                <>
+                                  <div className="progress-header text-[11px] leading-tight">
+                                    <span className="min-w-0 truncate">{statusLabel(row.status)}</span>
+                                    <span className="shrink-0 tabular-nums">{statusPct}%</span>
+                                  </div>
+                                  <div
+                                    role="progressbar"
+                                    aria-valuemin={0}
+                                    aria-valuemax={100}
+                                    aria-valuenow={statusPct}
+                                    aria-valuetext={statusLabel(row.status)}
+                                    className="glass-progress"
+                                  >
+                                    <div className="progress-fill" style={{ width: `${statusPct}%` }} />
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div
+                                    role="progressbar"
+                                    aria-valuemin={0}
+                                    aria-valuemax={100}
+                                    aria-valuenow={statusPct}
+                                    aria-valuetext={statusLabel(row.status)}
+                                    className={['h-1.5 w-full overflow-hidden rounded-full', statusUi.track].join(' ')}
+                                  >
+                                    <span
+                                      className={['block h-full rounded-full transition-all', statusUi.fill].join(' ')}
+                                      style={{ width: `${statusPct}%` }}
+                                    />
+                                  </div>
+                                  <span
+                                    className={['text-right text-[11px] font-semibold leading-none', statusUi.text].join(
+                                      ' ',
+                                    )}
+                                  >
+                                    {statusLabel(row.status)}
+                                  </span>
+                                </>
+                              )}
                             </div>
                           </li>
                             )
                           })()
                         ))
                       ) : (
-                        <li className="rounded-lg border border-slate-200/50 bg-white/50 px-3 py-2 text-sm text-slate-600 dark:border-slate-700/50 dark:bg-slate-900/35 dark:text-slate-300">
+                        <li
+                          className={
+                            gl
+                              ? 'glass-card glass-card--static text-sm text-black'
+                              : 'rounded-lg border border-slate-200/50 bg-white/50 px-3 py-2 text-sm text-slate-600 dark:border-slate-700/50 dark:bg-slate-900/35 dark:text-slate-300'
+                          }
+                        >
                           Filtreye uygun proje bulunamadi.
                         </li>
                       )}
@@ -875,62 +1003,121 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                       ) : null}
                     </ul>
                   </div>
-                  <div className="sticky bottom-0 z-10 mt-1 shrink-0 border-t border-slate-200/60 bg-white/90 pt-2 text-xs backdrop-blur dark:border-slate-700/60 dark:bg-slate-900/85">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-slate-600 dark:text-slate-300">
-                        {filtered.length > 0 ? (
-                          <>
-                            <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">
-                              {listPageStart}
-                            </span>
-                            -
-                            <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">
-                              {listPageEnd}
-                            </span>{' '}
-                            /{' '}
-                            <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">
-                              {filtered.length}
-                            </span>{' '}
-                            sonuc
-                          </>
-                        ) : (
-                          'Sonuc yok'
-                        )}
-                      </p>
-                      <label className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
-                        <span>Sayfa boyutu</span>
-                        <select
-                          value={pageSize}
-                          onChange={(event) => {
-                            setPageSize(Number(event.target.value))
-                            setListPage(1)
-                            requestAnimationFrame(() => {
-                              listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                            })
-                          }}
-                          className="rounded-md border border-slate-300 bg-white px-1.5 py-1 text-xs text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-                        >
-                          {[6, 8, 10, 15].map((size) => (
-                            <option key={size} value={size}>
-                              {size}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                  {gl ? (
+                    <div className="glass-card glass-card--static project-mgmt-footer-panel sticky bottom-0 z-10 mt-2 shrink-0 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-black dark:text-slate-300">
+                          {filtered.length > 0 ? (
+                            <>
+                              <span className="tabular-nums font-semibold text-black dark:text-slate-100">
+                                {listPageStart}
+                              </span>
+                              -
+                              <span className="tabular-nums font-semibold text-black dark:text-slate-100">
+                                {listPageEnd}
+                              </span>{' '}
+                              /{' '}
+                              <span className="tabular-nums font-semibold text-black dark:text-slate-100">
+                                {filtered.length}
+                              </span>{' '}
+                              sonuc
+                            </>
+                          ) : (
+                            'Sonuc yok'
+                          )}
+                        </p>
+                        <label className="flex items-center gap-1 text-black dark:text-slate-300">
+                          <span>Sayfa boyutu</span>
+                          <select
+                            value={pageSize}
+                            onChange={(event) => {
+                              setPageSize(Number(event.target.value))
+                              setListPage(1)
+                              requestAnimationFrame(() => {
+                                listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+                              })
+                            }}
+                            className="glass-input px-2 py-1 text-xs"
+                          >
+                            {[6, 8, 10, 15].map((size) => (
+                              <option key={size} value={size}>
+                                {size}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <p className="text-black dark:text-slate-400">
+                          Yüklenen grup{' '}
+                          <span className="tabular-nums font-semibold">{safeListPage}</span> /{' '}
+                          <span className="tabular-nums font-semibold">{listPageCount}</span>
+                        </p>
+                        <p className="text-[11px] text-black dark:text-slate-400">
+                          {safeListPage < listPageCount
+                            ? 'Liste sonuna gelince veya alan dolunca yeni kayıtlar yüklenir'
+                            : 'Tüm kayıtlar yüklendi'}
+                        </p>
+                      </div>
                     </div>
-                    <div className="mt-2 flex items-center justify-between gap-2">
-                      <p className="text-slate-500 dark:text-slate-400">
-                        Yüklenen grup{' '}
-                        <span className="tabular-nums font-semibold">{safeListPage}</span> /{' '}
-                        <span className="tabular-nums font-semibold">{listPageCount}</span>
-                      </p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                        {safeListPage < listPageCount
-                          ? 'Liste sonuna gelince veya alan dolunca yeni kayıtlar yüklenir'
-                          : 'Tüm kayıtlar yüklendi'}
-                      </p>
+                  ) : (
+                    <div className="sticky bottom-0 z-10 mt-1 shrink-0 border-t border-slate-200/60 bg-white/90 pt-2 text-xs backdrop-blur dark:border-slate-700/60 dark:bg-slate-900/85">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-slate-600 dark:text-slate-300">
+                          {filtered.length > 0 ? (
+                            <>
+                              <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">
+                                {listPageStart}
+                              </span>
+                              -
+                              <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">
+                                {listPageEnd}
+                              </span>{' '}
+                              /{' '}
+                              <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">
+                                {filtered.length}
+                              </span>{' '}
+                              sonuc
+                            </>
+                          ) : (
+                            'Sonuc yok'
+                          )}
+                        </p>
+                        <label className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                          <span>Sayfa boyutu</span>
+                          <select
+                            value={pageSize}
+                            onChange={(event) => {
+                              setPageSize(Number(event.target.value))
+                              setListPage(1)
+                              requestAnimationFrame(() => {
+                                listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+                              })
+                            }}
+                            className="rounded-md border border-slate-300 bg-white px-1.5 py-1 text-xs text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                          >
+                            {[6, 8, 10, 15].map((size) => (
+                              <option key={size} value={size}>
+                                {size}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <p className="text-slate-500 dark:text-slate-400">
+                          Yüklenen grup{' '}
+                          <span className="tabular-nums font-semibold">{safeListPage}</span> /{' '}
+                          <span className="tabular-nums font-semibold">{listPageCount}</span>
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          {safeListPage < listPageCount
+                            ? 'Liste sonuna gelince veya alan dolunca yeni kayıtlar yüklenir'
+                            : 'Tüm kayıtlar yüklendi'}
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  )}
             </section>
 
             <div className="relative z-10 mx-1 hidden w-2 shrink-0 cursor-col-resize lg:flex">
@@ -943,7 +1130,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                 className={[
                   'group absolute inset-y-3 left-1/2 -translate-x-1/2 rounded-full border transition',
                   isResizing || isResizerHover
-                    ? 'w-6 border-sky-300/70 bg-sky-100/70 dark:border-sky-500/60 dark:bg-sky-900/40'
+                    ? gl
+                      ? 'w-6 border-slate-400/60 bg-slate-200/80 dark:border-slate-500/60 dark:bg-slate-800/70'
+                      : neutralShell
+                        ? 'w-6 border-slate-400/60 bg-slate-200/80 dark:border-slate-500/60 dark:bg-slate-800/70'
+                        : 'w-6 border-sky-300/70 bg-sky-100/70 dark:border-sky-500/60 dark:bg-sky-900/40'
                     : 'w-3 border-slate-200/80 bg-white/70 dark:border-slate-700/80 dark:bg-slate-900/60',
                 ].join(' ')}
               >
@@ -959,7 +1150,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
 
             <aside
               ref={detailPanelRef}
-              className="okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:pl-2"
+              className={
+                gl
+                  ? 'okan-project-split-aside glass-card glass-card--static project-mgmt-split-panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
+                  : 'okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:pl-2'
+              }
             >
             {selected ? (
               <div key={selectedId} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
@@ -977,7 +1172,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                   <button
                     type="button"
                     onClick={openEditDialog}
-                    className="mt-2 rounded-md border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+                    className={
+                      gl
+                        ? 'card-button mt-2'
+                        : 'mt-2 rounded-md border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800'
+                    }
                   >
                     Projeyi düzenle
                   </button>
@@ -985,7 +1184,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
 
                 <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-0.5">
                   <div
-                    className="okan-liquid-pill-track flex max-w-full gap-1 overflow-x-auto rounded-full p-1"
+                    className={
+                      gl
+                        ? 'glass-nav max-w-full flex-wrap justify-center overflow-x-auto p-0'
+                        : 'okan-liquid-pill-track flex max-w-full gap-1 overflow-x-auto rounded-full p-1'
+                    }
                     role="tablist"
                     aria-label="Secili proje panel tablari"
                     aria-orientation="horizontal"
@@ -1009,11 +1212,15 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                       aria-controls="project-detail-panel"
                       tabIndex={detailTab === id ? 0 : -1}
                       onClick={() => setDetailTab(id)}
-                      className={`shrink-0 rounded-full px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
-                        detailTab === id
-                          ? 'okan-liquid-pill-active okan-project-tab-active text-slate-900 dark:text-slate-50'
-                          : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
-                      }`}
+                      className={
+                        gl
+                          ? ['nav-item', 'shrink-0', detailTab === id ? 'active' : ''].filter(Boolean).join(' ')
+                          : `shrink-0 rounded-full px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
+                              detailTab === id
+                                ? 'okan-liquid-pill-active okan-project-tab-active text-slate-900 dark:text-slate-50'
+                                : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
+                            }`
+                      }
                     >
                       {label}
                     </button>
@@ -1094,7 +1301,10 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                           <span className="min-w-0 max-w-full flex-1 truncate text-center font-medium text-slate-800 sm:text-left dark:text-slate-100">
                             {f}
                           </span>
-                          <button type="button" className="okan-liquid-btn-secondary shrink-0 px-2.5 py-1.5 text-xs font-semibold">
+                          <button
+                            type="button"
+                            className={gl ? 'card-button shrink-0 px-2.5 py-1.5 text-xs font-semibold' : 'okan-liquid-btn-secondary shrink-0 px-2.5 py-1.5 text-xs font-semibold'}
+                          >
                             Ac
                           </button>
                         </li>
@@ -1124,13 +1334,25 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
 
                 {detailTab === 'hizli-islemler' ? (
                   <div className="mx-auto flex w-full max-w-md flex-col gap-2.5">
-                    <button type="button" onClick={applyMockStatusChange} className="okan-liquid-btn-primary w-full px-4 py-2.5 text-sm font-semibold">
+                    <button
+                      type="button"
+                      onClick={applyMockStatusChange}
+                      className={gl ? 'glass-btn primary w-full' : 'okan-liquid-btn-primary w-full px-4 py-2.5 text-sm font-semibold'}
+                    >
                       Durum guncelle (mock)
                     </button>
-                    <button type="button" onClick={() => onNavigate('project')} className="okan-liquid-btn-secondary w-full px-4 py-2.5 text-sm font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('project')}
+                      className={gl ? 'glass-btn secondary w-full' : 'okan-liquid-btn-secondary w-full px-4 py-2.5 text-sm font-semibold'}
+                    >
                       Not ekle (mock)
                     </button>
-                    <button type="button" onClick={() => onNavigate('planning-hub')} className="okan-liquid-btn-secondary w-full px-4 py-2.5 text-sm font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('planning-hub')}
+                      className={gl ? 'glass-btn secondary w-full' : 'okan-liquid-btn-secondary w-full px-4 py-2.5 text-sm font-semibold'}
+                    >
                       Sorumlu ata (mock)
                     </button>
                   </div>
@@ -1144,15 +1366,15 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     <div className="mx-auto mt-3 max-w-md divide-y divide-slate-200/25 text-left dark:divide-white/10">
                       <label className="flex cursor-pointer items-center justify-between gap-4 py-3 text-sm first:pt-0">
                         <span className="min-w-0 text-slate-800 dark:text-slate-100">Bildirimleri ac</span>
-                        <input type="checkbox" defaultChecked className="size-4 shrink-0 accent-indigo-500" />
+                        <input type="checkbox" defaultChecked className={gl || neutralShell ? 'size-4 shrink-0 accent-slate-600' : 'size-4 shrink-0 accent-indigo-500'} />
                       </label>
                       <label className="flex cursor-pointer items-center justify-between gap-4 py-3 text-sm">
                         <span className="min-w-0 text-slate-800 dark:text-slate-100">Gecikme uyarisi</span>
-                        <input type="checkbox" defaultChecked className="size-4 shrink-0 accent-indigo-500" />
+                        <input type="checkbox" defaultChecked className={gl || neutralShell ? 'size-4 shrink-0 accent-slate-600' : 'size-4 shrink-0 accent-indigo-500'} />
                       </label>
                       <label className="flex cursor-pointer items-center justify-between gap-4 py-3 text-sm">
                         <span className="min-w-0 text-slate-800 dark:text-slate-100">Haftalik ozet maili</span>
-                        <input type="checkbox" className="size-4 shrink-0 accent-indigo-500" />
+                        <input type="checkbox" className={gl || neutralShell ? 'size-4 shrink-0 accent-slate-600' : 'size-4 shrink-0 accent-indigo-500'} />
                       </label>
                     </div>
                   </div>
@@ -1185,9 +1407,16 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                       <textarea
                         rows={3}
                         placeholder="Kisa proje notu yazin... (mock)"
-                        className="okan-liquid-input mt-2 w-full resize-none border-0 px-3 py-2.5 text-sm shadow-none focus:outline-none"
+                        className={
+                          gl
+                            ? 'glass-input mt-2 w-full resize-none'
+                            : 'okan-liquid-input mt-2 w-full resize-none border-0 px-3 py-2.5 text-sm shadow-none focus:outline-none'
+                        }
                       />
-                      <button type="button" className="okan-liquid-btn-secondary mt-2 px-3 py-2 text-sm font-semibold">
+                      <button
+                        type="button"
+                        className={gl ? 'glass-submit mt-2' : 'okan-liquid-btn-secondary mt-2 px-3 py-2 text-sm font-semibold'}
+                      >
                         Notu kaydet (mock)
                       </button>
                     </div>
@@ -1216,7 +1445,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
             role="dialog"
             aria-modal="true"
             aria-label={dialogMode === 'create' ? 'Proje oluştur' : 'Proje düzenle'}
-            className="relative z-10 w-full max-w-2xl rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xl dark:border-slate-700/70 dark:bg-slate-900"
+            className={
+              gl
+                ? 'glass-card glass-card--static relative z-10 w-full max-w-2xl'
+                : 'relative z-10 w-full max-w-2xl rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xl dark:border-slate-700/70 dark:bg-slate-900'
+            }
           >
             <div className="mb-4 flex items-start justify-between gap-2">
               <div>
@@ -1230,7 +1463,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               <button
                 type="button"
                 onClick={() => setIsProjectDialogOpen(false)}
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                className={
+                  gl
+                    ? 'card-button inline-flex size-8 items-center justify-center p-0'
+                    : 'inline-flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
+                }
               >
                 <X className="size-4" aria-hidden />
               </button>
@@ -1250,7 +1487,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     }))
                     setDialogError(null)
                   }}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+                  className={
+                    gl
+                      ? 'glass-input mt-1 w-full'
+                      : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950'
+                  }
                 >
                   {customerOptions.map((customer) => (
                     <option key={customer} value={customer}>
@@ -1268,7 +1509,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     setDialogDraft((prev) => ({ ...prev, location: event.target.value }))
                     setDialogError(null)
                   }}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+                  className={
+                    gl
+                      ? 'glass-input mt-1 w-full'
+                      : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950'
+                  }
                 >
                   {locationOptions.map((location) => (
                     <option key={location} value={location}>
@@ -1286,7 +1531,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     setDialogDraft((prev) => ({ ...prev, status: event.target.value as ProjectStatus }))
                     setDialogError(null)
                   }}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+                  className={
+                    gl
+                      ? 'glass-input mt-1 w-full'
+                      : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950'
+                  }
                 >
                   {(['planlama', 'devam', 'riskli', 'beklemede', 'tamamlandi'] as const).map((status) => (
                     <option key={status} value={status}>
@@ -1304,7 +1553,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     setDialogDraft((prev) => ({ ...prev, name: event.target.value }))
                     setDialogError(null)
                   }}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+                  className={
+                    gl
+                      ? 'glass-input mt-1 w-full'
+                      : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950'
+                  }
                 />
               </label>
 
@@ -1318,7 +1571,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     setDialogError(null)
                   }}
                   placeholder="2-4 karakter"
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm uppercase dark:border-slate-600 dark:bg-slate-950"
+                  className={
+                    gl
+                      ? 'glass-input mt-1 w-full uppercase'
+                      : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm uppercase dark:border-slate-600 dark:bg-slate-950'
+                  }
                 />
               </label>
 
@@ -1331,7 +1588,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     setDialogDraft((prev) => ({ ...prev, startDate: event.target.value }))
                     setDialogError(null)
                   }}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+                  className={
+                    gl
+                      ? 'glass-input mt-1 w-full'
+                      : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950'
+                  }
                 />
               </label>
 
@@ -1344,7 +1605,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     setDialogDraft((prev) => ({ ...prev, dueDate: event.target.value }))
                     setDialogError(null)
                   }}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+                  className={
+                    gl
+                      ? 'glass-input mt-1 w-full'
+                      : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950'
+                  }
                 />
               </label>
             </div>
@@ -1357,14 +1622,22 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               <button
                 type="button"
                 onClick={() => setIsProjectDialogOpen(false)}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200"
+                className={
+                  gl
+                    ? ['glass-btn', 'secondary', 'small'].join(' ')
+                    : 'rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200'
+                }
               >
                 Vazgeç
               </button>
               <button
                 type="button"
                 onClick={saveProjectDialog}
-                className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+                className={
+                  gl
+                    ? ['glass-btn', 'primary', 'small'].join(' ')
+                    : 'rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'
+                }
               >
                 {dialogMode === 'create' ? 'Projeyi oluştur' : 'Değişiklikleri kaydet'}
               </button>

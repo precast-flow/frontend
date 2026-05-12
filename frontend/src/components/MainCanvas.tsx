@@ -63,6 +63,8 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
           ? 'gm-glass-main-canvas gm-glass-main-canvas--full gm-glass-main-canvas--okan-liquid flex min-h-0 flex-1 flex-col overflow-hidden'
           : [
               `gm-glass-main-canvas flex min-h-0 flex-1 flex-col rounded-3xl ${
+                isProject ? 'project-mgmt-page-root overflow-hidden ' : ''
+              }${
                 isProject || isCrm || isMaterialCatalog || isStandardSeriesCatalog || isApprovalFlow || isRolesPermissions || isUserManagement || isElementIdentityAdmin || isUnitWorkQueue
                   ? 'px-0 py-1 md:px-1 md:py-2'
                   : 'p-5 md:p-6'

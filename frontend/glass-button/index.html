@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Glass UI Components</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/style.css">
+  </head>
+  <body>
+    <main class="main-wrapper">
+      <!-- Header -->
+      <header class="glass-header">
+        <div class="logo">Glass UI</div>
+        <nav class="glass-nav">
+          <a href="#" class="nav-item active">Components</a>
+          <a href="#" class="nav-item">Documentation</a>
+          <a href="#" class="nav-item">Examples</a>
+        </nav>
+      </header>
+
+      <!-- Hero Section with Original Button -->
+      <section class="section hero">
+        <h1 class="hero-title">Glassmorphic Components</h1>
+        <p class="hero-subtitle">Beautiful, modern UI elements with frosted glass aesthetics</p>
+        <div class="glass-button">
+          <div class="button-wrap">
+            <button>
+              <span>Fluttertop Studio</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Components Grid -->
+      <section class="components-grid">
+
+        <!-- Glass Card -->
+        <div class="glass-card">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <h3 class="card-title">Glass Card</h3>
+          <p class="card-text">Elegant frosted glass card with subtle shadows and depth effects.</p>
+          <button class="card-button">Learn More</button>
+        </div>
+
+        <!-- Glass Input Card -->
+        <div class="glass-card">
+          <h3 class="card-title">Form Elements</h3>
+          <div class="form-group">
+            <input type="text" class="glass-input" placeholder="Enter your name">
+          </div>
+          <div class="form-group">
+            <input type="email" class="glass-input" placeholder="Enter your email">
+          </div>
+          <button class="glass-submit">Subscribe</button>
+        </div>
+
+        <!-- Glass Toggle Card -->
+        <div class="glass-card">
+          <h3 class="card-title">Toggles & Switches</h3>
+          <div class="toggle-group">
+            <span class="toggle-label">Dark Mode</span>
+            <label class="glass-toggle">
+              <input type="checkbox">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-group">
+            <span class="toggle-label">Notifications</span>
+            <label class="glass-toggle">
+              <input type="checkbox" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-group">
+            <span class="toggle-label">Auto-save</span>
+            <label class="glass-toggle">
+              <input type="checkbox" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Glass Slider Card -->
+        <div class="glass-card">
+          <h3 class="card-title">Range Slider</h3>
+          <div class="slider-group">
+            <label class="slider-label">Volume</label>
+            <input type="range" class="glass-slider" min="0" max="100" value="65">
+            <span class="slider-value">65%</span>
+          </div>
+          <div class="slider-group">
+            <label class="slider-label">Brightness</label>
+            <input type="range" class="glass-slider" min="0" max="100" value="80">
+            <span class="slider-value">80%</span>
+          </div>
+        </div>
+
+        <!-- Glass Badge Card -->
+        <div class="glass-card">
+          <h3 class="card-title">Badges & Tags</h3>
+          <div class="badge-group">
+            <span class="glass-badge">New</span>
+            <span class="glass-badge success">Active</span>
+            <span class="glass-badge warning">Pending</span>
+            <span class="glass-badge danger">Offline</span>
+          </div>
+          <div class="chip-group">
+            <span class="glass-chip">Design</span>
+            <span class="glass-chip">Development</span>
+            <span class="glass-chip">UI/UX</span>
+          </div>
+        </div>
+
+        <!-- Glass Progress Card -->
+        <div class="glass-card">
+          <h3 class="card-title">Progress Bars</h3>
+          <div class="progress-group">
+            <div class="progress-header">
+              <span>Project Alpha</span>
+              <span>75%</span>
+            </div>
+            <div class="glass-progress">
+              <div class="progress-fill" style="width: 75%"></div>
+            </div>
+          </div>
+          <div class="progress-group">
+            <div class="progress-header">
+              <span>Project Beta</span>
+              <span>45%</span>
+            </div>
+            <div class="glass-progress">
+              <div class="progress-fill" style="width: 45%"></div>
+            </div>
+          </div>
+          <div class="progress-group">
+            <div class="progress-header">
+              <span>Project Gamma</span>
+              <span>90%</span>
+            </div>
+            <div class="glass-progress">
+              <div class="progress-fill" style="width: 90%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Glass Checkbox Card -->
+        <div class="glass-card">
+          <h3 class="card-title">Checkboxes & Radio</h3>
+          <div class="checkbox-group">
+            <label class="glass-checkbox">
+              <input type="checkbox" checked>
+              <span class="checkmark"></span>
+              <span>Remember me</span>
+            </label>
+            <label class="glass-checkbox">
+              <input type="checkbox">
+              <span class="checkmark"></span>
+              <span>Accept terms</span>
+            </label>
+          </div>
+          <div class="radio-group">
+            <label class="glass-radio">
+              <input type="radio" name="plan" checked>
+              <span class="radiomark"></span>
+              <span>Free Plan</span>
+            </label>
+            <label class="glass-radio">
+              <input type="radio" name="plan">
+              <span class="radiomark"></span>
+              <span>Pro Plan</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Glass Avatar Card -->
+        <div class="glass-card">
+          <h3 class="card-title">Avatars & Status</h3>
+          <div class="avatar-group">
+            <div class="glass-avatar">
+              <span>JD</span>
+              <span class="status online"></span>
+            </div>
+            <div class="glass-avatar">
+              <span>AK</span>
+              <span class="status away"></span>
+            </div>
+            <div class="glass-avatar">
+              <span>MR</span>
+              <span class="status offline"></span>
+            </div>
+            <div class="glass-avatar">
+              <span>+5</span>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Button Variants Section -->
+      <section class="section button-showcase">
+        <h2 class="section-title">Button Variants</h2>
+        <div class="button-row">
+          <button class="glass-btn primary">Primary</button>
+          <button class="glass-btn secondary">Secondary</button>
+          <button class="glass-btn outline">Outline</button>
+          <button class="glass-btn ghost">Ghost</button>
+        </div>
+        <div class="button-row">
+          <button class="glass-btn primary small">Small</button>
+          <button class="glass-btn primary">Default</button>
+          <button class="glass-btn primary large">Large</button>
+        </div>
+      </section>
+
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
