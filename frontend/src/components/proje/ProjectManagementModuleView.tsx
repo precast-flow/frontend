@@ -544,7 +544,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
 
   return (
     <div
-      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-[1.25rem]"
+      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl"
       data-neutral-shell={neutralShell ? 'true' : undefined}
     >
       <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-2">
@@ -580,7 +580,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
           className={[
             'min-h-0 overflow-hidden',
             gl
-              ? 'flex min-h-0 flex-1 flex-col gap-2 rounded-[1.25rem] bg-transparent p-1 md:p-1.5'
+              ? 'flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl bg-transparent p-1 md:p-1.5'
               : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
           ].join(' ')}
         >
@@ -588,7 +588,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
             ref={splitRef}
             className={[
               'relative flex h-full min-h-0 min-w-0 overflow-hidden',
-              gl ? 'gap-3 lg:gap-4' : 'gap-0',
+              gl ? 'gap-3 rounded-3xl lg:gap-4' : 'gap-0',
             ].join(' ')}
           >
             <section
