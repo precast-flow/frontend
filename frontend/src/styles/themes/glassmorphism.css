@@ -56,8 +56,8 @@ html[data-ui-template='glass'].dark {
 }
 
 html[data-ui-template='glass']:not(.dark) {
-  /* Açık tema: patlak #fff yerine buzlu slate cam — düşük opaklık + daha güçlü blur */
-  --glass-bg-primary: linear-gradient(135deg, #38bdf8 0%, #6366f1 38%, #a855f7 100%);
+  /* Açık tema: sayfa zemini düz nötr (mor/cyan gradyan yok) */
+  --glass-bg-primary: #dbdbdb;
   --glass-bg-panel: rgb(248 250 252 / 0.13);
   --glass-bg-panel-strong: rgb(248 250 252 / 0.19);
   --glass-bg-widget: rgb(241 245 249 / 0.11);
@@ -101,8 +101,21 @@ html[data-ui-template='glass']:not(.dark) {
 
 @layer components {
   .gm-glass-page {
-    background-image: var(--glass-bg-primary);
+    background: var(--glass-bg-primary);
     color: var(--glass-text-primary);
+  }
+
+  /** Açık tema: mor/cyan gradyan yok — düz nötr zemin katmanı (`GlassLayout` fill) */
+  html[data-ui-template='glass'] .gm-glass-page.gm-glass-page--neutral-grid {
+    background: transparent;
+  }
+
+  html[data-ui-template='glass']:not(.dark) .gm-glass-neutral-grid-fill {
+    background-color: #dbdbdb;
+  }
+
+  html[data-ui-template='glass'].dark .gm-glass-neutral-grid-fill {
+    background-color: #121212;
   }
 
   .gm-glass-blob {
