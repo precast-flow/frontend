@@ -1,6 +1,8 @@
-import { Package, Plus } from 'lucide-react'
+import { ChevronRight, Package, Plus } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
+import '../proje/projectManagementGlassLight.css'
 import { ALL_ELEMENT_TYPES } from '../../elementIdentity/catalog/allElementTypes'
 import { TYPOLOGIES_BY_ID } from '../../elementIdentity/catalog/typologies'
 import type {
@@ -11,6 +13,8 @@ import type {
   StandardSeriesTemplate,
 } from '../../elementIdentity/types'
 import { useI18n } from '../../i18n/I18nProvider'
+import { activeModuleIdFromPathname } from '../../data/navigation'
+import { useThemeMode } from '../../theme/ThemeProvider'
 import { mergeTemplateFromProductPartial, templateToProductForEditor } from '../../standardSeriesCatalog/templateProductAdapter'
 import { PmStyleDialog } from '../shared/PmStyleDialog'
 import { ProductActivityTab } from '../elementIdentity/ProductActivityTab'
@@ -42,6 +46,9 @@ const ALL_CATEGORIES: ElementCategory[] = [
   'custom_prefab',
 ]
 
+const LIST_VIEW_STATE_KEY = 'standard-series-catalog:list:view'
+const STANDARD_SERIES_LIST_PAGE_SIZE = 5
+
 function elemCatLabelKey(cat: ElementCategory): string {
   return `standardSeries.elemCat.${cat}`
 }
@@ -58,6 +65,10 @@ function categoryPassesFilter(
 
 export function StandardSeriesCatalogModuleView() {
   const { t, locale } = useI18n()
+  const { mode } = useThemeMode()
+  const gl = mode === 'light'
+  const location = useLocation()
+  const neutralShell = activeModuleIdFromPathname(location.pathname) === 'standard-series-catalog'
   const {
     activeFirm,
     standardSeriesTemplates,
@@ -77,6 +88,17 @@ export function StandardSeriesCatalogModuleView() {
   const [filterQuery, setFilterQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('focus')
   const [activeOnly, setActiveOnly] = useState(false)
+  const [listPage, setListPage] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem(LIST_VIEW_STATE_KEY)
+      if (!raw) return 1
+      const v = JSON.parse(raw) as { listPage?: number }
+      return typeof v.listPage === 'number' && v.listPage > 0 ? v.listPage : 1
+    } catch {
+      return 1
+    }
+  })
+  const listScrollRef = useRef<HTMLUListElement | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [detailTab, setDetailTab] = useState<DetailTab>('general')
   const rightRef = useRef<HTMLDivElement | null>(null)
@@ -132,6 +154,35 @@ export function StandardSeriesCatalogModuleView() {
     })
   }, [firmTemplates, filterQuery, categoryFilter, activeOnly, locale])
 
+  useEffect(() => {
+    setListPage(1)
+  }, [filterQuery, categoryFilter, activeOnly])
+
+  const listPageCount = useMemo(
+    () => Math.max(1, Math.ceil(filtered.length / STANDARD_SERIES_LIST_PAGE_SIZE)),
+    [filtered.length],
+  )
+  const safeListPage = Math.min(listPage, listPageCount)
+  const visibleTemplates = useMemo(() => {
+    const start = (safeListPage - 1) * STANDARD_SERIES_LIST_PAGE_SIZE
+    return filtered.slice(start, start + STANDARD_SERIES_LIST_PAGE_SIZE)
+  }, [filtered, safeListPage])
+  const listPageStart =
+    filtered.length === 0 ? 0 : (safeListPage - 1) * STANDARD_SERIES_LIST_PAGE_SIZE + 1
+  const listPageEnd = Math.min(filtered.length, safeListPage * STANDARD_SERIES_LIST_PAGE_SIZE)
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(LIST_VIEW_STATE_KEY, JSON.stringify({ listPage: safeListPage }))
+    } catch {
+      /* ignore */
+    }
+  }, [safeListPage])
+
+  useEffect(() => {
+    requestAnimationFrame(() => listScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
+  }, [safeListPage])
+
   const typologyIdsForType = useCallback((elementTypeId: string) => {
     const et = ALL_ELEMENT_TYPES.find((e) => e.id === elementTypeId)
     return et?.allowedTypologies ?? []
@@ -171,6 +222,19 @@ export function StandardSeriesCatalogModuleView() {
     [locale],
   )
 
+  const fieldLabelClass = gl
+    ? 'text-[11px] font-medium text-black/65 dark:text-white/75'
+    : 'text-[11px] font-medium text-slate-600 dark:text-slate-300'
+  const fieldInputClass = gl
+    ? 'glass-input mt-1 w-full px-2.5 py-2 text-sm'
+    : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100'
+  const fieldMonoClass = gl
+    ? 'glass-input mt-1 w-full px-2.5 py-2 font-mono text-sm'
+    : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 font-mono text-sm dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100'
+  const fieldTextareaClass = gl
+    ? 'glass-input mt-1 w-full resize-y px-2.5 py-2 text-sm'
+    : 'mt-1 w-full resize-y rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100'
+
   const handleNewTemplate = () => {
     addStandardSeriesTemplate({
       firmId: activeFirm.id,
@@ -180,6 +244,7 @@ export function StandardSeriesCatalogModuleView() {
       elementTypeId: 'land-paver',
       typologyId: 'beam-rect',
     })
+    setListPage(1)
   }
 
   const openAddToProject = () => {
@@ -200,385 +265,584 @@ export function StandardSeriesCatalogModuleView() {
 
   return (
     <>
-      <ElementIdentityPieceCodesLikeSplit
-        persistKey="standard-series-catalog"
-        listTitle={t('standardSeries.listTitle')}
-        filterToolbarSearch={
-          <FilterToolbarSearch
-            id="standard-series-list-search"
-            value={filterQuery}
-            onValueChange={setFilterQuery}
-            placeholder={t('standardSeries.searchPh')}
-            ariaLabel={t('standardSeries.search')}
-          />
-        }
-        headerActions={
-          <>
-            <button type="button" onClick={handleNewTemplate} className={eiSplitHeaderButtonPassive}>
-              <Plus className="size-3.5 shrink-0" aria-hidden />
-              {t('standardSeries.newTemplate')}
-            </button>
-            <button
-              type="button"
-              disabled={!selected}
-              onClick={openAddToProject}
-              className={eiSplitHeaderButtonPassive}
-            >
-              <Package className="size-3.5 shrink-0" aria-hidden />
-              {t('standardSeries.addToProject')}
-            </button>
-          </>
-        }
-        isFilterOpen={filterOpen}
-        onFilterOpenChange={setFilterOpen}
-        filterAside={
-          <div>
-            <ElementIdentityFilterSheetHeader
-              title={t('standardSeries.filtersTitle')}
-              subtitle={t('standardSeries.filtersSubtitle')}
-              onClose={() => setFilterOpen(false)}
-            />
-            <div className="grid gap-2.5">
-              <label>
-                <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                  {t('standardSeries.search')}
-                </span>
-                <input
-                  type="text"
-                  value={filterQuery}
-                  onChange={(e) => setFilterQuery(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
-                />
-              </label>
-              <label>
-                <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                  {t('standardSeries.categoryFilter')}
-                </span>
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value as CategoryFilter)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
-                >
-                  <option value="all">{t('standardSeries.catAll')}</option>
-                  <option value="focus">{t('standardSeries.catFocus')}</option>
-                  {ALL_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {t(elemCatLabelKey(c))}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex items-center gap-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={activeOnly}
-                  onChange={(e) => setActiveOnly(e.target.checked)}
-                  className="rounded border-slate-300"
-                />
-                {t('standardSeries.activeOnly')}
-              </label>
-            </div>
-            <div className="mt-3 flex justify-end border-t border-slate-200/60 pt-2 dark:border-slate-700/60">
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterQuery('')
-                  setCategoryFilter('focus')
-                  setActiveOnly(false)
-                }}
-                className="rounded-md border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200"
-              >
-                {t('elementIdentity.reset')}
-              </button>
-            </div>
+    <div
+      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-1 overflow-hidden rounded-3xl"
+      data-neutral-shell={neutralShell ? 'true' : undefined}
+    >
+      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-1">
+          <div className="px-[0.6875rem] pt-0 pb-0.5">
+            <nav aria-label={t('project.breadcrumbAria')} className="mb-0">
+              <ol className="flex flex-wrap items-center gap-1 text-xs text-black/60 dark:text-white/65">
+                <li>
+                  <Link
+                    to="/tanimlar"
+                    className="font-medium text-black/75 underline-offset-2 transition hover:text-black hover:underline dark:text-white/75 dark:hover:text-white"
+                  >
+                    {t('elementIdentity.detail.breadcrumbHub')}
+                  </Link>
+                </li>
+                <li className="flex items-center gap-1" aria-hidden>
+                  <ChevronRight className="size-3.5 shrink-0 opacity-70" />
+                </li>
+                <li className="font-semibold text-black dark:text-white" aria-current="page">
+                  {t('nav.standardSeriesCatalog')}
+                </li>
+              </ol>
+            </nav>
           </div>
-        }
-        listBody={
-          filtered.length === 0 ? (
-            <li className="rounded-lg border border-dashed border-slate-300/60 bg-white/30 px-3 py-8 text-center text-xs text-slate-500 dark:border-slate-600 dark:bg-slate-900/20">
-              {t('standardSeries.empty')}
-            </li>
-          ) : (
-            filtered.map((tpl) => {
-              const et = tpl.elementTypeId ? ALL_ELEMENT_TYPES.find((e) => e.id === tpl.elementTypeId) : undefined
-              const cat = et?.category
-              return (
-                <li key={tpl.id}>
+
+        <div className="min-h-0 flex min-h-0 flex-1 flex-col overflow-hidden">
+          <ElementIdentityPieceCodesLikeSplit
+              persistKey="standard-series-catalog"
+              visualVariant="project-mgmt"
+              neutralChrome={neutralShell}
+              listRef={listScrollRef}
+              listIndentWhenFilterOpen="18.5rem"
+              defaultSplitRatio={38}
+              listTitle={t('standardSeries.listTitle')}
+              filterToolbarSearch={
+                <FilterToolbarSearch
+                  id="standard-series-list-search"
+                  value={filterQuery}
+                  onValueChange={(v) => {
+                    setFilterQuery(v)
+                    setListPage(1)
+                  }}
+                  placeholder={t('standardSeries.searchPh')}
+                  ariaLabel={t('standardSeries.search')}
+                  className={gl ? 'project-mgmt-toolbar-search' : ''}
+                  inputClassName={gl ? 'glass-input' : ''}
+                />
+              }
+              headerActions={
+                <>
                   <button
                     type="button"
-                    onClick={() => {
-                      setSelectedId(tpl.id)
-                      setDetailTab('general')
-                      scrollPanelTop()
-                    }}
-                    className={`flex w-full flex-col gap-1 rounded-lg border px-2.5 py-2 text-left text-xs transition ${
-                      selectedId === tpl.id
-                        ? 'border-sky-400/60 bg-sky-500/10 dark:border-sky-500/40 dark:bg-sky-500/15'
-                        : 'border-slate-200/50 bg-white/40 hover:bg-white/70 dark:border-slate-700/50 dark:bg-slate-900/30 dark:hover:bg-slate-900/50'
-                    }`}
+                    onClick={handleNewTemplate}
+                    className={
+                      gl
+                        ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
+                        : eiSplitHeaderButtonPassive
+                    }
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-sm font-semibold text-slate-900 dark:text-slate-50">
-                        {tpl.code}
-                      </span>
-                      <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                          tpl.active
-                            ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-200'
-                            : 'bg-slate-400/20 text-slate-600 dark:text-slate-400'
-                        }`}
-                      >
-                        {tpl.active ? t('standardSeries.active') : t('standardSeries.inactive')}
-                      </span>
-                    </div>
-                    <span className="line-clamp-2 text-slate-700 dark:text-slate-200">{tpl.name}</span>
-                    {cat ? (
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400">{t(elemCatLabelKey(cat))}</span>
-                    ) : null}
+                    <Plus className="size-3.5 shrink-0" aria-hidden />
+                    {t('standardSeries.newTemplate')}
                   </button>
-                </li>
-              )
-            })
-          )
-        }
-        footer={
-          <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[11px] text-slate-600 dark:text-slate-300">
-            <p>
-              <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">
-                {filtered.length}
-              </span>{' '}
-              {locale === 'en' ? 'templates' : 'şablon'}
-            </p>
-            <button
-              type="button"
-              onClick={() => selectedId && removeStandardSeriesTemplate(selectedId)}
-              disabled={!selected}
-              className="rounded-md border border-rose-300/70 px-2 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-40 dark:border-rose-600/60 dark:text-rose-300 dark:hover:bg-rose-950/40"
-            >
-              {t('standardSeries.remove')}
-            </button>
-          </div>
-        }
-        rightPanelRef={rightRef}
-        rightAside={
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-            {selected && productLike ? (
-              <div className="flex h-full min-h-0 flex-col">
-                <header className="shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    {t('standardSeries.selected')}
-                  </p>
-                  <h3 className="mt-1.5 font-mono text-xl font-semibold text-slate-900 dark:text-slate-50">
-                    {selected.code}
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{selected.name}</p>
-                </header>
-                <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-3">
-                  <div className="flex max-w-full gap-1 overflow-x-auto" role="tablist">
-                    {(
-                      [
-                        ['general', 'standardSeries.tabGeneral'],
-                        ['dimensions', 'elementIdentity.products.tabDimensions'],
-                        ['materials', 'elementIdentity.products.tabMaterials'],
-                        ['rebar', 'elementIdentity.products.tabRebar'],
-                        ['drawings', 'elementIdentity.products.tabDrawings'],
-                        ['activity', 'elementIdentity.products.tabActivity'],
-                        ['assembly', 'standardSeries.tabAssembly'],
-                      ] as const
-                    ).map(([id, key]) => (
-                      <button
-                        key={id}
-                        type="button"
-                        role="tab"
-                        aria-selected={detailTab === id}
-                        onClick={() => {
-                          setDetailTab(id)
-                          scrollPanelTop()
-                        }}
-                        className={`shrink-0 rounded-full border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
-                          detailTab === id
-                            ? 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
-                            : 'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
-                        }`}
+                  <button
+                    type="button"
+                    disabled={!selected}
+                    onClick={openAddToProject}
+                    className={
+                      gl
+                        ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
+                        : eiSplitHeaderButtonPassive
+                    }
+                  >
+                    <Package className="size-3.5 shrink-0" aria-hidden />
+                    {t('standardSeries.addToProject')}
+                  </button>
+                </>
+              }
+              isFilterOpen={filterOpen}
+              onFilterOpenChange={setFilterOpen}
+              filterAside={
+                <div>
+                  <ElementIdentityFilterSheetHeader
+                    title={t('standardSeries.filtersTitle')}
+                    subtitle={t('standardSeries.filtersSubtitle')}
+                    onClose={() => setFilterOpen(false)}
+                    glass={gl}
+                  />
+                  <div className="grid gap-2.5">
+                    <label>
+                      <span className={fieldLabelClass}>{t('standardSeries.search')}</span>
+                      <input
+                        type="text"
+                        value={filterQuery}
+                        onChange={(e) => setFilterQuery(e.target.value)}
+                        className={
+                          gl
+                            ? 'glass-input mt-1 w-full px-2.5 py-2 text-xs'
+                            : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100'
+                        }
+                      />
+                    </label>
+                    <label>
+                      <span className={fieldLabelClass}>{t('standardSeries.categoryFilter')}</span>
+                      <select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value as CategoryFilter)}
+                        className={
+                          gl
+                            ? 'glass-input mt-1 w-full px-2.5 py-2 text-xs'
+                            : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100'
+                        }
                       >
-                        {t(key)}
-                      </button>
-                    ))}
+                        <option value="all">{t('standardSeries.catAll')}</option>
+                        <option value="focus">{t('standardSeries.catFocus')}</option>
+                        {ALL_CATEGORIES.map((c) => (
+                          <option key={c} value={c}>
+                            {t(elemCatLabelKey(c))}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label
+                      className={
+                        gl
+                          ? 'flex items-center gap-2 text-xs text-black/80 dark:text-white/80'
+                          : 'flex items-center gap-2 text-xs'
+                      }
+                    >
+                      <input
+                        type="checkbox"
+                        checked={activeOnly}
+                        onChange={(e) => setActiveOnly(e.target.checked)}
+                        className="rounded border-slate-300"
+                      />
+                      {t('standardSeries.activeOnly')}
+                    </label>
+                  </div>
+                  <div
+                    className={
+                      gl
+                        ? 'mt-3 flex justify-end border-t border-black/12 pt-2 dark:border-white/12'
+                        : 'mt-3 flex justify-end border-t border-slate-200/60 pt-2 dark:border-slate-700/60'
+                    }
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFilterQuery('')
+                        setCategoryFilter('focus')
+                        setActiveOnly(false)
+                      }}
+                      className={
+                        gl
+                          ? ['glass-btn', 'secondary', 'small'].join(' ')
+                          : 'rounded-md border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200'
+                      }
+                    >
+                      {t('elementIdentity.reset')}
+                    </button>
                   </div>
                 </div>
-                <div
-                  role="tabpanel"
-                  className="okan-project-tab-panel mt-3 min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 text-left sm:px-1"
-                >
-                  {detailTab === 'general' && (
-                    <div className="flex flex-col gap-3">
-                      <label className="block">
-                        <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                          {t('elementIdentity.detail.code')}
-                        </span>
-                        <input
-                          value={selected.code}
-                          onChange={(e) => patchTemplateFields({ code: e.target.value.toUpperCase() })}
-                          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 font-mono text-sm dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                          {t('elementIdentity.products.nameField')}
-                        </span>
-                        <input
-                          value={selected.name}
-                          onChange={(e) => patchTemplateFields({ name: e.target.value })}
-                          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
-                        />
-                      </label>
-                      <label className="flex items-center gap-2 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={selected.active}
-                          onChange={(e) => patchTemplateFields({ active: e.target.checked })}
-                          className="rounded border-slate-300"
-                        />
-                        {t('standardSeries.active')}
-                      </label>
-                      <label className="block">
-                        <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                          {t('standardSeries.description')}
-                        </span>
-                        <textarea
-                          value={selected.description ?? ''}
-                          onChange={(e) => patchTemplateFields({ description: e.target.value || undefined })}
-                          rows={3}
-                          className="mt-1 w-full resize-y rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                          {t('elementIdentity.products.definition')}
-                        </span>
-                        <textarea
-                          value={selected.definition ?? ''}
-                          onChange={(e) => patchTemplateFields({ definition: e.target.value || undefined })}
-                          rows={3}
-                          className="mt-1 w-full resize-y rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
-                        />
-                      </label>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <label className="block sm:col-span-2">
-                          <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                            {t('elementIdentity.table.elementType')}
-                          </span>
-                          <select
-                            value={selected.elementTypeId ?? ''}
-                            onChange={(e) => {
-                              const elementTypeId = e.target.value || undefined
-                              const allowed = typologyIdsForType(elementTypeId ?? '')
-                              const nextTy = allowed[0]
-                              patchTemplateFields({
-                                elementTypeId,
-                                typologyId: nextTy,
-                              })
-                            }}
-                            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
-                          >
-                            <option value="">—</option>
-                            {ALL_ELEMENT_TYPES.map((et) => (
-                              <option key={et.id} value={et.id}>
-                                {locale === 'en' ? et.nameEn : et.nameTr}
-                              </option>
-                            ))}
-                          </select>
-                          <p className="mt-1 text-[10px] text-slate-500">{elementTypeLabel(selected.elementTypeId)}</p>
-                        </label>
-                        <label className="block sm:col-span-2">
-                          <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                            {t('elementIdentity.table.typology')}
-                          </span>
-                          <select
-                            value={selected.typologyId ?? ''}
-                            onChange={(e) => patchTemplateFields({ typologyId: e.target.value || undefined })}
-                            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
-                          >
-                            <option value="">—</option>
-                            {typologyOptions.map((ty) => (
-                              <option key={ty.id} value={ty.id}>
-                                {locale === 'en' ? ty.nameEn : ty.nameTr}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label className="block">
-                          <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                            {t('elementIdentity.products.lifecycle')}
-                          </span>
-                          <select
-                            value={selected.lifecycleStatus ?? 'tasarim'}
-                            onChange={(e) =>
-                              patchTemplateFields({
-                                lifecycleStatus: e.target.value as ProductLifecycleStatus,
-                              })
+              }
+              listBody={
+                filtered.length === 0 ? (
+                  <li
+                    className={
+                      gl
+                        ? 'glass-card glass-card--static px-3 py-8 text-center text-sm text-black dark:text-white'
+                        : 'rounded-lg border border-dashed border-slate-300/60 bg-white/30 px-3 py-8 text-center text-xs text-slate-500 dark:border-slate-600 dark:bg-slate-900/20'
+                    }
+                  >
+                    {t('standardSeries.empty')}
+                  </li>
+                ) : (
+                  visibleTemplates.map((tpl) => {
+                    const et = tpl.elementTypeId ? ALL_ELEMENT_TYPES.find((e) => e.id === tpl.elementTypeId) : undefined
+                    const cat = et?.category
+                    return (
+                      <li
+                        key={tpl.id}
+                        className={
+                          gl
+                            ? [
+                                'glass-card',
+                                'glass-card--static',
+                                'project-mgmt-list-row-card',
+                                'min-h-0',
+                                'shrink-0',
+                                selectedId === tpl.id ? 'okan-project-list-row--active' : '',
+                              ]
+                                .filter(Boolean)
+                                .join(' ')
+                            : [
+                                'rounded-lg border border-slate-200/50 bg-white/50 dark:border-slate-700/50 dark:bg-slate-900/25',
+                                selectedId === tpl.id ? 'okan-project-list-row--active' : '',
+                              ].join(' ')
+                        }
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedId(tpl.id)
+                            setDetailTab('general')
+                            scrollPanelTop()
+                          }}
+                          aria-current={selectedId === tpl.id ? 'true' : undefined}
+                          className={
+                            gl
+                              ? 'flex w-full flex-col gap-1 px-3 py-2 text-left text-sm transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/8'
+                              : `flex w-full flex-col gap-1 rounded-lg border px-2.5 py-2 text-left text-xs transition ${
+                                  selectedId === tpl.id
+                                    ? 'border-sky-400/60 bg-sky-500/10 dark:border-sky-500/40 dark:bg-sky-500/15'
+                                    : 'border-slate-200/50 bg-white/40 hover:bg-white/70 dark:border-slate-700/50 dark:bg-slate-900/30 dark:hover:bg-slate-900/50'
+                                }`
+                          }
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span
+                              className={
+                                gl
+                                  ? 'font-mono text-sm font-semibold text-black dark:text-white'
+                                  : 'font-mono text-sm font-semibold text-slate-900 dark:text-slate-50'
+                              }
+                            >
+                              {tpl.code}
+                            </span>
+                            <span
+                              className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                tpl.active
+                                  ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-200'
+                                  : 'bg-slate-400/20 text-slate-600 dark:text-slate-400'
+                              }`}
+                            >
+                              {tpl.active ? t('standardSeries.active') : t('standardSeries.inactive')}
+                            </span>
+                          </div>
+                          <span
+                            className={
+                              gl
+                                ? 'line-clamp-2 text-black/75 dark:text-white/75'
+                                : 'line-clamp-2 text-slate-700 dark:text-slate-200'
                             }
-                            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
                           >
-                            <option value="tasarim">{locale === 'en' ? 'Design' : 'Tasarım'}</option>
-                            <option value="uretim">{locale === 'en' ? 'Production' : 'Üretim'}</option>
-                            <option value="saha">{locale === 'en' ? 'Site' : 'Saha'}</option>
-                            <option value="montaj">{locale === 'en' ? 'Assembly' : 'Montaj'}</option>
-                            <option value="tamamlandi">{locale === 'en' ? 'Completed' : 'Tamamlandı'}</option>
-                          </select>
-                        </label>
-                        <label className="block">
-                          <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                            {t('elementIdentity.products.volume')}
+                            {tpl.name}
                           </span>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min={0}
-                            value={selected.volumeM3 ?? ''}
-                            onChange={(e) => {
-                              const v = e.target.value
-                              patchTemplateFields({
-                                volumeM3: v === '' ? undefined : Math.max(0, Number(v) || 0),
-                              })
-                            }}
-                            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm tabular-nums dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
+                          {cat ? (
+                            <span
+                              className={
+                                gl ? 'text-[10px] text-black/55 dark:text-white/65' : 'text-[10px] text-slate-500 dark:text-slate-400'
+                              }
+                            >
+                              {t(elemCatLabelKey(cat))}
+                            </span>
+                          ) : null}
+                        </button>
+                      </li>
+                    )
+                  })
+                )
+              }
+              footer={
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                  <p className={gl ? 'text-black dark:text-white/80' : 'text-black/75 dark:text-white/80'}>
+                    {filtered.length > 0 ? (
+                      <>
+                        <span className="tabular-nums font-semibold text-black dark:text-white">{listPageStart}</span>-
+                        <span className="tabular-nums font-semibold text-black dark:text-white">{listPageEnd}</span>{' '}
+                        / <span className="tabular-nums font-semibold text-black dark:text-white">{filtered.length}</span>{' '}
+                        {locale === 'en' ? 'templates' : 'şablon'}
+                      </>
+                    ) : (
+                      <span className={gl ? 'text-black/70 dark:text-white/75' : 'text-slate-600 dark:text-slate-300'}>
+                        {t('standardSeries.empty')}
+                      </span>
+                    )}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {filtered.length > 0 ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={safeListPage <= 1}
+                          onClick={() => setListPage((p) => Math.max(1, p - 1))}
+                          className={
+                            gl
+                              ? ['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
+                                  ' ',
+                                )
+                              : 'rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10'
+                          }
+                        >
+                          Önceki
+                        </button>
+                        <span
+                          className={
+                            gl
+                              ? 'tabular-nums text-black/80 dark:text-white/75'
+                              : 'tabular-nums text-black/70 dark:text-white/75'
+                          }
+                        >
+                          Sayfa {safeListPage}/{listPageCount}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={safeListPage >= listPageCount}
+                          onClick={() => setListPage((p) => Math.min(listPageCount, p + 1))}
+                          className={
+                            gl
+                              ? ['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
+                                  ' ',
+                                )
+                              : 'rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10'
+                          }
+                        >
+                          Sonraki
+                        </button>
+                      </div>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => selectedId && removeStandardSeriesTemplate(selectedId)}
+                      disabled={!selected}
+                      className={
+                        gl
+                          ? ['glass-btn', 'outline', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(' ')
+                          : 'rounded-md border border-rose-300/70 px-2 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-40 dark:border-rose-600/60 dark:text-rose-300 dark:hover:bg-rose-950/40'
+                      }
+                    >
+                      {t('standardSeries.remove')}
+                    </button>
+                  </div>
+                </div>
+              }
+              rightPanelRef={rightRef}
+              rightAside={
+                <div key={selectedId ?? 'none'} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
+                  <div className="mx-auto flex h-full min-h-0 min-w-0 w-full max-w-2xl flex-1 flex-col gap-4 overflow-hidden lg:max-w-3xl">
+                  {selected && productLike ? (
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                      <header className="flex shrink-0 flex-col items-center border-b border-black/12 pb-3 text-center dark:border-white/10">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
+                          {t('standardSeries.selected')}
+                        </p>
+                        <h3 className="mt-1.5 max-w-full px-1 font-mono text-lg font-semibold text-black dark:text-white">
+                          {selected.code}
+                        </h3>
+                        <p className="mt-1 max-w-full px-1 text-sm text-black/75 dark:text-white/80">{selected.name}</p>
+                      </header>
+                      <div className="sticky top-0 z-10 flex w-full min-w-0 shrink-0 justify-center bg-transparent pt-2">
+                        <div
+                          className={
+                            gl
+                              ? 'glass-nav max-w-full flex-nowrap justify-center gap-2 overflow-x-auto p-0.5 [scrollbar-width:thin]'
+                              : 'flex max-w-full gap-1 overflow-x-auto'
+                          }
+                          role="tablist"
+                          aria-label={t('standardSeries.listTitle')}
+                          aria-orientation="horizontal"
+                        >
+                          {(
+                            [
+                              ['general', 'standardSeries.tabGeneral'],
+                              ['dimensions', 'elementIdentity.products.tabDimensions'],
+                              ['materials', 'elementIdentity.products.tabMaterials'],
+                              ['rebar', 'elementIdentity.products.tabRebar'],
+                              ['drawings', 'elementIdentity.products.tabDrawings'],
+                              ['activity', 'elementIdentity.products.tabActivity'],
+                              ['assembly', 'standardSeries.tabAssembly'],
+                            ] as const
+                          ).map(([id, key]) => (
+                            <button
+                              key={id}
+                              type="button"
+                              role="tab"
+                              aria-selected={detailTab === id}
+                              onClick={() => {
+                                setDetailTab(id)
+                                scrollPanelTop()
+                              }}
+                              className={
+                                gl
+                                  ? ['nav-item', 'shrink-0', 'whitespace-nowrap', detailTab === id ? 'active' : '']
+                                      .filter(Boolean)
+                                      .join(' ')
+                                  : `shrink-0 rounded-full border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
+                                      detailTab === id
+                                        ? 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
+                                        : 'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
+                                    }`
+                              }
+                            >
+                              {t(key)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div
+                        role="tabpanel"
+                        className="okan-project-tab-panel mt-2 min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-1 text-left sm:px-2"
+                      >
+                        {detailTab === 'general' && (
+                          <div className="flex flex-col gap-3">
+                            <label className="block">
+                              <span className={fieldLabelClass}>{t('elementIdentity.detail.code')}</span>
+                              <input
+                                value={selected.code}
+                                onChange={(e) => patchTemplateFields({ code: e.target.value.toUpperCase() })}
+                                className={fieldMonoClass}
+                              />
+                            </label>
+                            <label className="block">
+                              <span className={fieldLabelClass}>{t('elementIdentity.products.nameField')}</span>
+                              <input
+                                value={selected.name}
+                                onChange={(e) => patchTemplateFields({ name: e.target.value })}
+                                className={fieldInputClass}
+                              />
+                            </label>
+                            <label
+                              className={
+                                gl
+                                  ? 'flex items-center gap-2 text-sm text-black/85 dark:text-white/85'
+                                  : 'flex items-center gap-2 text-sm'
+                              }
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selected.active}
+                                onChange={(e) => patchTemplateFields({ active: e.target.checked })}
+                                className="rounded border-slate-300"
+                              />
+                              {t('standardSeries.active')}
+                            </label>
+                            <label className="block">
+                              <span className={fieldLabelClass}>{t('standardSeries.description')}</span>
+                              <textarea
+                                value={selected.description ?? ''}
+                                onChange={(e) => patchTemplateFields({ description: e.target.value || undefined })}
+                                rows={3}
+                                className={fieldTextareaClass}
+                              />
+                            </label>
+                            <label className="block">
+                              <span className={fieldLabelClass}>{t('elementIdentity.products.definition')}</span>
+                              <textarea
+                                value={selected.definition ?? ''}
+                                onChange={(e) => patchTemplateFields({ definition: e.target.value || undefined })}
+                                rows={3}
+                                className={fieldTextareaClass}
+                              />
+                            </label>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <label className="block sm:col-span-2">
+                                <span className={fieldLabelClass}>{t('elementIdentity.table.elementType')}</span>
+                                <select
+                                  value={selected.elementTypeId ?? ''}
+                                  onChange={(e) => {
+                                    const elementTypeId = e.target.value || undefined
+                                    const allowed = typologyIdsForType(elementTypeId ?? '')
+                                    const nextTy = allowed[0]
+                                    patchTemplateFields({
+                                      elementTypeId,
+                                      typologyId: nextTy,
+                                    })
+                                  }}
+                                  className={fieldInputClass}
+                                >
+                                  <option value="">—</option>
+                                  {ALL_ELEMENT_TYPES.map((et) => (
+                                    <option key={et.id} value={et.id}>
+                                      {locale === 'en' ? et.nameEn : et.nameTr}
+                                    </option>
+                                  ))}
+                                </select>
+                                <p
+                                  className={
+                                    gl ? 'mt-1 text-[10px] text-black/55 dark:text-white/60' : 'mt-1 text-[10px] text-slate-500'
+                                  }
+                                >
+                                  {elementTypeLabel(selected.elementTypeId)}
+                                </p>
+                              </label>
+                              <label className="block sm:col-span-2">
+                                <span className={fieldLabelClass}>{t('elementIdentity.table.typology')}</span>
+                                <select
+                                  value={selected.typologyId ?? ''}
+                                  onChange={(e) => patchTemplateFields({ typologyId: e.target.value || undefined })}
+                                  className={fieldInputClass}
+                                >
+                                  <option value="">—</option>
+                                  {typologyOptions.map((ty) => (
+                                    <option key={ty.id} value={ty.id}>
+                                      {locale === 'en' ? ty.nameEn : ty.nameTr}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="block">
+                                <span className={fieldLabelClass}>{t('elementIdentity.products.lifecycle')}</span>
+                                <select
+                                  value={selected.lifecycleStatus ?? 'tasarim'}
+                                  onChange={(e) =>
+                                    patchTemplateFields({
+                                      lifecycleStatus: e.target.value as ProductLifecycleStatus,
+                                    })
+                                  }
+                                  className={fieldInputClass}
+                                >
+                                  <option value="tasarim">{locale === 'en' ? 'Design' : 'Tasarım'}</option>
+                                  <option value="uretim">{locale === 'en' ? 'Production' : 'Üretim'}</option>
+                                  <option value="saha">{locale === 'en' ? 'Site' : 'Saha'}</option>
+                                  <option value="montaj">{locale === 'en' ? 'Assembly' : 'Montaj'}</option>
+                                  <option value="tamamlandi">{locale === 'en' ? 'Completed' : 'Tamamlandı'}</option>
+                                </select>
+                              </label>
+                              <label className="block">
+                                <span className={fieldLabelClass}>{t('elementIdentity.products.volume')}</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min={0}
+                                  value={selected.volumeM3 ?? ''}
+                                  onChange={(e) => {
+                                    const v = e.target.value
+                                    patchTemplateFields({
+                                      volumeM3: v === '' ? undefined : Math.max(0, Number(v) || 0),
+                                    })
+                                  }}
+                                  className={`${fieldInputClass} tabular-nums`}
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        )}
+                        {detailTab === 'dimensions' && (
+                          <ProductDimensionsTab product={productLike} onPatch={patchFromProductTabs} />
+                        )}
+                        {detailTab === 'materials' && (
+                          <ProductMaterialsTab product={productLike} onPatch={patchFromProductTabs} />
+                        )}
+                        {detailTab === 'rebar' && <ProductRebarTab product={productLike} onPatch={patchFromProductTabs} />}
+                        {detailTab === 'drawings' && (
+                          <ProductDrawingsTab product={productLike} onPatch={patchFromProductTabs} />
+                        )}
+                        {detailTab === 'activity' && (
+                          <ProductActivityTab product={productLike} onPatch={patchFromProductTabs} />
+                        )}
+                        {detailTab === 'assembly' && (
+                          <StandardSeriesAssemblyTab
+                            rows={selected.assemblyComponents ?? []}
+                            onChange={(rows: AssemblyComponentLine[]) =>
+                              patchTemplateFields({ assemblyComponents: rows })
+                            }
                           />
-                        </label>
+                        )}
                       </div>
                     </div>
+                  ) : (
+                    <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-2 py-8">
+                      <p
+                        className={
+                          gl
+                            ? 'text-center text-xs text-black/60 dark:text-white/65'
+                            : 'text-center text-xs text-slate-500 dark:text-slate-400'
+                        }
+                      >
+                        {t('standardSeries.selectHint')}
+                      </p>
+                    </div>
                   )}
-                  {detailTab === 'dimensions' && (
-                    <ProductDimensionsTab product={productLike} onPatch={patchFromProductTabs} />
-                  )}
-                  {detailTab === 'materials' && (
-                    <ProductMaterialsTab product={productLike} onPatch={patchFromProductTabs} />
-                  )}
-                  {detailTab === 'rebar' && <ProductRebarTab product={productLike} onPatch={patchFromProductTabs} />}
-                  {detailTab === 'drawings' && (
-                    <ProductDrawingsTab product={productLike} onPatch={patchFromProductTabs} />
-                  )}
-                  {detailTab === 'activity' && (
-                    <ProductActivityTab product={productLike} onPatch={patchFromProductTabs} />
-                  )}
-                  {detailTab === 'assembly' && (
-                    <StandardSeriesAssemblyTab
-                      rows={selected.assemblyComponents ?? []}
-                      onChange={(rows: AssemblyComponentLine[]) =>
-                        patchTemplateFields({ assemblyComponents: rows })
-                      }
-                    />
-                  )}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <p className="px-1 text-center text-xs text-slate-500 dark:text-slate-400">
-                {t('standardSeries.selectHint')}
-              </p>
-            )}
+              }
+            />
           </div>
-        }
-      />
+        </div>
+      </div>
 
       {addToProjectOpen && selected ? (
         <PmStyleDialog

@@ -1,9 +1,13 @@
-import { Plus, Trash2, X } from 'lucide-react'
+import { ChevronRight, Plus, Trash2, X } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import type { FieldDef, FieldType, MaterialCategory, MaterialDef } from '../../materialCatalog/types'
+import { activeModuleIdFromPathname } from '../../data/navigation'
 import { useI18n } from '../../i18n/I18nProvider'
+import { useThemeMode } from '../../theme/ThemeProvider'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
+import '../proje/projectManagementGlassLight.css'
 import {
   eiSplitHeaderButtonPassive,
   ElementIdentityFilterSheetHeader,
@@ -46,11 +50,30 @@ function parseOptionsText(text: string): string[] {
     .filter(Boolean)
 }
 
+const LIST_VIEW_STATE_KEY = 'material-catalog:list:view'
+
+/** Malzeme kataloğu listesi: her sayfada sabit kayıt sayısı */
+const MATERIAL_CATALOG_LIST_PAGE_SIZE = 5
+
 export function MaterialCatalogModuleView() {
   const { t, locale } = useI18n()
+  const { mode } = useThemeMode()
+  const gl = mode === 'light'
+  const location = useLocation()
+  const neutralShell = activeModuleIdFromPathname(location.pathname) === 'material-catalog'
   const { materials, upsertMaterial, removeMaterial } = useMaterialCatalog()
   const [filterOpen, setFilterOpen] = useState(false)
   const [listSearch, setListSearch] = useState('')
+  const [listPage, setListPage] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem(LIST_VIEW_STATE_KEY)
+      if (!raw) return 1
+      const v = JSON.parse(raw) as { listPage?: number }
+      return typeof v.listPage === 'number' && v.listPage > 0 ? v.listPage : 1
+    } catch {
+      return 1
+    }
+  })
   const [filterCategory, setFilterCategory] = useState<MaterialCategory | 'all'>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [detailTab, setDetailTab] = useState<DetailTab>('general')
@@ -59,6 +82,7 @@ export function MaterialCatalogModuleView() {
   const [newDraft, setNewDraft] = useState({ name: '', code: '', category: 'custom' as MaterialCategory })
   const newTriggerRef = useRef<HTMLButtonElement | null>(null)
   const [popoverPos, setPopoverPos] = useState<{ top: number; left: number; width: number } | null>(null)
+  const listScrollRef = useRef<HTMLUListElement | null>(null)
 
   const selected = useMemo(() => materials.find((m) => m.id === selectedId) ?? null, [materials, selectedId])
 
@@ -70,12 +94,6 @@ export function MaterialCatalogModuleView() {
     setDraft({ ...selected, fields: sortFields(selected.fields) })
   }, [selected])
 
-  useEffect(() => {
-    if (materials.length && (!selectedId || !materials.some((m) => m.id === selectedId))) {
-      setSelectedId(materials[0]!.id)
-    }
-  }, [materials, selectedId])
-
   const filtered = useMemo(() => {
     const byCat = filterCategory === 'all' ? materials : materials.filter((m) => m.category === filterCategory)
     const q = listSearch.trim().toLocaleLowerCase(locale === 'en' ? 'en-US' : 'tr-TR')
@@ -85,6 +103,38 @@ export function MaterialCatalogModuleView() {
       return hay.includes(q)
     })
   }, [materials, filterCategory, listSearch, locale])
+
+  const listPageCount = useMemo(
+    () => Math.max(1, Math.ceil(filtered.length / MATERIAL_CATALOG_LIST_PAGE_SIZE)),
+    [filtered.length],
+  )
+  const safeListPage = Math.min(listPage, listPageCount)
+  const visibleMaterials = useMemo(() => {
+    const start = (safeListPage - 1) * MATERIAL_CATALOG_LIST_PAGE_SIZE
+    return filtered.slice(start, start + MATERIAL_CATALOG_LIST_PAGE_SIZE)
+  }, [filtered, safeListPage])
+  const listPageStart =
+    filtered.length === 0 ? 0 : (safeListPage - 1) * MATERIAL_CATALOG_LIST_PAGE_SIZE + 1
+  const listPageEnd = Math.min(filtered.length, safeListPage * MATERIAL_CATALOG_LIST_PAGE_SIZE)
+
+  useEffect(() => {
+    if (filtered.length === 0) return
+    if (!selectedId || !filtered.some((m) => m.id === selectedId)) {
+      setSelectedId(filtered[0]!.id)
+    }
+  }, [filtered, selectedId])
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(LIST_VIEW_STATE_KEY, JSON.stringify({ listPage: safeListPage }))
+    } catch {
+      /* ignore */
+    }
+  }, [safeListPage])
+
+  useEffect(() => {
+    requestAnimationFrame(() => listScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
+  }, [safeListPage])
 
   const measureNewPopover = useCallback(() => {
     const btn = newTriggerRef.current
@@ -212,36 +262,76 @@ export function MaterialCatalogModuleView() {
     upsertMaterial(m)
     setSelectedId(m.id)
     setDetailTab('general')
+    setListPage(1)
     setNewOpen(false)
     setNewDraft({ name: '', code: '', category: 'custom' })
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <ElementIdentityPieceCodesLikeSplit
-        persistKey="material-catalog"
-        listTitle={t('materialCatalog.listTitle')}
-        defaultSplitRatio={38}
-        filterToolbarSearch={
-          <FilterToolbarSearch
-            id="material-catalog-list-search"
-            value={listSearch}
-            onValueChange={setListSearch}
-            placeholder={locale === 'en' ? 'Code, name…' : 'Kod, ad…'}
-            ariaLabel={locale === 'en' ? 'Search materials' : 'Materyal ara'}
-          />
-        }
-        headerActions={
-          <div className="relative self-center sm:self-auto">
-            <button
-              ref={newTriggerRef}
-              type="button"
-              onClick={() => setNewOpen((o) => !o)}
-              className={eiSplitHeaderButtonPassive}
-            >
-              <Plus className="size-3.5 shrink-0" aria-hidden />
-              {t('materialCatalog.new')}
-            </button>
+    <div
+      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-1 overflow-hidden rounded-3xl"
+      data-neutral-shell={neutralShell ? 'true' : undefined}
+    >
+      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-1">
+        <div className="px-[0.6875rem] pt-0 pb-0.5">
+          <nav aria-label={t('project.breadcrumbAria')} className="mb-0">
+            <ol className="flex flex-wrap items-center gap-1 text-xs text-black/60 dark:text-white/65">
+              <li>
+                <Link
+                  to="/tanimlar"
+                  className="font-medium text-black/75 underline-offset-2 transition hover:text-black hover:underline dark:text-white/75 dark:hover:text-white"
+                >
+                  {t('elementIdentity.detail.breadcrumbHub')}
+                </Link>
+              </li>
+              <li className="flex items-center gap-1" aria-hidden>
+                <ChevronRight className="size-3.5 shrink-0 opacity-70" />
+              </li>
+              <li className="font-semibold text-black dark:text-white" aria-current="page">
+                {t('nav.materialCatalog')}
+              </li>
+            </ol>
+          </nav>
+        </div>
+
+        <div className="min-h-0 flex min-h-0 flex-1 flex-col overflow-hidden">
+          <ElementIdentityPieceCodesLikeSplit
+            persistKey="material-catalog"
+            visualVariant="project-mgmt"
+            neutralChrome={neutralShell}
+            listRef={listScrollRef}
+            listIndentWhenFilterOpen="18.5rem"
+            listTitle={t('materialCatalog.listTitle')}
+            defaultSplitRatio={38}
+            filterToolbarSearch={
+              <FilterToolbarSearch
+                id="material-catalog-list-search"
+                value={listSearch}
+                onValueChange={(v) => {
+                  setListSearch(v)
+                  setListPage(1)
+                }}
+                placeholder={locale === 'en' ? 'Code, name…' : 'Kod, ad…'}
+                ariaLabel={locale === 'en' ? 'Search materials' : 'Materyal ara'}
+                className={gl ? 'project-mgmt-toolbar-search' : ''}
+                inputClassName={gl ? 'glass-input' : ''}
+              />
+            }
+            headerActions={
+              <div className="relative self-center sm:self-auto">
+                <button
+                  ref={newTriggerRef}
+                  type="button"
+                  onClick={() => setNewOpen((o) => !o)}
+                  className={
+                    gl
+                      ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
+                      : eiSplitHeaderButtonPassive
+                  }
+                >
+                  <Plus className="size-3.5 shrink-0" aria-hidden />
+                  {t('materialCatalog.new')}
+                </button>
             {newOpen && popoverPos
               ? createPortal(
                   <>
@@ -339,25 +429,54 @@ export function MaterialCatalogModuleView() {
               title={t('materialCatalog.filterTitle')}
               subtitle={t('materialCatalog.filterCategory')}
               onClose={() => setFilterOpen(false)}
+              glass={gl}
             />
             <label className="mt-2 block">
-              <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">{t('materialCatalog.search')}</span>
+              <span
+                className={
+                  gl
+                    ? 'text-[11px] font-medium text-black/75 dark:text-white/80'
+                    : 'text-[11px] font-medium text-slate-600 dark:text-slate-300'
+                }
+              >
+                {t('materialCatalog.search')}
+              </span>
               <input
                 type="search"
                 value={listSearch}
-                onChange={(e) => setListSearch(e.target.value)}
+                onChange={(e) => {
+                  setListSearch(e.target.value)
+                  setListPage(1)
+                }}
                 placeholder={locale === 'en' ? 'Code, name…' : 'Kod, ad…'}
                 autoComplete="off"
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
+                className={
+                  gl
+                    ? 'glass-input mt-1 w-full'
+                    : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100'
+                }
               />
             </label>
             <div className="mt-2 space-y-2">
               <button
                 type="button"
-                onClick={() => setFilterCategory('all')}
-                className={`w-full rounded-lg px-2 py-1.5 text-left text-xs font-semibold ${
-                  filterCategory === 'all' ? 'okan-liquid-pill-active' : 'okan-liquid-btn-secondary'
-                }`}
+                onClick={() => {
+                  setFilterCategory('all')
+                  setListPage(1)
+                }}
+                className={
+                  gl
+                    ? [
+                        'glass-btn',
+                        'small',
+                        'w-full',
+                        'justify-start',
+                        filterCategory === 'all' ? 'primary' : 'secondary',
+                      ].join(' ')
+                    : `w-full rounded-lg px-2 py-1.5 text-left text-xs font-semibold ${
+                        filterCategory === 'all' ? 'okan-liquid-pill-active' : 'okan-liquid-btn-secondary'
+                      }`
+                }
               >
                 {t('materialCatalog.filterAll')}
               </button>
@@ -365,10 +484,23 @@ export function MaterialCatalogModuleView() {
                 <button
                   key={c}
                   type="button"
-                  onClick={() => setFilterCategory(c)}
-                  className={`w-full rounded-lg px-2 py-1.5 text-left text-xs font-semibold ${
-                    filterCategory === c ? 'okan-liquid-pill-active' : 'okan-liquid-btn-secondary'
-                  }`}
+                  onClick={() => {
+                    setFilterCategory(c)
+                    setListPage(1)
+                  }}
+                  className={
+                    gl
+                      ? [
+                          'glass-btn',
+                          'small',
+                          'w-full',
+                          'justify-start',
+                          filterCategory === c ? 'primary' : 'secondary',
+                        ].join(' ')
+                      : `w-full rounded-lg px-2 py-1.5 text-left text-xs font-semibold ${
+                          filterCategory === c ? 'okan-liquid-pill-active' : 'okan-liquid-btn-secondary'
+                        }`
+                  }
                 >
                   {t(categoryLabelKey(c))}
                 </button>
@@ -378,12 +510,37 @@ export function MaterialCatalogModuleView() {
         }
         listBody={
           filtered.length === 0 ? (
-            <li className="rounded-lg border border-dashed border-slate-300/60 px-3 py-8 text-center text-xs text-slate-500 dark:border-slate-600">
+            <li
+              className={
+                gl
+                  ? 'glass-card glass-card--static text-sm text-black'
+                  : 'rounded-lg border border-dashed border-slate-300/60 px-3 py-8 text-center text-xs text-slate-500 dark:border-slate-600'
+              }
+            >
               —
             </li>
           ) : (
-            filtered.map((m) => (
-              <li key={m.id} className="rounded-lg border border-slate-200/50 bg-white/50 dark:border-slate-700/50 dark:bg-slate-900/25">
+            visibleMaterials.map((m) => (
+              <li
+                key={m.id}
+                className={
+                  gl
+                    ? [
+                        'glass-card',
+                        'glass-card--static',
+                        'project-mgmt-list-row-card',
+                        'min-h-0',
+                        'shrink-0',
+                        selectedId === m.id ? 'okan-project-list-row--active' : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')
+                    : [
+                        'rounded-lg border border-slate-200/50 bg-white/50 dark:border-slate-700/50 dark:bg-slate-900/25',
+                        selectedId === m.id ? 'okan-project-list-row--active' : '',
+                      ].join(' ')
+                }
+              >
                 <button
                   type="button"
                   onClick={() => {
@@ -392,24 +549,34 @@ export function MaterialCatalogModuleView() {
                     scrollTop()
                   }}
                   aria-current={selectedId === m.id ? 'true' : undefined}
-                  className={[
-                    'flex w-full flex-col gap-1 px-3 py-2 text-left text-sm transition',
-                    selectedId === m.id
-                      ? 'okan-project-list-row--active bg-sky-500/10 dark:bg-sky-400/10'
-                      : 'hover:bg-white/50 dark:hover:bg-slate-900/35',
-                  ].join(' ')}
+                  className={
+                    gl
+                      ? 'flex w-full flex-col gap-1 px-3 py-2 text-left text-sm transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/8'
+                      : [
+                          'flex w-full flex-col gap-1 px-3 py-2 text-left text-sm transition',
+                          selectedId === m.id
+                            ? 'okan-project-list-row--active bg-sky-500/10 dark:bg-sky-400/10'
+                            : 'hover:bg-white/50 dark:hover:bg-slate-900/35',
+                        ].join(' ')
+                  }
                 >
                   <div className="flex flex-wrap items-center gap-1">
-                    <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                    <span
+                      className={
+                        gl
+                          ? 'rounded-md bg-black/8 px-1.5 py-0.5 text-[10px] font-semibold text-black dark:bg-black/50 dark:text-white/90'
+                          : 'rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                      }
+                    >
                       {t(categoryLabelKey(m.category))}
                     </span>
                     {m.readonly ? (
                       <span className="text-[10px] font-semibold text-sky-700 dark:text-sky-300">{t('materialCatalog.readonly')}</span>
                     ) : null}
                   </div>
-                  <p className="font-mono text-xs font-semibold text-slate-900 dark:text-slate-50">{m.code}</p>
-                  <p className="truncate text-xs text-slate-600 dark:text-slate-300">{m.name}</p>
-                  <p className="text-[10px] text-slate-500">
+                  <p className={`font-mono text-xs font-semibold ${gl ? 'text-black dark:text-white' : 'text-slate-900 dark:text-slate-50'}`}>{m.code}</p>
+                  <p className={`truncate text-xs ${gl ? 'text-black/70 dark:text-white/70' : 'text-slate-600 dark:text-slate-300'}`}>{m.name}</p>
+                  <p className={`text-[10px] ${gl ? 'text-black/55 dark:text-white/65' : 'text-slate-500'}`}>
                     {m.fields.length} {t('materialCatalog.fieldsCount')}
                   </p>
                 </button>
@@ -418,34 +585,90 @@ export function MaterialCatalogModuleView() {
           )
         }
         footer={
-          <div className="flex items-center justify-between px-1 text-[11px] text-slate-600 dark:text-slate-300">
-            <span>
-              <span className="tabular-nums font-semibold">{filtered.length}</span> {locale === 'en' ? 'items' : 'kayıt'}
-            </span>
-            <button
-              type="button"
-              onClick={() => selected && !selected.readonly && removeMaterial(selected.id)}
-              disabled={!selected || Boolean(selected.readonly)}
-              className="rounded-md border border-rose-300/70 px-2 py-1 text-[11px] font-semibold text-rose-700 disabled:opacity-40 dark:border-rose-600 dark:text-rose-300"
-            >
-              {t('materialCatalog.delete')}
-            </button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <p className={gl ? 'text-black dark:text-white/80' : 'text-black/75 dark:text-white/80'}>
+              {filtered.length > 0 ? (
+                <>
+                  <span className="tabular-nums font-semibold text-black dark:text-white">{listPageStart}</span>-
+                  <span className="tabular-nums font-semibold text-black dark:text-white">{listPageEnd}</span>{' '}
+                  / <span className="tabular-nums font-semibold text-black dark:text-white">{filtered.length}</span>{' '}
+                  {locale === 'en' ? 'results' : 'sonuç'}
+                </>
+              ) : (
+                locale === 'en' ? 'No results' : 'Sonuç yok'
+              )}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {filtered.length > 0 ? (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={safeListPage <= 1}
+                    onClick={() => setListPage((p) => Math.max(1, p - 1))}
+                    className={
+                      gl
+                        ? ['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(' ')
+                        : 'rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10'
+                    }
+                  >
+                    Önceki
+                  </button>
+                  <span className={gl ? 'tabular-nums text-black/80 dark:text-white/75' : 'tabular-nums text-black/70 dark:text-white/75'}>
+                    Sayfa {safeListPage}/{listPageCount}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={safeListPage >= listPageCount}
+                    onClick={() => setListPage((p) => Math.min(listPageCount, p + 1))}
+                    className={
+                      gl
+                        ? ['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(' ')
+                        : 'rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10'
+                    }
+                  >
+                    Sonraki
+                  </button>
+                </div>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => selected && !selected.readonly && removeMaterial(selected.id)}
+                disabled={!selected || Boolean(selected.readonly)}
+                className={
+                  gl
+                    ? ['glass-btn', 'outline', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(' ')
+                    : 'rounded-md border border-rose-300/70 px-2 py-1 text-[11px] font-semibold text-rose-700 disabled:opacity-40 dark:border-rose-600 dark:text-rose-300'
+                }
+              >
+                {t('materialCatalog.delete')}
+              </button>
+            </div>
           </div>
         }
         rightPanelRef={rightRef}
         rightAside={
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div key={draft?.id ?? 'none'} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
+            <div className="mx-auto flex h-full min-h-0 min-w-0 w-full max-w-2xl flex-1 flex-col gap-4 overflow-hidden lg:max-w-3xl">
             {draft ? (
-              <div className="flex h-full min-h-0 flex-col">
-                <header className="shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                <header className="flex shrink-0 flex-col items-center border-b border-black/12 pb-3 text-center dark:border-white/10">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
                     {t('materialCatalog.detail.selected')}
                   </p>
-                  <h3 className="mt-1.5 font-mono text-lg font-semibold text-slate-900 dark:text-slate-50">{draft.code}</h3>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{draft.name}</p>
+                  <h3 className="mt-1.5 max-w-full px-1 font-mono text-lg font-semibold text-black dark:text-white">{draft.code}</h3>
+                  <p className="mt-1 max-w-full px-1 text-sm text-black/75 dark:text-white/80">{draft.name}</p>
                 </header>
-                <div className="sticky top-0 z-10 flex shrink-0 justify-center pt-3">
-                  <div className="flex max-w-full gap-1 overflow-x-auto" role="tablist">
+                <div className="sticky top-0 z-10 flex w-full min-w-0 shrink-0 justify-center bg-transparent pt-2">
+                  <div
+                    className={
+                      gl
+                        ? 'glass-nav max-w-full flex-nowrap justify-center gap-2 overflow-x-auto p-0.5 [scrollbar-width:thin]'
+                        : 'flex max-w-full gap-1 overflow-x-auto rounded-full border border-slate-200/60 bg-white/55 p-1 dark:border-slate-700/60 dark:bg-slate-900/35'
+                    }
+                    role="tablist"
+                    aria-label={t('materialCatalog.listTitle')}
+                    aria-orientation="horizontal"
+                  >
                     {(
                       [
                         ['general', 'materialCatalog.tab.general'],
@@ -462,18 +685,24 @@ export function MaterialCatalogModuleView() {
                           setDetailTab(id)
                           scrollTop()
                         }}
-                        className={`shrink-0 rounded-full border px-3 py-2 text-xs font-semibold sm:text-sm ${
-                          detailTab === id
-                            ? 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
-                            : 'border-slate-200/70 bg-white/55 text-slate-600 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300'
-                        }`}
+                        className={
+                          gl
+                            ? ['nav-item', 'shrink-0', 'whitespace-nowrap', detailTab === id ? 'active' : '']
+                                .filter(Boolean)
+                                .join(' ')
+                            : `shrink-0 rounded-full border px-3 py-2 text-xs font-semibold sm:text-sm ${
+                                detailTab === id
+                                  ? 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
+                                  : 'border-slate-200/70 bg-white/55 text-slate-600 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300'
+                              }`
+                        }
                       >
                         {t(key)}
                       </button>
                     ))}
                   </div>
                 </div>
-                <div className="okan-project-tab-panel mt-3 min-h-0 flex-1 overflow-y-auto px-0.5 text-left sm:px-1">
+                <div className="okan-project-tab-panel mt-2 min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-1 text-left sm:px-2">
                   {detailTab === 'general' ? (
                     <div className="flex flex-col gap-3">
                       <label className="block text-xs">
@@ -684,11 +913,14 @@ export function MaterialCatalogModuleView() {
                 </div>
               </div>
             ) : (
-              <p className="px-2 text-center text-xs text-slate-500">—</p>
+              <p className="px-2 text-center text-xs text-black/60 dark:text-white/65">—</p>
             )}
+            </div>
           </div>
         }
       />
+        </div>
+      </div>
     </div>
   )
 }

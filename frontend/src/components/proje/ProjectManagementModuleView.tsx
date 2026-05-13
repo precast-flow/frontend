@@ -226,11 +226,12 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
   const [pageSize, setPageSize] = useState(() => {
     try {
       const raw = sessionStorage.getItem(PROJECT_MANAGEMENT_VIEW_STATE_KEY)
-      if (!raw) return 6
+      if (!raw) return 4
       const parsed = JSON.parse(raw) as { pageSize?: number }
-      return typeof parsed.pageSize === 'number' && parsed.pageSize > 0 ? parsed.pageSize : 6
+      const n = Number(parsed.pageSize)
+      return [4, 6, 8, 10, 15].includes(n) ? n : 4
     } catch {
-      return 6
+      return 4
     }
   })
   const [splitRatio, setSplitRatio] = useState(() => {
@@ -1073,7 +1074,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                               }}
                               className="glass-input px-2 py-1 text-xs"
                             >
-                              {[6, 8, 10, 15].map((size) => (
+                              {[4, 6, 8, 10, 15].map((size) => (
                                 <option key={size} value={size}>
                                   {size}
                                 </option>
@@ -1143,7 +1144,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                               }}
                               className="rounded-md border border-black/22 bg-white px-1.5 py-1 text-xs text-black dark:border-white/15 dark:bg-black/80 dark:text-white"
                             >
-                              {[6, 8, 10, 15].map((size) => (
+                              {[4, 6, 8, 10, 15].map((size) => (
                                 <option key={size} value={size}>
                                   {size}
                                 </option>

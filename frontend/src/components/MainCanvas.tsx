@@ -46,7 +46,13 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
   const fullBleedInMainModule = isPlanningDesign
   /** `GlassAppShell` zaten `--gm-footer-clear` veriyor; sabit `100dvh-12.5rem` ile çift kısaltmayı önle. */
   const fillsMainCanvasViewportHeight =
-    isUserManagement || isProject || isCrm || isUnitWorkQueue
+    isUserManagement ||
+    isProject ||
+    isCrm ||
+    isUnitWorkQueue ||
+    isElementIdentity ||
+    isMaterialCatalog ||
+    isStandardSeriesCatalog
 
   const okanSplitHeadingAlign =
     isProject ||
@@ -57,6 +63,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
     isApprovalFlow ||
     isRolesPermissions ||
     isUserManagement ||
+    isElementIdentity ||
     isElementIdentityAdmin ||
     isUnitWorkQueue
 
@@ -67,17 +74,23 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
           ? 'gm-glass-main-canvas gm-glass-main-canvas--full gm-glass-main-canvas--okan-liquid flex min-h-0 flex-1 flex-col overflow-hidden'
           : [
               `gm-glass-main-canvas flex min-h-0 flex-1 flex-col rounded-3xl ${
-                isProject || isCrm || isUnitWorkQueue || isApprovalFlow || isRolesPermissions || isUserManagement
+                isProject ||
+                isCrm ||
+                isUnitWorkQueue ||
+                isElementIdentity ||
+                isMaterialCatalog ||
+                isStandardSeriesCatalog ||
+                isApprovalFlow ||
+                isRolesPermissions ||
+                isUserManagement
                   ? 'project-mgmt-page-root overflow-hidden '
                   : ''
               }${
                 isUserManagement
                   ? 'px-0 py-0 md:px-1 md:py-0'
-                  : isProject
+                  : isProject || isElementIdentity || isMaterialCatalog || isStandardSeriesCatalog
                     ? 'px-0 pt-0 pb-1 md:px-1 md:pt-0 md:pb-2'
                     : isCrm ||
-                        isMaterialCatalog ||
-                        isStandardSeriesCatalog ||
                         isApprovalFlow ||
                         isRolesPermissions ||
                         isElementIdentityAdmin ||
@@ -86,15 +99,10 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
                       : 'p-5 md:p-6'
               }`,
               fillsMainCanvasViewportHeight
-                ? 'gm-glass-main-canvas--okan-liquid min-h-0 flex-1 overflow-hidden'
-                : isMaterialCatalog ||
-                    isStandardSeriesCatalog ||
-                    isApprovalFlow ||
-                    isRolesPermissions ||
-                    isElementIdentityAdmin
+                ? 'gm-glass-main-canvas--okan-liquid h-full min-h-0 flex-1 overflow-hidden'
+                : isApprovalFlow || isRolesPermissions || isElementIdentityAdmin
                   ? 'gm-glass-main-canvas--okan-liquid h-[calc(100dvh-12.5rem)] min-h-[calc(100dvh-12.5rem)] max-h-[calc(100dvh-12.5rem)]'
-                  : isPlanningHub ||
-                      isConfigurationCenter || isElementIdentity
+                  : isPlanningHub || isConfigurationCenter
                     ? 'gm-glass-main-canvas--okan-liquid min-h-[min(100%,42rem)]'
                     : 'bg-pf-surface shadow-neo-out',
             ].join(' ')
@@ -103,7 +111,11 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
       {!isUnitWorkQueue ? (
         <div
           className={[
-            fullBleedInMainModule ? 'mb-2 shrink-0 pb-2' : isProject ? 'mb-2 shrink-0 pt-1 pb-2 md:pt-1.5' : 'mb-2 pb-2',
+            fullBleedInMainModule
+              ? 'mb-2 shrink-0 pb-2'
+              : isProject || isElementIdentity || isMaterialCatalog || isStandardSeriesCatalog
+                ? 'mb-2 shrink-0 pt-1 pb-2 md:pt-1.5'
+                : 'mb-2 pb-2',
             okanSplitHeadingAlign ? 'ps-[0.6875rem] pe-[0.6875rem]' : '',
           ]
             .filter(Boolean)
@@ -173,15 +185,21 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
           </div>
         </div>
       ) : isElementIdentity ? (
-        <ElementIdentityModuleView />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <ElementIdentityModuleView />
+        </div>
       ) : isElementIdentityAdmin ? (
         <AdminElementIdentityModuleView />
       ) : isMaterialCatalog ? (
-        <MaterialCatalogProvider>
-          <MaterialCatalogModuleView />
-        </MaterialCatalogProvider>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <MaterialCatalogProvider>
+            <MaterialCatalogModuleView />
+          </MaterialCatalogProvider>
+        </div>
       ) : isStandardSeriesCatalog ? (
-        <StandardSeriesCatalogModuleView />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <StandardSeriesCatalogModuleView />
+        </div>
       ) : isPlanningDesign ? (
         <PlanningDesignView />
       ) : isApprovalFlow ? (
