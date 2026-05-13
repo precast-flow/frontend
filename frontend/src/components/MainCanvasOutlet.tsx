@@ -13,5 +13,9 @@ export function MainCanvasOutlet() {
     [location.pathname],
   )
 
-  return <MainCanvas activeId={activeId} onNavigate={onNavigate} />
+  return (
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
+      <MainCanvas activeId={activeId} onNavigate={onNavigate} />
+    </div>
+  )
 }

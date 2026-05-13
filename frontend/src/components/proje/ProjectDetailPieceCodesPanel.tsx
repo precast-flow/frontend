@@ -57,7 +57,7 @@ export function ProjectDetailPieceCodesPanel() {
     'production-asc' | 'production-desc' | 'code-asc' | 'family-asc'
   >('production-asc')
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(6)
+  const [pageSize, setPageSize] = useState(4)
   const [splitRatio, setSplitRatio] = useState(40)
   const [isResizing, setIsResizing] = useState(false)
   const [isResizerHover, setIsResizerHover] = useState(false)
@@ -521,7 +521,7 @@ export function ProjectDetailPieceCodesPanel() {
                 }}
                 className="rounded-md border border-slate-300 bg-white px-1.5 py-1 text-xs text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               >
-                {[6, 10, 15, 20].map((size) => (
+                {[4, 6, 10, 15, 20].map((size) => (
                   <option key={size} value={size}>
                     {size}
                   </option>

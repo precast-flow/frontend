@@ -1,5 +1,5 @@
 import { ChevronsLeftRight, Filter, GripVertical, X } from 'lucide-react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useThemeMode } from '../../theme/ThemeProvider'
 
 const SPLIT_KEY = (persistKey: string) => `ei-piece-split:${persistKey}`
@@ -83,6 +83,25 @@ export function ElementIdentityPieceCodesLikeSplit({
   })
   const [isResizing, setIsResizing] = useState(false)
   const [isResizerHover, setIsResizerHover] = useState(false)
+  const leftColumnRef = useRef<HTMLElement | null>(null)
+  const [rightPanelHeightPx, setRightPanelHeightPx] = useState<number | null>(null)
+
+  useLayoutEffect(() => {
+    if (!isPm) {
+      setRightPanelHeightPx(null)
+      return
+    }
+    const el = leftColumnRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const measure = () => {
+      const h = el.getBoundingClientRect().height
+      setRightPanelHeightPx(h > 0 ? h : null)
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [isPm])
 
   useEffect(() => {
     if (!isResizing) return
@@ -158,9 +177,9 @@ export function ElementIdentityPieceCodesLikeSplit({
 
   const sectionClass =
     isPm && gl
-      ? 'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 self-stretch flex-col overflow-hidden glass-card glass-card--static project-mgmt-split-panel min-h-0'
+      ? 'okan-project-split-list okan-split-list-active-lift flex h-auto max-h-full min-h-0 shrink-0 self-start flex-col overflow-x-hidden overflow-y-auto glass-card glass-card--static project-mgmt-split-panel min-h-0'
       : isPm
-        ? 'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 self-stretch flex-col overflow-hidden p-3'
+        ? 'okan-project-split-list okan-split-list-active-lift flex h-auto max-h-full min-h-0 shrink-0 self-start flex-col overflow-x-hidden overflow-y-auto p-3'
         : 'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden p-3'
 
   const filterAsideClass = [
@@ -174,12 +193,16 @@ export function ElementIdentityPieceCodesLikeSplit({
   ].join(' ')
 
   const ulPadClass = isPm
-    ? 'flex h-full min-h-0 flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-100 ease-out'
+    ? 'flex min-h-0 max-h-full flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-100 ease-out'
     : 'flex h-full min-h-0 flex-col gap-1 overflow-y-auto pr-1 transition-[padding] duration-300'
 
   const splitRow = (
     <>
-      <section className={sectionClass} style={{ width: `calc(${splitRatio}% - 5px)` }}>
+      <section
+        ref={leftColumnRef}
+        className={sectionClass}
+        style={{ width: `calc(${splitRatio}% - 5px)` }}
+      >
         <div className="mb-2 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
           <h3
             className={
@@ -208,7 +231,7 @@ export function ElementIdentityPieceCodesLikeSplit({
         </div>
         {!isPm ? <div className="mb-3 shrink-0" /> : null}
 
-        <div className="relative min-h-0 flex-1 overflow-hidden">
+        <div className={isPm ? 'relative min-h-0 overflow-hidden' : 'relative min-h-0 flex-1 overflow-hidden'}>
           <aside className={filterAsideClass} aria-hidden={!isFilterOpen}>
             {filterAside}
           </aside>
@@ -226,11 +249,11 @@ export function ElementIdentityPieceCodesLikeSplit({
 
         {footer ? (
           isPm && gl ? (
-            <div className="glass-card glass-card--static project-mgmt-footer-panel sticky bottom-0 z-10 mt-2 shrink-0 text-xs">
+            <div className="glass-card glass-card--static project-mgmt-footer-panel mt-2 shrink-0 text-xs">
               {footer}
             </div>
           ) : (
-            <div className="sticky bottom-0 z-10 mt-1 shrink-0 border-t border-slate-200/60 bg-white/90 pt-2 text-xs backdrop-blur dark:border-slate-700/60 dark:bg-slate-900/85">
+            <div className="mt-1 shrink-0 border-t border-slate-200/60 bg-white/90 pt-2 text-xs backdrop-blur dark:border-slate-700/60 dark:bg-slate-900/85">
               {footer}
             </div>
           )
@@ -287,10 +310,21 @@ export function ElementIdentityPieceCodesLikeSplit({
         ref={rightPanelRef}
         className={
           isPm && gl
-            ? 'okan-project-split-aside glass-card glass-card--static project-mgmt-split-panel flex h-full min-h-0 min-w-0 flex-1 flex-col self-stretch overflow-hidden'
+            ? [
+                'okan-project-split-aside glass-card glass-card--static project-mgmt-split-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
+                rightPanelHeightPx == null ? 'h-full self-stretch' : 'self-start',
+              ].join(' ')
             : isPm
-              ? 'okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col self-stretch overflow-hidden p-3 lg:pl-2'
+              ? [
+                  'okan-project-split-aside flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:pl-2',
+                  rightPanelHeightPx == null ? 'h-full self-stretch' : 'self-start',
+                ].join(' ')
               : 'okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:pl-2'
+        }
+        style={
+          isPm && rightPanelHeightPx != null
+            ? { height: rightPanelHeightPx, minHeight: rightPanelHeightPx, maxHeight: rightPanelHeightPx }
+            : undefined
         }
       >
         {rightAside}
@@ -299,24 +333,23 @@ export function ElementIdentityPieceCodesLikeSplit({
   )
 
   if (isPm) {
+    const paddedShell = gl
+      ? 'flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl bg-transparent p-1 md:p-1.5'
+      : 'flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5'
+
     return (
-      <div
-        className={[
-          'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden h-full w-full',
-          gl
-            ? 'gap-2 overflow-hidden rounded-3xl bg-transparent p-1 md:p-1.5'
-            : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
-        ].join(' ')}
-      >
-        <div
-          ref={splitRef}
-          data-split-dragging={isResizing ? 'true' : undefined}
-          className={[
-            'relative flex min-h-0 min-w-0 flex-1 items-stretch overflow-hidden h-full w-full',
-            gl ? 'gap-3 rounded-3xl lg:gap-4' : 'gap-0',
-          ].join(' ')}
-        >
-          {splitRow}
+      <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden">
+        <div className={['min-h-0 w-full overflow-hidden', paddedShell].join(' ')}>
+          <div
+            ref={splitRef}
+            data-split-dragging={isResizing ? 'true' : undefined}
+            className={[
+              'relative flex h-full min-h-0 min-w-0 overflow-hidden',
+              gl ? 'gap-3 rounded-3xl lg:gap-4' : 'gap-0',
+            ].join(' ')}
+          >
+            {splitRow}
+          </div>
         </div>
       </div>
     )
