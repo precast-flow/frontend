@@ -944,7 +944,13 @@ export function ProjectManagementDetailPage() {
                     <button
                       type="button"
                       aria-label="Paneller arası genişliği ayarla"
+                      title="Çift tıklayarak varsayılan sütun genişliğine dön"
                       onMouseDown={() => setIsDocResizing(true)}
+                      onDoubleClick={(e) => {
+                        e.preventDefault()
+                        setIsDocResizing(false)
+                        setDocSplitRatio(40)
+                      }}
                       onMouseEnter={() => setIsDocResizerHover(true)}
                       onMouseLeave={() => setIsDocResizerHover(false)}
                       className={[

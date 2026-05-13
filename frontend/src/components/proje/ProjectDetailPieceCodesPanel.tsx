@@ -546,7 +546,13 @@ export function ProjectDetailPieceCodesPanel() {
         <button
           type="button"
           aria-label="Paneller arası genişliği ayarla"
+          title="Çift tıklayarak varsayılan sütun genişliğine dön"
           onMouseDown={() => setIsResizing(true)}
+          onDoubleClick={(e) => {
+            e.preventDefault()
+            setIsResizing(false)
+            setSplitRatio(40)
+          }}
           onMouseEnter={() => setIsResizerHover(true)}
           onMouseLeave={() => setIsResizerHover(false)}
           className={[

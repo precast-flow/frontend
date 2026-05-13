@@ -71,6 +71,25 @@ function unitLabel(orgId: WorkQueueOrgUnit, t: (k: string) => string) {
   return hit ? t(hit.labelKey) : orgId
 }
 
+const UNIT_WORK_QUEUE_LIST_STATE_KEY = 'unit-work-queue:list-state'
+const UNIT_WORK_QUEUE_DEFAULT_PAGE_SIZE = 4
+const UNIT_WORK_QUEUE_PAGE_SIZE_OPTIONS = [4, 6, 8, 10, 12, 15] as const
+
+function readStoredWorkQueuePageSize(): number {
+  try {
+    const raw = sessionStorage.getItem(UNIT_WORK_QUEUE_LIST_STATE_KEY)
+    if (!raw) return UNIT_WORK_QUEUE_DEFAULT_PAGE_SIZE
+    const parsed = JSON.parse(raw) as { pageSize?: number }
+    const n = parsed.pageSize
+    if (typeof n !== 'number' || !Number.isFinite(n)) return UNIT_WORK_QUEUE_DEFAULT_PAGE_SIZE
+    return UNIT_WORK_QUEUE_PAGE_SIZE_OPTIONS.includes(n as (typeof UNIT_WORK_QUEUE_PAGE_SIZE_OPTIONS)[number])
+      ? n
+      : UNIT_WORK_QUEUE_DEFAULT_PAGE_SIZE
+  } catch {
+    return UNIT_WORK_QUEUE_DEFAULT_PAGE_SIZE
+  }
+}
+
 type Props = {
   onNavigate?: (moduleId: string) => void
 }
@@ -81,6 +100,7 @@ export function UnitWorkQueueModuleView(_props: Props) {
   const baseId = useId()
   const { isFactoryInScope } = useFactoryContext()
   const rightRef = useRef<HTMLDivElement | null>(null)
+  const listRef = useRef<HTMLUListElement | null>(null)
 
   const [perspective, setPerspective] = useState<WorkQueuePerspective>('to_me')
   const [unit, setUnit] = useState<WorkQueueOrgUnit | 'all'>('all')
@@ -89,6 +109,8 @@ export function UnitWorkQueueModuleView(_props: Props) {
   const [factoryRestricted, setFactoryRestricted] = useState(true)
   const [selectedId, setSelectedId] = useState<string>(WORK_QUEUE_ITEMS[0]!.id)
   const [detailTab, setDetailTab] = useState<'summary' | 'project' | 'history'>('summary')
+  const [listPage, setListPage] = useState(1)
+  const [pageSize, setPageSize] = useState(readStoredWorkQueuePageSize)
 
   const filtered = useMemo(
     () =>
@@ -103,10 +125,45 @@ export function UnitWorkQueueModuleView(_props: Props) {
     [perspective, unit, search, factoryRestricted, isFactoryInScope],
   )
 
+  const listTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const safeListPage = Math.min(listPage, listTotalPages)
+  const pagedItems = useMemo(() => {
+    const start = (safeListPage - 1) * pageSize
+    return filtered.slice(start, start + pageSize)
+  }, [filtered, pageSize, safeListPage])
+  const listPageStart = filtered.length === 0 ? 0 : (safeListPage - 1) * pageSize + 1
+  const listPageEnd = Math.min(filtered.length, safeListPage * pageSize)
+
   useEffect(() => {
-    if (filtered.some((r) => r.id === selectedId)) return
-    setSelectedId(filtered[0]?.id ?? '')
-  }, [filtered, selectedId])
+    setListPage(1)
+  }, [perspective, unit, search, factoryRestricted, pageSize])
+
+  useEffect(() => {
+    setListPage((p) => Math.min(p, listTotalPages))
+  }, [listTotalPages])
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(UNIT_WORK_QUEUE_LIST_STATE_KEY, JSON.stringify({ pageSize }))
+    } catch {
+      /* ignore */
+    }
+  }, [pageSize])
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+    })
+  }, [safeListPage, pageSize])
+
+  useEffect(() => {
+    if (filtered.length === 0) {
+      setSelectedId('')
+      return
+    }
+    if (pagedItems.some((r) => r.id === selectedId)) return
+    setSelectedId(pagedItems[0]?.id ?? filtered[0]!.id)
+  }, [filtered, pagedItems, selectedId])
 
   useEffect(() => {
     setDetailTab('summary')
@@ -194,6 +251,7 @@ export function UnitWorkQueueModuleView(_props: Props) {
         <div className="flex h-full min-h-0 flex-col overflow-hidden">
           <ElementIdentityPieceCodesLikeSplit
             persistKey="unit-work-queue"
+            listRef={listRef}
             defaultSplitRatio={38}
             listTitle={t('unitWorkQueue.listTitle')}
             visualVariant="project-mgmt"
@@ -326,7 +384,7 @@ export function UnitWorkQueueModuleView(_props: Props) {
                   {t('unitWorkQueue.empty')}
                 </li>
               ) : (
-                filtered.map((row) => {
+                pagedItems.map((row) => {
                   const active = row.id === selectedId
                   return (
                     <li
@@ -430,16 +488,115 @@ export function UnitWorkQueueModuleView(_props: Props) {
               <div
                 className={
                   gl
-                    ? 'flex flex-wrap items-center justify-between gap-2 px-2 py-1 text-[11px] text-black/70 dark:text-white/75'
-                    : 'flex flex-wrap items-center justify-between gap-2 px-2 text-[11px] text-slate-500 dark:text-slate-400'
+                    ? 'flex flex-col gap-2 px-2 py-1 text-[11px] text-black/70 dark:text-white/75 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between'
+                    : 'flex flex-col gap-2 px-2 text-[11px] text-slate-500 dark:text-slate-400 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between'
                 }
               >
-                <span>
-                  {filtered.length}/{WORK_QUEUE_ITEMS.length} mock
-                </span>
-                <span className="hidden sm:inline">
-                  {t('unitWorkQueue.demoViewer', { name: resolveWorkQueueName(MOCK_WORK_QUEUE_VIEWER_ID) })}
-                </span>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  {filtered.length > 0 ? (
+                    <span className="tabular-nums">
+                      {t('unitWorkQueue.pagination.footerRange', {
+                        start: String(listPageStart),
+                        end: String(listPageEnd),
+                        total: String(filtered.length),
+                      })}
+                    </span>
+                  ) : (
+                    <span className="tabular-nums">{t('unitWorkQueue.pagination.emptyFooter')}</span>
+                  )}
+                  <span className="hidden sm:inline">
+                    {t('unitWorkQueue.demoViewer', { name: resolveWorkQueueName(MOCK_WORK_QUEUE_VIEWER_ID) })}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {filtered.length > 0 ? (
+                    <>
+                      <div className="flex items-center gap-1">
+                        {gl ? (
+                          <>
+                            <button
+                              type="button"
+                              disabled={safeListPage <= 1}
+                              onClick={() => setListPage((p) => Math.max(1, p - 1))}
+                              className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
+                                ' ',
+                              )}
+                            >
+                              {t('unitWorkQueue.pagination.prev')}
+                            </button>
+                            <span className="tabular-nums text-black/80 dark:text-white/75">
+                              {t('unitWorkQueue.pagination.pageOf', {
+                                current: String(safeListPage),
+                                total: String(listTotalPages),
+                              })}
+                            </span>
+                            <button
+                              type="button"
+                              disabled={safeListPage >= listTotalPages}
+                              onClick={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
+                              className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
+                                ' ',
+                              )}
+                            >
+                              {t('unitWorkQueue.pagination.next')}
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              disabled={safeListPage <= 1}
+                              onClick={() => setListPage((p) => Math.max(1, p - 1))}
+                              className="rounded-md border border-slate-300/90 bg-white px-2 py-1 text-[11px] font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-35 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                            >
+                              {t('unitWorkQueue.pagination.prev')}
+                            </button>
+                            <span className="tabular-nums text-slate-600 dark:text-slate-300">
+                              {t('unitWorkQueue.pagination.pageOf', {
+                                current: String(safeListPage),
+                                total: String(listTotalPages),
+                              })}
+                            </span>
+                            <button
+                              type="button"
+                              disabled={safeListPage >= listTotalPages}
+                              onClick={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
+                              className="rounded-md border border-slate-300/90 bg-white px-2 py-1 text-[11px] font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-35 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                            >
+                              {t('unitWorkQueue.pagination.next')}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                      <label
+                        className={
+                          gl
+                            ? 'flex items-center gap-1 text-black/80 dark:text-white/75'
+                            : 'flex items-center gap-1 text-slate-600 dark:text-slate-300'
+                        }
+                      >
+                        <span>{t('unitWorkQueue.pagination.pageSize')}</span>
+                        <select
+                          value={pageSize}
+                          onChange={(e) => {
+                            setPageSize(Number(e.target.value))
+                            setListPage(1)
+                            requestAnimationFrame(() => {
+                              listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+                            })
+                          }}
+                          className={gl ? 'glass-input px-2 py-1 text-xs' : `${selectCls} py-1 text-xs`}
+                        >
+                          {UNIT_WORK_QUEUE_PAGE_SIZE_OPTIONS.map((n) => (
+                            <option key={n} value={n}>
+                              {n}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </>
+                  ) : null}
+                </div>
               </div>
             }
             rightPanelRef={rightRef}

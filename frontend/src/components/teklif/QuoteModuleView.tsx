@@ -23,6 +23,7 @@ type Props = {
 }
 
 const QUOTE_LIST_PAGE_SIZE = 8
+const QUOTE_DEFAULT_SPLIT_RATIO = 40
 
 const detailTabDefs = [
   { id: 'ozet', label: 'Özet' },
@@ -106,7 +107,7 @@ export function QuoteModuleView({
   const [detailTab, setDetailTab] = useState<DetailTabId>('ozet')
   const [listPage, setListPage] = useState(1)
   const [pageSize, setPageSize] = useState(QUOTE_LIST_PAGE_SIZE)
-  const [splitRatio, setSplitRatio] = useState(40)
+  const [splitRatio, setSplitRatio] = useState(QUOTE_DEFAULT_SPLIT_RATIO)
   const [isResizing, setIsResizing] = useState(false)
   const [isResizerHover, setIsResizerHover] = useState(false)
   const [persistHydrated, setPersistHydrated] = useState(!persistKey)
@@ -516,7 +517,13 @@ export function QuoteModuleView({
               <button
                 type="button"
                 aria-label="Paneller arası genişliği ayarla"
+                title="Çift tıklayarak varsayılan sütun genişliğine dön"
                 onMouseDown={() => setIsResizing(true)}
+                onDoubleClick={(e) => {
+                  e.preventDefault()
+                  setIsResizing(false)
+                  setSplitRatio(QUOTE_DEFAULT_SPLIT_RATIO)
+                }}
                 onMouseEnter={() => setIsResizerHover(true)}
                 onMouseLeave={() => setIsResizerHover(false)}
                 className={[

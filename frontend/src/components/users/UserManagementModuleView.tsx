@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import {
   AlertTriangle,
   Factory,
@@ -12,7 +12,9 @@ import {
 import { MOCK_ROLES } from '../../data/mockRbac'
 import { directReportsCount, isValidReportsTo } from '../../data/orgHierarchy'
 import { roleLabel, userNameById } from '../../data/mockUsers'
+import { activeModuleIdFromPathname } from '../../data/navigation'
 import { useI18n } from '../../i18n/I18nProvider'
+import { useThemeMode } from '../../theme/ThemeProvider'
 import { PmStyleDialog } from '../shared/PmStyleDialog'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import {
@@ -21,6 +23,7 @@ import {
   ElementIdentityPieceCodesLikeSplit,
 } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
+import '../proje/projectManagementGlassLight.css'
 import type { UserManagementState } from './useUserManagementState'
 
 const inputCls =
@@ -37,12 +40,16 @@ function tabPill(active: boolean) {
 
 export function UserManagementModuleView(props: UserManagementState) {
   const { t, locale } = useI18n()
+  const { mode } = useThemeMode()
+  const gl = mode === 'light'
+  const location = useLocation()
+  const neutralShell = activeModuleIdFromPathname(location.pathname) === 'user-management'
   const baseId = useId()
-  const rightRef = useRef<HTMLDivElement | null>(null)
+  const rightScrollRef = useRef<HTMLDivElement | null>(null)
   const [filterOpen, setFilterOpen] = useState(false)
 
   const scrollPanelTop = () => {
-    requestAnimationFrame(() => rightRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
+    requestAnimationFrame(() => rightScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
   }
 
   const {
@@ -76,37 +83,70 @@ export function UserManagementModuleView(props: UserManagementState) {
 
   return (
     <>
-      <ElementIdentityPieceCodesLikeSplit
-        persistKey="user-management"
-        listTitle={t('userManagement.listTitle')}
-        filterToolbarSearch={
-          <FilterToolbarSearch
-            id="user-management-list-search"
-            value={searchQuery}
-            onValueChange={setSearchQuery}
-            placeholder={t('userManagement.filterSearchPh')}
-            ariaLabel={t('userManagement.filterSearch')}
-          />
-        }
-        headerActions={
-          <>
-            <button type="button" onClick={addMockUser} className={eiSplitHeaderButtonPassive}>
-              <UserPlus className="size-3.5 shrink-0" aria-hidden />
-              {t('userManagement.newUser')}
-            </button>
-            <Link
-              to="/kullanicilar?legacy=1"
-              className={`${eiSplitHeaderButtonPassive} no-underline`}
-            >
-              {t('userManagement.legacyLink')}
-            </Link>
-          </>
-        }
+      <div
+        className="project-mgmt-glass-light flex min-h-0 min-w-0 flex-1 basis-0 flex-col gap-0 overflow-hidden rounded-3xl"
+        data-neutral-shell={neutralShell ? 'true' : undefined}
+      >
+        <div className="grid min-h-0 min-w-0 flex-1 grid-rows-[minmax(0,1fr)] overflow-hidden">
+          <div
+            className={[
+              'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
+              gl
+                ? 'rounded-3xl bg-transparent p-0'
+                : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
+            ].join(' ')}
+          >
+            <ElementIdentityPieceCodesLikeSplit
+              persistKey="user-management"
+              visualVariant="project-mgmt"
+              neutralChrome={neutralShell}
+              listIndentWhenFilterOpen="18.5rem"
+              listTitle={t('userManagement.listTitle')}
+              filterToolbarSearch={
+              <FilterToolbarSearch
+                id="user-management-list-search"
+                value={searchQuery}
+                onValueChange={setSearchQuery}
+                placeholder={t('userManagement.filterSearchPh')}
+                ariaLabel={t('userManagement.filterSearch')}
+                className={gl ? 'project-mgmt-toolbar-search' : ''}
+                inputClassName={gl ? 'glass-input' : ''}
+              />
+            }
+            headerActions={
+              <>
+                <button
+                  type="button"
+                  onClick={addMockUser}
+                  className={
+                    gl
+                      ? ['glass-btn', 'primary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
+                      : eiSplitHeaderButtonPassive
+                  }
+                >
+                  <UserPlus className="size-3.5 shrink-0" aria-hidden />
+                  {t('userManagement.newUser')}
+                </button>
+                <Link
+                  to="/kullanicilar?legacy=1"
+                  className={
+                    gl
+                      ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5', 'no-underline'].join(
+                          ' ',
+                        )
+                      : `${eiSplitHeaderButtonPassive} no-underline`
+                  }
+                >
+                  {t('userManagement.legacyLink')}
+                </Link>
+              </>
+            }
         isFilterOpen={filterOpen}
         onFilterOpenChange={setFilterOpen}
         filterAside={
           <div>
             <ElementIdentityFilterSheetHeader
+              glass={gl}
               title={t('userManagement.filtersTitle')}
               subtitle={t('userManagement.filtersSubtitle')}
               onClose={() => setFilterOpen(false)}
@@ -250,12 +290,9 @@ export function UserManagementModuleView(props: UserManagementState) {
             </p>
           </div>
         }
-        rightPanelRef={rightRef}
         rightAside={
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-            <p className="mb-2 shrink-0 px-0.5 text-[11px] leading-relaxed text-slate-600 dark:text-slate-400 sm:px-1">
-              {t('userManagement.intro')}
-            </p>
+          <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            <div ref={rightScrollRef} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-0">
             {selected ? (
               <div className="flex h-full min-h-0 flex-col">
                 <header className="shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10">
@@ -621,9 +658,13 @@ export function UserManagementModuleView(props: UserManagementState) {
             ) : (
               <p className="px-1 text-center text-xs text-slate-500 dark:text-slate-400">{t('userManagement.selectHint')}</p>
             )}
+            </div>
           </div>
         }
-      />
+          />
+          </div>
+        </div>
+      </div>
 
       {toast ? (
         <div

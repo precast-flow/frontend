@@ -44,6 +44,10 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
   const isUserManagement = activeId === 'user-management'
 
   const fullBleedInMainModule = isPlanningDesign
+  /** `GlassAppShell` zaten `--gm-footer-clear` veriyor; sabit `100dvh-12.5rem` ile çift kısaltmayı önle. */
+  const fillsMainCanvasViewportHeight =
+    isUserManagement || isProject || isCrm || isUnitWorkQueue
+
   const okanSplitHeadingAlign =
     isProject ||
     isCrm ||
@@ -63,25 +67,43 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
           ? 'gm-glass-main-canvas gm-glass-main-canvas--full gm-glass-main-canvas--okan-liquid flex min-h-0 flex-1 flex-col overflow-hidden'
           : [
               `gm-glass-main-canvas flex min-h-0 flex-1 flex-col rounded-3xl ${
-                isProject || isCrm || isUnitWorkQueue ? 'project-mgmt-page-root overflow-hidden ' : ''
+                isProject || isCrm || isUnitWorkQueue || isApprovalFlow || isRolesPermissions || isUserManagement
+                  ? 'project-mgmt-page-root overflow-hidden '
+                  : ''
               }${
-                isProject || isCrm || isMaterialCatalog || isStandardSeriesCatalog || isApprovalFlow || isRolesPermissions || isUserManagement || isElementIdentityAdmin || isUnitWorkQueue
-                  ? 'px-0 py-1 md:px-1 md:py-2'
-                  : 'p-5 md:p-6'
+                isUserManagement
+                  ? 'px-0 py-0 md:px-1 md:py-0'
+                  : isProject
+                    ? 'px-0 pt-0 pb-1 md:px-1 md:pt-0 md:pb-2'
+                    : isCrm ||
+                        isMaterialCatalog ||
+                        isStandardSeriesCatalog ||
+                        isApprovalFlow ||
+                        isRolesPermissions ||
+                        isElementIdentityAdmin ||
+                        isUnitWorkQueue
+                      ? 'px-0 py-1 md:px-1 md:py-2'
+                      : 'p-5 md:p-6'
               }`,
-              isProject || isCrm || isMaterialCatalog || isStandardSeriesCatalog || isApprovalFlow || isRolesPermissions || isUserManagement || isElementIdentityAdmin || isUnitWorkQueue
-                ? 'gm-glass-main-canvas--okan-liquid h-[calc(100dvh-12.5rem)] min-h-[calc(100dvh-12.5rem)] max-h-[calc(100dvh-12.5rem)]'
-                : isPlanningHub ||
-                    isConfigurationCenter || isElementIdentity
-                  ? 'gm-glass-main-canvas--okan-liquid min-h-[min(100%,42rem)]'
-                  : 'bg-pf-surface shadow-neo-out',
+              fillsMainCanvasViewportHeight
+                ? 'gm-glass-main-canvas--okan-liquid min-h-0 flex-1 overflow-hidden'
+                : isMaterialCatalog ||
+                    isStandardSeriesCatalog ||
+                    isApprovalFlow ||
+                    isRolesPermissions ||
+                    isElementIdentityAdmin
+                  ? 'gm-glass-main-canvas--okan-liquid h-[calc(100dvh-12.5rem)] min-h-[calc(100dvh-12.5rem)] max-h-[calc(100dvh-12.5rem)]'
+                  : isPlanningHub ||
+                      isConfigurationCenter || isElementIdentity
+                    ? 'gm-glass-main-canvas--okan-liquid min-h-[min(100%,42rem)]'
+                    : 'bg-pf-surface shadow-neo-out',
             ].join(' ')
       }
     >
       {!isUnitWorkQueue ? (
         <div
           className={[
-            fullBleedInMainModule ? 'mb-2 shrink-0 pb-2' : 'mb-2 pb-2',
+            fullBleedInMainModule ? 'mb-2 shrink-0 pb-2' : isProject ? 'mb-2 shrink-0 pt-1 pb-2 md:pt-1.5' : 'mb-2 pb-2',
             okanSplitHeadingAlign ? 'ps-[0.6875rem] pe-[0.6875rem]' : '',
           ]
             .filter(Boolean)
@@ -99,15 +121,21 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
       ) : null}
 
       {isCrm ? (
-        <CrmModuleView onNavigate={onNavigate} />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <CrmModuleView onNavigate={onNavigate} />
+        </div>
       ) : isPlanningHub ? (
         <PlanningHubView />
       ) : isUnitWorkQueue ? (
-        <UnitWorkQueueModuleView onNavigate={onNavigate} />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <UnitWorkQueueModuleView onNavigate={onNavigate} />
+        </div>
       ) : isWorkStart ? (
         <StartWorkWizardView onNavigate={onNavigate} />
       ) : isProject ? (
-        <ProjectManagementModuleView onNavigate={onNavigate} />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <ProjectManagementModuleView onNavigate={onNavigate} />
+        </div>
       ) : isConfigurationCenter ? (
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           <button
@@ -161,7 +189,9 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
       ) : isRolesPermissions ? (
         <RolesAndPermissionsView />
       ) : isUserManagement ? (
-        <UserManagementView />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <UserManagementView />
+        </div>
       ) : (
         <div className="grid flex-1 gap-4 lg:grid-cols-3">
           <section className="rounded-2xl bg-gray-50 p-4 shadow-neo-in dark:bg-gray-950/50 lg:col-span-2">
