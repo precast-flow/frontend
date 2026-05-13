@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { activeModuleIdFromPathname } from '../../data/navigation'
 import {
   ChevronsLeftRight,
   ChevronRight,
@@ -19,10 +20,12 @@ import {
 import { crmCustomers, statusLabel, type CrmCustomer, type CrmLocationRow } from '../../data/crmCustomers'
 import { useFactoryContext } from '../../context/FactoryContext'
 import { useI18n } from '../../i18n/I18nProvider'
+import { useThemeMode } from '../../theme/ThemeProvider'
 import { CrmNewCustomerModal } from './CrmNewCustomerModal'
 import { NeoSwitch } from '../NeoSwitch'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
+import '../proje/projectManagementGlassLight.css'
 
 type Props = {
   onNavigate: (moduleId: string) => void
@@ -69,6 +72,10 @@ function resolveLocations(customer: CrmCustomer): CrmLocationRow[] {
 export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
   void _onNavigate
   const { t } = useI18n()
+  const { mode } = useThemeMode()
+  const gl = mode === 'light'
+  const location = useLocation()
+  const neutralShell = activeModuleIdFromPathname(location.pathname) === 'crm'
   const navigate = useNavigate()
   const { selectedCodes } = useFactoryContext()
   const filterId = 'crm-fabrika-filtre'
@@ -257,20 +264,28 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
 
   useEffect(() => {
     if (!isResizing) return
+    let rafId = 0
     const onMouseMove = (event: MouseEvent) => {
-      const host = splitRef.current
-      if (!host) return
-      const rect = host.getBoundingClientRect()
-      if (rect.width <= 0) return
-      const next = ((event.clientX - rect.left) / rect.width) * 100
-      setSplitRatio(Math.min(55, Math.max(30, Number(next.toFixed(2)))))
+      cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(() => {
+        const host = splitRef.current
+        if (!host) return
+        const rect = host.getBoundingClientRect()
+        if (rect.width <= 0) return
+        const next = ((event.clientX - rect.left) / rect.width) * 100
+        setSplitRatio(Math.min(55, Math.max(30, Number(next.toFixed(2)))))
+      })
     }
-    const onMouseUp = () => setIsResizing(false)
+    const onMouseUp = () => {
+      cancelAnimationFrame(rafId)
+      setIsResizing(false)
+    }
     document.body.style.cursor = 'col-resize'
     document.body.style.userSelect = 'none'
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseup', onMouseUp)
     return () => {
+      cancelAnimationFrame(rafId)
       document.body.style.cursor = ''
       document.body.style.userSelect = ''
       window.removeEventListener('mousemove', onMouseMove)
@@ -438,7 +453,10 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-[1.25rem]">
+    <div
+      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl"
+      data-neutral-shell={neutralShell ? 'true' : undefined}
+    >
       <CrmNewCustomerModal
         open={newOpen}
         mode={customerDialogMode}
@@ -451,11 +469,11 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
       <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-2">
         <div className="px-[0.6875rem] py-1">
           <nav aria-label={t('project.breadcrumbAria')} className="mb-0">
-            <ol className="flex flex-wrap items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+            <ol className="flex flex-wrap items-center gap-1 text-xs text-black/60 dark:text-white/65">
               <li>
                 <Link
                   to="/planlama"
-                  className="font-medium text-slate-600 underline-offset-2 transition hover:text-sky-600 hover:underline dark:text-slate-300 dark:hover:text-sky-400"
+                  className="font-medium text-black/75 underline-offset-2 transition hover:text-black hover:underline dark:text-white/75 dark:hover:text-white"
                 >
                   {t('nav.sidebar.section.planning')}
                 </Link>
@@ -463,21 +481,40 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
               <li className="flex items-center gap-1" aria-hidden>
                 <ChevronRight className="size-3.5 shrink-0 opacity-70" />
               </li>
-              <li className="font-semibold text-slate-800 dark:text-slate-100" aria-current="page">
+              <li className="font-semibold text-black dark:text-white" aria-current="page">
                 {t('nav.crm')}
               </li>
             </ol>
           </nav>
         </div>
 
-        <div ref={splitRef} className="min-h-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
-          <div className="relative flex h-full min-h-0 min-w-0 overflow-hidden gap-0">
+        <div
+          className={[
+            'min-h-0 overflow-hidden',
+            gl
+              ? 'flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl bg-transparent p-1 md:p-1.5'
+              : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
+          ].join(' ')}
+        >
+          <div
+            ref={splitRef}
+            data-split-dragging={isResizing ? 'true' : undefined}
+            className={[
+              'relative flex h-full min-h-0 min-w-0 overflow-hidden',
+              gl ? 'gap-3 rounded-3xl lg:gap-4' : 'gap-0',
+            ].join(' ')}
+          >
             <section
-              className="okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden p-3"
+              className={[
+                'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden',
+                gl
+                  ? 'glass-card glass-card--static project-mgmt-split-panel min-h-0'
+                  : 'p-3',
+              ].join(' ')}
               style={{ width: `calc(${splitRatio}% - 5px)` }}
             >
-              <div className="mb-3 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
-                <h2 className="min-w-0 shrink-0 text-sm font-semibold text-slate-900 dark:text-slate-50 sm:text-base">
+              <div className="mb-2 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
+                <h2 className="min-w-0 shrink-0 text-sm font-semibold text-black dark:text-white sm:text-base">
                   Müşteriler
                 </h2>
                 <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
@@ -487,23 +524,46 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                     onValueChange={setSearch}
                     placeholder="Ünvan, kod, vergi no, şehir, kişi…"
                     ariaLabel="Müşterilerde ara"
+                    className={gl ? 'project-mgmt-toolbar-search' : ''}
+                    inputClassName={gl ? 'glass-input' : ''}
                   />
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setFiltersOpen((v) => !v)}
                       aria-expanded={filtersOpen}
-                      className={[
-                        'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
-                        filtersOpen
-                          ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
-                          : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
-                      ].join(' ')}
+                      className={
+                        gl
+                          ? [
+                              'glass-btn',
+                              'small',
+                              'inline-flex',
+                              'items-center',
+                              'gap-1.5',
+                              filtersOpen ? 'outline' : 'secondary',
+                            ].join(' ')
+                          : [
+                              'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25',
+                              filtersOpen
+                                ? neutralShell
+                                  ? 'border-black/35 bg-black/10 text-black dark:border-white/20 dark:bg-black/50 dark:text-white'
+                                  : 'border-black/25 bg-black/8 text-black dark:border-white/20 dark:bg-black/45 dark:text-white'
+                                : 'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
+                            ].join(' ')
+                      }
                     >
                       <Filter className="size-3.5 shrink-0" aria-hidden />
                       <span>Filtrele</span>
                       {activeFilterCount > 0 ? (
-                        <span className="rounded-full bg-sky-500/25 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-sky-900 dark:bg-sky-400/20 dark:text-sky-100">
+                        <span
+                          className={
+                            gl
+                              ? 'rounded-full bg-black/8 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black'
+                              : neutralShell
+                                ? 'rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black dark:bg-white/10 dark:text-white'
+                                : 'rounded-full bg-black/12 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black dark:bg-white/12 dark:text-white'
+                          }
+                        >
                           {activeFilterCount}
                         </span>
                       ) : null}
@@ -511,10 +571,14 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                     <button
                       type="button"
                       onClick={openCreateCustomerDialog}
-                      className={[
-                        'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
-                        'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
-                      ].join(' ')}
+                      className={
+                        gl
+                          ? ['glass-btn', 'primary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
+                          : [
+                              'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30',
+                              'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
+                            ].join(' ')
+                      }
                     >
                       <Plus className="size-3.5 shrink-0" aria-hidden />
                       <span>Yeni müşteri</span>
@@ -526,20 +590,27 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
               <div className="relative min-h-0 flex-1 overflow-hidden">
                 <aside
                   className={[
-                    'absolute inset-y-0 left-0 z-20 w-64 overflow-y-auto rounded-xl border border-slate-200/70 bg-white/95 p-3 shadow-xl backdrop-blur-sm transition-transform dark:border-slate-700/70 dark:bg-slate-900/95',
+                    'absolute inset-y-0 left-0 z-20 w-72 overflow-y-auto shadow-xl backdrop-blur-sm transition-transform duration-150 ease-out',
+                    gl
+                      ? 'glass-card glass-card--static project-mgmt-split-panel project-mgmt-filter-drawer'
+                      : 'rounded-xl border border-black/15 bg-white/95 p-3 dark:border-white/12 dark:bg-black/70',
                     filtersOpen ? 'translate-x-0' : '-translate-x-[105%]',
                   ].join(' ')}
                   aria-hidden={!filtersOpen}
                 >
                   <div className="mb-3 flex items-start justify-between gap-2">
                     <div>
-                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Müşteri filtreleri</h4>
-                      <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Arama, durum, sektör</p>
+                      <h4 className="text-sm font-semibold text-black dark:text-white">Müşteri filtreleri</h4>
+                      <p className="mt-1 text-[11px] text-black/60 dark:text-white/65">Arama, durum, sektör</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => setFiltersOpen(false)}
-                      className="inline-flex size-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                      className={
+                        gl
+                          ? 'card-button inline-flex size-7 items-center justify-center p-0'
+                          : 'inline-flex size-7 items-center justify-center rounded-lg border border-black/20 text-black/80 hover:bg-black/5 dark:border-white/15 dark:text-white/80 dark:hover:bg-white/10'
+                      }
                       aria-label="Filtreyi kapat"
                     >
                       <X className="size-3.5" aria-hidden />
@@ -547,7 +618,7 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                   </div>
                   <div className="space-y-4">
                     <label className="block">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80">
                         Ara
                       </span>
                       <input
@@ -555,18 +626,26 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Ünvan, kod, vergi no, şehir, kişi…"
-                        className="okan-liquid-input mt-2 w-full border-0 px-3 py-2.5 text-sm shadow-none focus:outline-none"
+                        className={
+                          gl
+                            ? 'glass-input mt-2 w-full'
+                            : 'okan-liquid-input mt-2 w-full border-0 px-3 py-2.5 text-sm shadow-none focus:outline-none'
+                        }
                       />
                     </label>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <label>
-                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80">
                           Durum
                         </span>
                         <select
                           value={filterStatus}
                           onChange={(e) => setFilterStatus(e.target.value)}
-                          className="okan-liquid-select mt-2 w-full border-0 px-3 py-2.5 text-sm shadow-none"
+                          className={
+                            gl
+                              ? 'glass-input mt-2 w-full'
+                              : 'okan-liquid-select mt-2 w-full border-0 px-3 py-2.5 text-sm shadow-none'
+                          }
                         >
                           <option value="all">Tümü</option>
                           <option value="aktif">Aktif</option>
@@ -576,13 +655,17 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                         </select>
                       </label>
                       <label>
-                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80">
                           Sektör (P1)
                         </span>
                         <select
                           value={filterSector}
                           onChange={(e) => setFilterSector(e.target.value)}
-                          className="okan-liquid-select mt-2 w-full border-0 px-3 py-2.5 text-sm shadow-none"
+                          className={
+                            gl
+                              ? 'glass-input mt-2 w-full'
+                              : 'okan-liquid-select mt-2 w-full border-0 px-3 py-2.5 text-sm shadow-none'
+                          }
                         >
                           <option value="all">Tümü</option>
                           <option value="Konut">Konut</option>
@@ -597,13 +680,17 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                       checked={filterByFactoryContext}
                       onChange={setFilterByFactoryContext}
                     />
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    <p className="text-[11px] text-black/60 dark:text-white/65">
                       P1 — Üst seçici fabrika ile müşteri fabrika listesinin kesişimi (mock).
                     </p>
                     <button
                       type="button"
                       onClick={clearFilters}
-                      className="okan-liquid-btn-secondary w-full px-4 py-2.5 text-sm font-semibold sm:w-auto"
+                      className={
+                        gl
+                          ? ['glass-btn', 'secondary', 'small', 'w-full', 'sm:w-auto'].join(' ')
+                          : 'okan-liquid-btn-secondary w-full px-4 py-2.5 text-sm font-semibold sm:w-auto'
+                      }
                     >
                       Sıfırla
                     </button>
@@ -612,11 +699,23 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
 
                 {list.length === 0 ? (
                   <div className="flex h-full flex-col items-center justify-center gap-3 py-6 text-center">
-                    <p className="text-sm text-slate-600 dark:text-slate-300">Filtreye uygun müşteri bulunamadı.</p>
+                    <p
+                      className={
+                        gl
+                          ? 'text-sm text-black dark:text-white/80'
+                          : 'text-sm text-black/80 dark:text-white/80'
+                      }
+                    >
+                      Filtreye uygun müşteri bulunamadı.
+                    </p>
                     <button
                       type="button"
                       onClick={openCreateCustomerDialog}
-                      className="okan-liquid-btn-primary px-5 py-2.5 text-sm font-semibold"
+                      className={
+                        gl
+                          ? ['glass-btn', 'primary', 'small', 'px-5', 'py-2.5', 'text-sm', 'font-semibold'].join(' ')
+                          : 'okan-liquid-btn-primary px-5 py-2.5 text-sm font-semibold'
+                      }
                     >
                       Yeni müşteri
                     </button>
@@ -625,15 +724,26 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                   <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
                     <ul
                       ref={listRef}
-                      className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-300"
-                      style={{ paddingLeft: filtersOpen ? '15.75rem' : '0' }}
+                      className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-100 ease-out"
+                      style={{ paddingLeft: filtersOpen ? '18.5rem' : '0' }}
                       onScroll={onListScroll}
                     >
                       {listPageSlice.map((row) => (
                       <li
                         key={row.id}
                         className={[
-                          'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-slate-200/50 bg-white/70 px-2 py-1.5 dark:border-slate-700/50 dark:bg-slate-900/35',
+                          gl
+                            ? [
+                                'glass-card',
+                                'glass-card--static',
+                                'project-mgmt-list-row-card',
+                                'flex',
+                                'min-h-0',
+                                'shrink-0',
+                                'items-stretch',
+                                'gap-1.5',
+                              ].join(' ')
+                            : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
                           selected?.id === row.id ? 'okan-project-list-row--active' : '',
                         ].join(' ')}
                       >
@@ -641,18 +751,18 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                           type="button"
                           onClick={() => setSelectedId(row.id)}
                           aria-current={selected?.id === row.id ? 'true' : undefined}
-                          className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:hover:bg-slate-900/40"
+                          className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/8"
                         >
-                          <p className="truncate text-sm font-semibold leading-snug text-slate-900 dark:text-slate-50">
+                          <p className="truncate text-sm font-semibold leading-snug text-black dark:text-white">
                             {row.name}
                           </p>
-                          <p className="mt-0.5 truncate text-xs text-slate-600 dark:text-slate-400">
+                          <p className="mt-0.5 truncate text-xs text-black/70 dark:text-white/70">
                             {row.code} · {row.city}
                           </p>
                           <p className="mt-0.5 flex flex-wrap items-center gap-1.5">
                             <span className={statusPill(row.status)}>{statusLabel(row.status)}</span>
                             {row.openQuotes > 0 ? (
-                              <span className="text-[10px] font-medium tabular-nums text-slate-500 dark:text-slate-400">
+                              <span className="text-[10px] font-medium tabular-nums text-black/55 dark:text-white/65">
                                 {row.openQuotes} açık teklif
                               </span>
                             ) : null}
@@ -662,7 +772,11 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                           type="button"
                           title="Tam müşteri detay sayfası"
                           onClick={() => navigate(`/musteri-detay/${row.id}`, { state: { fromCrmList: true } })}
-                          className="inline-flex shrink-0 items-center gap-0.5 self-center rounded-md px-1.5 py-1 text-[11px] font-medium leading-none text-slate-500 transition hover:bg-slate-500/10 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100"
+                          className={
+                            gl
+                              ? 'card-button ml-auto inline-flex shrink-0 items-center gap-0.5 self-center py-1 pl-2 pr-2 text-[11px] font-medium leading-none'
+                              : 'inline-flex shrink-0 items-center gap-0.5 self-center rounded-md px-1.5 py-1 text-[11px] font-medium leading-none text-black/55 transition hover:bg-black/8 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/65 dark:hover:bg-white/8 dark:hover:text-white'
+                          }
                         >
                           Detay
                           <ChevronRight className="size-3 opacity-70" strokeWidth={2} aria-hidden />
@@ -671,16 +785,49 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                       ))}
                       {safeListPage < listTotalPages ? <li ref={loadMoreSentinelRef} className="h-5" aria-hidden /> : null}
                     </ul>
-                    <div className="mt-1.5 flex shrink-0 items-center justify-between gap-2 border-t border-slate-200/35 pt-2.5 text-[11px] dark:border-slate-600/35">
-                      <span className="text-slate-600 dark:text-slate-300">
+                    {gl ? (
+                      <div className="glass-card glass-card--static project-mgmt-footer-panel sticky bottom-0 z-10 mt-2 shrink-0 text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-black dark:text-white/80">
+                            <span className="tabular-nums font-semibold text-black dark:text-white">
+                              {listPageStart}
+                            </span>
+                            -
+                            <span className="tabular-nums font-semibold text-black dark:text-white">
+                              {listPageEnd}
+                            </span>{' '}
+                            /{' '}
+                            <span className="tabular-nums font-semibold text-black dark:text-white">
+                              {list.length}
+                            </span>{' '}
+                            sonuç
+                          </p>
+                          <label className="flex items-center gap-1 text-black dark:text-white/80">
+                            <span>Sayfa boyutu</span>
+                            <select
+                              value={pageSize}
+                              onChange={(event) => setPageSize(Number(event.target.value))}
+                              className="glass-input px-2 py-1 text-xs"
+                            >
+                              <option value={6}>6</option>
+                              <option value={8}>8</option>
+                              <option value={12}>12</option>
+                              <option value={16}>16</option>
+                            </select>
+                          </label>
+                        </div>
+                      </div>
+                    ) : (
+                    <div className="mt-1.5 flex shrink-0 items-center justify-between gap-2 border-t border-black/15 pt-2.5 text-[11px] dark:border-white/12">
+                      <span className="text-black/75 dark:text-white/80">
                         {listPageStart}-{listPageEnd} / {list.length} sonuç
                       </span>
                       <div className="flex items-center gap-2">
-                        <label className="text-slate-500 dark:text-slate-400">Sayfa boyutu:</label>
+                        <label className="text-black/55 dark:text-white/65">Sayfa boyutu:</label>
                         <select
                           value={pageSize}
                           onChange={(event) => setPageSize(Number(event.target.value))}
-                          className="rounded-md border border-slate-300 bg-white px-1.5 py-0.5 text-[11px] text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+                          className="rounded-md border border-black/22 bg-white px-1.5 py-0.5 text-[11px] text-black dark:border-white/15 dark:bg-black/80 dark:text-white"
                         >
                           <option value={6}>6</option>
                           <option value={8}>8</option>
@@ -689,6 +836,7 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                         </select>
                       </div>
                     </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -704,11 +852,15 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                 className={[
                   'group absolute inset-y-3 left-1/2 -translate-x-1/2 rounded-full border transition',
                   isResizing || isResizerHover
-                    ? 'w-6 border-sky-300/70 bg-sky-100/70 dark:border-sky-500/60 dark:bg-sky-900/40'
-                    : 'w-3 border-slate-200/80 bg-white/70 dark:border-slate-700/80 dark:bg-slate-900/60',
+                    ? gl
+                      ? 'w-6 border-black/35 bg-black/12 dark:border-white/18 dark:bg-black/60'
+                      : neutralShell
+                        ? 'w-6 border-black/35 bg-black/12 dark:border-white/18 dark:bg-black/60'
+                        : 'w-6 border-black/25 bg-black/8 dark:border-white/20 dark:bg-black/50'
+                    : 'w-3 border-black/18 bg-white/70 dark:border-white/12 dark:bg-black/55',
                 ].join(' ')}
               >
-                <span className="pointer-events-none flex h-full items-center justify-center text-slate-500 dark:text-slate-300">
+                <span className="pointer-events-none flex h-full items-center justify-center text-black/55 dark:text-white/70">
                   {isResizing || isResizerHover ? <ChevronsLeftRight className="size-3.5" /> : <GripVertical className="size-3.5" />}
                 </span>
               </button>
@@ -716,26 +868,34 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
 
             <aside
               ref={detailPanelRef}
-              className="okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:pl-2"
+              className={
+                gl
+                  ? 'okan-project-split-aside glass-card glass-card--static project-mgmt-split-panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
+                  : 'okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:pl-2'
+              }
             >
               {selected ? (
                 <div key={selected.id} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
                   <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 lg:max-w-3xl">
-                    <header className="shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <header className="shrink-0 border-b border-black/12 pb-3 text-center dark:border-white/10">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
                         Seçili müşteri
                       </p>
-                      <h3 className="mt-1.5 text-xl font-semibold leading-tight text-slate-900 dark:text-slate-50">
+                      <h3 className="mt-1.5 text-xl font-semibold leading-tight text-black dark:text-white">
                         {selected.name}
                       </h3>
-                      <p className="mt-1 text-sm leading-snug text-slate-600 dark:text-slate-300">
+                      <p className="mt-1 text-sm leading-snug text-black/75 dark:text-white/80">
                         {selected.code} · {selected.city} · Satış: {selected.owner}
                       </p>
                       <div className="mt-2">
                         <button
                           type="button"
                           onClick={openEditCustomerDialog}
-                          className="inline-flex items-center rounded-lg border border-slate-200/70 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                          className={
+                            gl
+                              ? 'card-button mt-2'
+                              : 'inline-flex items-center rounded-lg border border-black/18 px-2.5 py-1 text-xs font-semibold text-black hover:bg-black/5 dark:border-white/12 dark:text-white dark:hover:bg-white/10'
+                          }
                         >
                           Müşteriyi düzenle
                         </button>
@@ -759,10 +919,10 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                             aria-controls="crm-detail-panel"
                             tabIndex={detailTab === tab.id ? 0 : -1}
                             onClick={() => setDetailTab(tab.id)}
-                            className={`shrink-0 rounded-full px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
+                            className={`shrink-0 rounded-full px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 ${
                               detailTab === tab.id
-                                ? 'okan-liquid-pill-active okan-project-tab-active text-slate-900 dark:text-slate-50'
-                                : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
+                                ? 'okan-liquid-pill-active okan-project-tab-active text-black dark:text-white'
+                                : 'text-black/70 hover:text-black dark:text-white/75 dark:hover:text-white'
                             }`}
                           >
                             {tab.label}
@@ -1243,7 +1403,7 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-slate-600 dark:text-slate-300">Müşteri seçin veya listeyi yükleyin.</p>
+                <p className="text-sm text-black/80 dark:text-white/80">Müşteri seçin veya listeyi yükleyin.</p>
               )}
             </aside>
           </div>

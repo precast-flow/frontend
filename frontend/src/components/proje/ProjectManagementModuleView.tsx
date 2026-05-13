@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Building2,
   ChevronsLeftRight,
@@ -67,9 +68,9 @@ function getProjectStatusProgress(status: ProjectStatus): number {
 
 function getProjectStatusBarClasses(status: ProjectStatus): { track: string; fill: string; text: string } {
   const neutral = {
-    track: 'bg-slate-200/75 dark:bg-slate-800/50',
-    fill: 'bg-slate-500 dark:bg-slate-500',
-    text: 'text-slate-700 dark:text-slate-300',
+    track: 'bg-black/12 dark:bg-black/55',
+    fill: 'bg-black dark:bg-neutral-200',
+    text: 'text-black/80 dark:text-white/80',
   }
   const map: Record<ProjectStatus, { track: string; fill: string; text: string }> = {
     planlama: neutral,
@@ -469,20 +470,28 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
 
   useEffect(() => {
     if (!isResizing) return
+    let rafId = 0
     const onMouseMove = (event: MouseEvent) => {
-      const host = splitRef.current
-      if (!host) return
-      const rect = host.getBoundingClientRect()
-      if (rect.width <= 0) return
-      const next = ((event.clientX - rect.left) / rect.width) * 100
-      setSplitRatio(Math.min(55, Math.max(30, Number(next.toFixed(2)))))
+      cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(() => {
+        const host = splitRef.current
+        if (!host) return
+        const rect = host.getBoundingClientRect()
+        if (rect.width <= 0) return
+        const next = ((event.clientX - rect.left) / rect.width) * 100
+        setSplitRatio(Math.min(55, Math.max(30, Number(next.toFixed(2)))))
+      })
     }
-    const onMouseUp = () => setIsResizing(false)
+    const onMouseUp = () => {
+      cancelAnimationFrame(rafId)
+      setIsResizing(false)
+    }
     document.body.style.cursor = 'col-resize'
     document.body.style.userSelect = 'none'
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseup', onMouseUp)
     return () => {
+      cancelAnimationFrame(rafId)
       document.body.style.cursor = ''
       document.body.style.userSelect = ''
       window.removeEventListener('mousemove', onMouseMove)
@@ -527,6 +536,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
   }, [detailTab, selectedId])
 
   useEffect(() => {
+    if (isResizing) return
     const next = {
       selectedId,
       statusFilter,
@@ -540,7 +550,19 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
       splitRatio,
     }
     sessionStorage.setItem(PROJECT_MANAGEMENT_VIEW_STATE_KEY, JSON.stringify(next))
-  }, [dateRange, detailTab, ownerFilter, pageSize, safeListPage, searchQuery, selectedId, sortMode, splitRatio, statusFilter])
+  }, [
+    dateRange,
+    detailTab,
+    isResizing,
+    ownerFilter,
+    pageSize,
+    safeListPage,
+    searchQuery,
+    selectedId,
+    sortMode,
+    splitRatio,
+    statusFilter,
+  ])
 
   return (
     <div
@@ -553,15 +575,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
             aria-label={t('project.breadcrumbAria')}
             className="mb-0"
           >
-            <ol className="flex flex-wrap items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+            <ol className="flex flex-wrap items-center gap-1 text-xs text-black/60 dark:text-white/65">
               <li>
                 <Link
                   to="/planlama"
-                  className={
-                    gl || neutralShell
-                      ? 'font-medium text-slate-600 underline-offset-2 transition hover:text-slate-900 hover:underline dark:text-slate-300 dark:hover:text-slate-100'
-                      : 'font-medium text-slate-600 underline-offset-2 transition hover:text-sky-600 hover:underline dark:text-slate-300 dark:hover:text-sky-400'
-                  }
+                  className="font-medium text-black/75 underline-offset-2 transition hover:text-black hover:underline dark:text-white/75 dark:hover:text-white"
                 >
                   {t('nav.sidebar.section.planning')}
                 </Link>
@@ -569,7 +587,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               <li className="flex items-center gap-1" aria-hidden>
                 <ChevronRight className="size-3.5 shrink-0 opacity-70" />
               </li>
-              <li className="font-semibold text-slate-800 dark:text-slate-100" aria-current="page">
+              <li className="font-semibold text-black dark:text-white" aria-current="page">
                 {t('nav.project')}
               </li>
             </ol>
@@ -586,6 +604,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
         >
           <div
             ref={splitRef}
+            data-split-dragging={isResizing ? 'true' : undefined}
             className={[
               'relative flex h-full min-h-0 min-w-0 overflow-hidden',
               gl ? 'gap-3 rounded-3xl lg:gap-4' : 'gap-0',
@@ -601,7 +620,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               style={{ width: `calc(${splitRatio}% - 5px)` }}
             >
               <div className="mb-2 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
-                <h2 className="min-w-0 shrink-0 text-sm font-semibold text-slate-900 dark:text-slate-50 sm:text-base">
+                <h2 className="min-w-0 shrink-0 text-sm font-semibold text-black dark:text-white sm:text-base">
                   Projeler
                 </h2>
                 <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
@@ -633,12 +652,12 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                               filtersOpen ? 'outline' : 'secondary',
                             ].join(' ')
                           : [
-                              'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40',
+                              'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25',
                               filtersOpen
                                 ? neutralShell
-                                  ? 'border-slate-400/70 bg-slate-200/80 text-slate-900 dark:border-slate-500/60 dark:bg-slate-800/45 dark:text-slate-100'
-                                  : 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
-                                : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
+                                  ? 'border-black/35 bg-black/10 text-black dark:border-white/20 dark:bg-black/50 dark:text-white'
+                                  : 'border-black/25 bg-black/8 text-black dark:border-white/20 dark:bg-black/45 dark:text-white'
+                                : 'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
                             ].join(' ')
                       }
                     >
@@ -648,10 +667,10 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                         <span
                           className={
                             gl
-                              ? 'rounded-full bg-white/50 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-slate-800'
+                              ? 'rounded-full bg-black/8 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black'
                               : neutralShell
-                                ? 'rounded-full bg-slate-400/25 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-slate-900 dark:bg-slate-500/25 dark:text-slate-100'
-                                : 'rounded-full bg-sky-500/25 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-sky-900 dark:bg-sky-400/20 dark:text-sky-100'
+                                ? 'rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black dark:bg-white/10 dark:text-white'
+                                : 'rounded-full bg-black/12 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black dark:bg-white/12 dark:text-white'
                           }
                         >
                           {activeFilterCount}
@@ -665,8 +684,8 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                         gl
                           ? ['glass-btn', 'primary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
                           : [
-                              'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
-                              'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
+                              'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30',
+                              'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
                             ].join(' ')
                       }
                     >
@@ -680,18 +699,18 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               <div className="relative min-h-0 flex-1 overflow-hidden">
                     <aside
                       className={[
-                        'absolute inset-y-0 left-0 z-20 w-72 overflow-y-auto shadow-xl backdrop-blur-sm transition-transform',
+                        'absolute inset-y-0 left-0 z-20 w-72 overflow-y-auto shadow-xl backdrop-blur-sm transition-transform duration-150 ease-out',
                         gl
-                          ? 'glass-card glass-card--static project-mgmt-split-panel'
-                          : 'rounded-xl border border-slate-200/70 bg-white/95 p-3 dark:border-slate-700/70 dark:bg-slate-900/95',
+                          ? 'glass-card glass-card--static project-mgmt-split-panel project-mgmt-filter-drawer'
+                          : 'rounded-xl border border-black/15 bg-white/95 p-3 dark:border-white/12 dark:bg-black/70',
                         filtersOpen ? 'translate-x-0' : '-translate-x-[105%]',
                       ].join(' ')}
                       aria-hidden={!filtersOpen}
                     >
                       <div className="mb-3 flex items-start justify-between gap-2">
                         <div>
-                          <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Proje filtreleri</h4>
-                          <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Durum, sorumlu, tarih</p>
+                          <h4 className="text-sm font-semibold text-black dark:text-white">Proje filtreleri</h4>
+                          <p className="mt-1 text-[11px] text-black/60 dark:text-white/65">Durum, sorumlu, tarih</p>
                         </div>
                         <button
                           type="button"
@@ -699,7 +718,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                           className={
                             gl
                               ? 'card-button inline-flex size-7 items-center justify-center p-0'
-                              : 'inline-flex size-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
+                              : 'inline-flex size-7 items-center justify-center rounded-lg border border-black/20 text-black/80 hover:bg-black/5 dark:border-white/15 dark:text-white/80 dark:hover:bg-white/10'
                           }
                           aria-label="Filtreyi kapat"
                         >
@@ -710,7 +729,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                         <div>
                           <label
                             htmlFor="project-list-panel-search"
-                            className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300"
+                            className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80"
                           >
                             Arama
                           </label>
@@ -727,14 +746,14 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                             className={
                               gl
                                 ? 'glass-input mt-2 w-full'
-                                : 'mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-950'
+                                : 'mt-2 w-full rounded-lg border border-black/22 bg-white px-3 py-2.5 text-sm dark:border-white/15 dark:bg-black/80'
                             }
                           />
                         </div>
                         <div>
                           <label
                             htmlFor="project-list-sort-mode"
-                            className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300"
+                            className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80"
                           >
                             Sıralama
                           </label>
@@ -758,7 +777,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                           </select>
                         </div>
                         <div>
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80">
                             Durum
                           </p>
                           <div className="mt-2 flex flex-wrap gap-2">
@@ -778,7 +797,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                                       : [
                                           'rounded-full px-3 py-2 text-left text-sm font-semibold leading-snug transition',
                                           statusFilter.includes(s)
-                                            ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
+                                            ? 'okan-liquid-pill-active text-black dark:text-white'
                                             : 'okan-liquid-btn-secondary',
                                         ].join(' ')
                                   }
@@ -790,7 +809,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                           </div>
                         </div>
                         <div>
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80">
                             Sorumlu
                           </p>
                           <div className="mt-2 flex flex-wrap gap-2">
@@ -811,7 +830,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                                     : [
                                         'max-w-full truncate rounded-full px-3 py-2 text-sm font-semibold transition',
                                         ownerFilter.includes(o)
-                                          ? 'okan-liquid-pill-active text-slate-900 dark:text-slate-50'
+                                          ? 'okan-liquid-pill-active text-black dark:text-white'
                                           : 'okan-liquid-btn-secondary',
                                       ].join(' ')
                                 }
@@ -825,7 +844,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                         <div>
                           <label
                             htmlFor="project-list-date-range"
-                            className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300"
+                            className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80"
                           >
                             Tarih araligi
                           </label>
@@ -848,8 +867,8 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                           </select>
                         </div>
                       </div>
-                      <div className="mt-3 flex items-center justify-between border-t border-slate-200/60 pt-2 dark:border-slate-700/60">
-                        <span className="text-[11px] text-slate-600 dark:text-slate-300">
+                      <div className="mt-3 flex items-center justify-between border-t border-black/15 pt-2 dark:border-white/12">
+                        <span className="text-[11px] text-black/75 dark:text-white/80">
                           Sonuc:{' '}
                           <span className="tabular-nums font-semibold">{filtered.length}</span>
                         </span>
@@ -862,7 +881,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                           className={
                             gl
                               ? ['glass-btn', 'secondary', 'small'].join(' ')
-                              : 'rounded-md border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800'
+                              : 'rounded-md border border-black/22 px-2 py-1 text-[11px] font-semibold text-black hover:bg-black/5 dark:border-white/15 dark:text-white dark:hover:bg-white/10'
                           }
                         >
                           Temizle
@@ -871,7 +890,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     </aside>
                     <ul
                       ref={listRef}
-                      className="flex h-full min-h-0 flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-300"
+                      className="flex h-full min-h-0 flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-100 ease-out"
                       style={{ paddingLeft: filtersOpen ? '18.5rem' : '0' }}
                       onScroll={onProjectListScroll}
                       role="list"
@@ -899,7 +918,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                                     'items-stretch',
                                     'gap-1.5',
                                   ].join(' ')
-                                : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-slate-200/50 bg-white/70 px-2 py-1.5 dark:border-slate-700/50 dark:bg-slate-900/35',
+                                : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
                               selected?.id === row.id ? 'okan-project-list-row--active' : '',
                             ].join(' ')}
                           >
@@ -907,15 +926,15 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                               type="button"
                               onClick={() => setSelectedId(row.id)}
                               aria-current={selected?.id === row.id ? 'true' : undefined}
-                              className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:hover:bg-slate-900/40"
+                              className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/8"
                             >
-                              <p className="truncate text-sm font-semibold leading-snug text-slate-900 dark:text-slate-50">
+                              <p className="truncate text-sm font-semibold leading-snug text-black dark:text-white">
                                 {row.name}
                               </p>
-                              <p className="mt-0.5 truncate text-xs text-slate-600 dark:text-slate-400">
+                              <p className="mt-0.5 truncate text-xs text-black/70 dark:text-white/70">
                                 {row.customer}
                               </p>
-                              <p className="mt-1 inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                              <p className="mt-1 inline-flex items-center gap-1 rounded-md bg-black/8 px-1.5 py-0.5 text-[10px] font-semibold text-black dark:bg-black/50 dark:text-white/90">
                                 <TypeIcon className="size-3" aria-hidden />
                                 {typeMeta.label}
                               </p>
@@ -935,7 +954,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                                 className={
                                   gl
                                     ? 'card-button ml-auto inline-flex items-center gap-0.5 py-1 pl-2 pr-2 text-[11px] font-medium leading-none'
-                                    : 'inline-flex items-center justify-end gap-0.5 rounded-md px-1.5 py-1 text-[11px] font-medium leading-none text-slate-500 transition hover:bg-slate-500/10 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100'
+                                    : 'inline-flex items-center justify-end gap-0.5 rounded-md px-1.5 py-1 text-[11px] font-medium leading-none text-black/55 transition hover:bg-black/8 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/65 dark:hover:bg-white/8 dark:hover:text-white'
                                 }
                               >
                                 Detay
@@ -992,7 +1011,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                           className={
                             gl
                               ? 'glass-card glass-card--static text-sm text-black'
-                              : 'rounded-lg border border-slate-200/50 bg-white/50 px-3 py-2 text-sm text-slate-600 dark:border-slate-700/50 dark:bg-slate-900/35 dark:text-slate-300'
+                              : 'rounded-lg border border-black/14 bg-white/50 px-3 py-2 text-sm text-black/80 dark:border-white/12 dark:bg-black/45 dark:text-white/85'
                           }
                         >
                           Filtreye uygun proje bulunamadi.
@@ -1006,18 +1025,18 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                   {gl ? (
                     <div className="glass-card glass-card--static project-mgmt-footer-panel sticky bottom-0 z-10 mt-2 shrink-0 text-xs">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-black dark:text-slate-300">
+                        <p className="text-black dark:text-white/80">
                           {filtered.length > 0 ? (
                             <>
-                              <span className="tabular-nums font-semibold text-black dark:text-slate-100">
+                              <span className="tabular-nums font-semibold text-black dark:text-white">
                                 {listPageStart}
                               </span>
                               -
-                              <span className="tabular-nums font-semibold text-black dark:text-slate-100">
+                              <span className="tabular-nums font-semibold text-black dark:text-white">
                                 {listPageEnd}
                               </span>{' '}
                               /{' '}
-                              <span className="tabular-nums font-semibold text-black dark:text-slate-100">
+                              <span className="tabular-nums font-semibold text-black dark:text-white">
                                 {filtered.length}
                               </span>{' '}
                               sonuc
@@ -1026,7 +1045,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                             'Sonuc yok'
                           )}
                         </p>
-                        <label className="flex items-center gap-1 text-black dark:text-slate-300">
+                        <label className="flex items-center gap-1 text-black dark:text-white/80">
                           <span>Sayfa boyutu</span>
                           <select
                             value={pageSize}
@@ -1047,34 +1066,22 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                           </select>
                         </label>
                       </div>
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                        <p className="text-black dark:text-slate-400">
-                          Yüklenen grup{' '}
-                          <span className="tabular-nums font-semibold">{safeListPage}</span> /{' '}
-                          <span className="tabular-nums font-semibold">{listPageCount}</span>
-                        </p>
-                        <p className="text-[11px] text-black dark:text-slate-400">
-                          {safeListPage < listPageCount
-                            ? 'Liste sonuna gelince veya alan dolunca yeni kayıtlar yüklenir'
-                            : 'Tüm kayıtlar yüklendi'}
-                        </p>
-                      </div>
                     </div>
                   ) : (
-                    <div className="sticky bottom-0 z-10 mt-1 shrink-0 border-t border-slate-200/60 bg-white/90 pt-2 text-xs backdrop-blur dark:border-slate-700/60 dark:bg-slate-900/85">
+                    <div className="sticky bottom-0 z-10 mt-1 shrink-0 border-t border-black/15 bg-white/90 pt-2 text-xs backdrop-blur dark:border-white/12 dark:bg-black/75">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-slate-600 dark:text-slate-300">
+                        <p className="text-black/75 dark:text-white/80">
                           {filtered.length > 0 ? (
                             <>
-                              <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">
+                              <span className="tabular-nums font-semibold text-black dark:text-white">
                                 {listPageStart}
                               </span>
                               -
-                              <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">
+                              <span className="tabular-nums font-semibold text-black dark:text-white">
                                 {listPageEnd}
                               </span>{' '}
                               /{' '}
-                              <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">
+                              <span className="tabular-nums font-semibold text-black dark:text-white">
                                 {filtered.length}
                               </span>{' '}
                               sonuc
@@ -1083,7 +1090,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                             'Sonuc yok'
                           )}
                         </p>
-                        <label className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                        <label className="flex items-center gap-1 text-black/75 dark:text-white/80">
                           <span>Sayfa boyutu</span>
                           <select
                             value={pageSize}
@@ -1094,7 +1101,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                                 listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
                               })
                             }}
-                            className="rounded-md border border-slate-300 bg-white px-1.5 py-1 text-xs text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                            className="rounded-md border border-black/22 bg-white px-1.5 py-1 text-xs text-black dark:border-white/15 dark:bg-black/80 dark:text-white"
                           >
                             {[6, 8, 10, 15].map((size) => (
                               <option key={size} value={size}>
@@ -1103,18 +1110,6 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                             ))}
                           </select>
                         </label>
-                      </div>
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                        <p className="text-slate-500 dark:text-slate-400">
-                          Yüklenen grup{' '}
-                          <span className="tabular-nums font-semibold">{safeListPage}</span> /{' '}
-                          <span className="tabular-nums font-semibold">{listPageCount}</span>
-                        </p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                          {safeListPage < listPageCount
-                            ? 'Liste sonuna gelince veya alan dolunca yeni kayıtlar yüklenir'
-                            : 'Tüm kayıtlar yüklendi'}
-                        </p>
                       </div>
                     </div>
                   )}
@@ -1131,14 +1126,14 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                   'group absolute inset-y-3 left-1/2 -translate-x-1/2 rounded-full border transition',
                   isResizing || isResizerHover
                     ? gl
-                      ? 'w-6 border-slate-400/60 bg-slate-200/80 dark:border-slate-500/60 dark:bg-slate-800/70'
+                      ? 'w-6 border-black/35 bg-black/12 dark:border-white/18 dark:bg-black/60'
                       : neutralShell
-                        ? 'w-6 border-slate-400/60 bg-slate-200/80 dark:border-slate-500/60 dark:bg-slate-800/70'
-                        : 'w-6 border-sky-300/70 bg-sky-100/70 dark:border-sky-500/60 dark:bg-sky-900/40'
-                    : 'w-3 border-slate-200/80 bg-white/70 dark:border-slate-700/80 dark:bg-slate-900/60',
+                        ? 'w-6 border-black/35 bg-black/12 dark:border-white/18 dark:bg-black/60'
+                        : 'w-6 border-black/25 bg-black/8 dark:border-white/20 dark:bg-black/50'
+                    : 'w-3 border-black/18 bg-white/70 dark:border-white/12 dark:bg-black/55',
                 ].join(' ')}
               >
-                <span className="pointer-events-none flex h-full items-center justify-center text-slate-500 dark:text-slate-300">
+                <span className="pointer-events-none flex h-full items-center justify-center text-black/55 dark:text-white/70">
                   {isResizing || isResizerHover ? (
                     <ChevronsLeftRight className="size-3.5" />
                   ) : (
@@ -1159,14 +1154,14 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
             {selected ? (
               <div key={selectedId} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
               <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 lg:max-w-3xl">
-                <header className="shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <header className="shrink-0 border-b border-black/12 pb-3 text-center dark:border-white/10">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
                     Secili proje
                   </p>
-                  <h3 className="mt-1.5 text-xl font-semibold leading-tight text-slate-900 dark:text-slate-50">
+                  <h3 className="mt-1.5 text-xl font-semibold leading-tight text-black dark:text-white">
                     {selected.name}
                   </h3>
-                  <p className="mt-1 text-sm leading-snug text-slate-600 dark:text-slate-300">
+                  <p className="mt-1 text-sm leading-snug text-black/75 dark:text-white/80">
                     {selected.customer} · Sorumlu {selected.owner}
                   </p>
                   <button
@@ -1175,7 +1170,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     className={
                       gl
                         ? 'card-button mt-2'
-                        : 'mt-2 rounded-md border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800'
+                        : 'mt-2 rounded-md border border-black/22 px-2 py-1 text-xs font-semibold text-black hover:bg-black/5 dark:border-white/15 dark:text-white dark:hover:bg-white/10'
                     }
                   >
                     Projeyi düzenle
@@ -1215,10 +1210,10 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                       className={
                         gl
                           ? ['nav-item', 'shrink-0', detailTab === id ? 'active' : ''].filter(Boolean).join(' ')
-                          : `shrink-0 rounded-full px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
+                          : `shrink-0 rounded-full px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 ${
                               detailTab === id
-                                ? 'okan-liquid-pill-active okan-project-tab-active text-slate-900 dark:text-slate-50'
-                                : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
+                                ? 'okan-liquid-pill-active okan-project-tab-active text-black dark:text-white'
+                                : 'text-black/70 hover:text-black dark:text-white/75 dark:hover:text-white'
                             }`
                       }
                     >
@@ -1236,51 +1231,51 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                 >
 
                 {detailTab === 'ozet' ? (
-                  <div className="flex flex-col divide-y divide-slate-200/25 dark:divide-white/10">
+                  <div className="flex flex-col divide-y divide-black/12 dark:divide-white/10">
                     <div className="pb-4 pt-0">
                       <dl className="mx-auto grid max-w-sm grid-cols-2 justify-items-center gap-x-6 gap-y-4 text-base sm:max-w-md sm:gap-x-10">
                         <div className="min-w-0">
-                          <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Durum</dt>
-                          <dd className="mt-0.5 font-medium leading-snug text-slate-900 dark:text-slate-50">
+                          <dt className="text-xs font-medium text-black/60 dark:text-white/65">Durum</dt>
+                          <dd className="mt-0.5 font-medium leading-snug text-black dark:text-white">
                             {statusLabel(selected.status)}
                           </dd>
                         </div>
                         <div className="min-w-0">
-                          <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Oncelik</dt>
-                          <dd className="mt-0.5 font-medium leading-snug text-slate-900 dark:text-slate-50">
+                          <dt className="text-xs font-medium text-black/60 dark:text-white/65">Oncelik</dt>
+                          <dd className="mt-0.5 font-medium leading-snug text-black dark:text-white">
                             {priorityLabel(selected.priority)}
                           </dd>
                         </div>
                         <div className="min-w-0">
-                          <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Baslangic</dt>
-                          <dd className="mt-0.5 font-medium leading-snug text-slate-900 dark:text-slate-50">{selected.startDate}</dd>
+                          <dt className="text-xs font-medium text-black/60 dark:text-white/65">Baslangic</dt>
+                          <dd className="mt-0.5 font-medium leading-snug text-black dark:text-white">{selected.startDate}</dd>
                         </div>
                         <div className="min-w-0">
-                          <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Termin</dt>
-                          <dd className="mt-0.5 font-medium leading-snug text-slate-900 dark:text-slate-50">{selected.dueDate}</dd>
+                          <dt className="text-xs font-medium text-black/60 dark:text-white/65">Termin</dt>
+                          <dd className="mt-0.5 font-medium leading-snug text-black dark:text-white">{selected.dueDate}</dd>
                         </div>
                       </dl>
                     </div>
 
-                    <p className="py-4 text-base leading-relaxed text-slate-700 dark:text-slate-200">{selected.note}</p>
+                    <p className="py-4 text-base leading-relaxed text-black/90 dark:text-white/90">{selected.note}</p>
 
                     <div className="pt-4">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
                         Son 3 aktivite
                       </p>
-                      <ul className="mx-auto mt-3 max-w-lg divide-y divide-slate-200/20 text-left dark:divide-white/10">
+                      <ul className="mx-auto mt-3 max-w-lg divide-y divide-black/12 text-left dark:divide-white/10">
                         {selectedActivities.length ? (
                           selectedActivities.map((a) => (
                             <li
                               key={a.id}
-                              className="flex justify-center gap-3 py-2.5 text-sm leading-snug text-slate-700 first:pt-0 dark:text-slate-200 sm:justify-start"
+                              className="flex justify-center gap-3 py-2.5 text-sm leading-snug text-black/90 first:pt-0 dark:text-white/90 sm:justify-start"
                             >
-                              <span className="w-14 shrink-0 tabular-nums text-slate-500 dark:text-slate-400">{a.at}</span>
+                              <span className="w-14 shrink-0 tabular-nums text-black/60 dark:text-white/65">{a.at}</span>
                               <span className="min-w-0 flex-1">{a.text}</span>
                             </li>
                           ))
                         ) : (
-                          <li className="py-2 text-sm text-slate-600 dark:text-slate-300">Aktivite kaydi yok.</li>
+                          <li className="py-2 text-sm text-black/75 dark:text-white/80">Aktivite kaydi yok.</li>
                         )}
                       </ul>
                     </div>
@@ -1289,16 +1284,16 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
 
                 {detailTab === 'dosyalar' ? (
                   <div className="flex flex-col">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
                       Proje dosyalari (mock)
                     </p>
-                    <ul className="mx-auto mt-3 max-w-lg divide-y divide-slate-200/25 text-left dark:divide-white/10" role="list">
+                    <ul className="mx-auto mt-3 max-w-lg divide-y divide-black/12 text-left dark:divide-white/10" role="list">
                       {['Vaziyet_Plani_RevC.pdf', 'Kalip_Seti_2026-04.ifc', 'Montaj_Notlari_v2.docx'].map((f) => (
                         <li
                           key={f}
                           className="flex flex-col items-center gap-2 py-3 text-sm first:pt-0 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
                         >
-                          <span className="min-w-0 max-w-full flex-1 truncate text-center font-medium text-slate-800 sm:text-left dark:text-slate-100">
+                          <span className="min-w-0 max-w-full flex-1 truncate text-center font-medium text-black sm:text-left dark:text-white">
                             {f}
                           </span>
                           <button
@@ -1315,16 +1310,16 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
 
                 {detailTab === 'aktivite' ? (
                   <div className="flex flex-col">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
                       Aktivite gecmisi
                     </p>
-                    <ul className="mx-auto mt-3 max-w-lg divide-y divide-slate-200/25 text-left dark:divide-white/10">
+                    <ul className="mx-auto mt-3 max-w-lg divide-y divide-black/12 text-left dark:divide-white/10">
                       {(projectManagementActivitiesMock.filter((a) => a.projectId === selected.id)).map((a) => (
                         <li
                           key={a.id}
-                          className="flex justify-center gap-3 py-2.5 text-sm leading-snug text-slate-700 first:pt-0 dark:text-slate-200 sm:justify-start"
+                          className="flex justify-center gap-3 py-2.5 text-sm leading-snug text-black/90 first:pt-0 dark:text-white/90 sm:justify-start"
                         >
-                          <span className="w-14 shrink-0 tabular-nums text-slate-500 dark:text-slate-400">{a.at}</span>
+                          <span className="w-14 shrink-0 tabular-nums text-black/60 dark:text-white/65">{a.at}</span>
                           <span className="min-w-0 flex-1">{a.text}</span>
                         </li>
                       ))}
@@ -1360,21 +1355,21 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
 
                 {detailTab === 'hizli-ayarlar' ? (
                   <div className="flex flex-col">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
                       Hizli ayarlar (mock)
                     </p>
-                    <div className="mx-auto mt-3 max-w-md divide-y divide-slate-200/25 text-left dark:divide-white/10">
+                    <div className="mx-auto mt-3 max-w-md divide-y divide-black/12 text-left dark:divide-white/10">
                       <label className="flex cursor-pointer items-center justify-between gap-4 py-3 text-sm first:pt-0">
-                        <span className="min-w-0 text-slate-800 dark:text-slate-100">Bildirimleri ac</span>
-                        <input type="checkbox" defaultChecked className={gl || neutralShell ? 'size-4 shrink-0 accent-slate-600' : 'size-4 shrink-0 accent-indigo-500'} />
+                        <span className="min-w-0 text-black dark:text-white">Bildirimleri ac</span>
+                        <input type="checkbox" defaultChecked className={gl || neutralShell ? 'size-4 shrink-0 accent-black' : 'size-4 shrink-0 accent-indigo-500'} />
                       </label>
                       <label className="flex cursor-pointer items-center justify-between gap-4 py-3 text-sm">
-                        <span className="min-w-0 text-slate-800 dark:text-slate-100">Gecikme uyarisi</span>
-                        <input type="checkbox" defaultChecked className={gl || neutralShell ? 'size-4 shrink-0 accent-slate-600' : 'size-4 shrink-0 accent-indigo-500'} />
+                        <span className="min-w-0 text-black dark:text-white">Gecikme uyarisi</span>
+                        <input type="checkbox" defaultChecked className={gl || neutralShell ? 'size-4 shrink-0 accent-black' : 'size-4 shrink-0 accent-indigo-500'} />
                       </label>
                       <label className="flex cursor-pointer items-center justify-between gap-4 py-3 text-sm">
-                        <span className="min-w-0 text-slate-800 dark:text-slate-100">Haftalik ozet maili</span>
-                        <input type="checkbox" className={gl || neutralShell ? 'size-4 shrink-0 accent-slate-600' : 'size-4 shrink-0 accent-indigo-500'} />
+                        <span className="min-w-0 text-black dark:text-white">Haftalik ozet maili</span>
+                        <input type="checkbox" className={gl || neutralShell ? 'size-4 shrink-0 accent-black' : 'size-4 shrink-0 accent-indigo-500'} />
                       </label>
                     </div>
                   </div>
@@ -1382,10 +1377,10 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
 
                 {detailTab === 'notlar' ? (
                   <div className="flex flex-col">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
                       Proje notlari (mock)
                     </p>
-                    <ul className="mx-auto mt-3 max-w-lg divide-y divide-slate-200/25 text-left dark:divide-white/10">
+                    <ul className="mx-auto mt-3 max-w-lg divide-y divide-black/12 text-left dark:divide-white/10">
                       {[
                         'Kalip teslim takvimi saha ekibiyle yeniden dogrulanacak.',
                         'Musteri tarafi revizyon R3 dokumani yarin bekleniyor.',
@@ -1393,15 +1388,15 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                       ].map((note, i) => (
                         <li
                           key={note}
-                          className="flex justify-center gap-3 py-2.5 text-sm leading-snug first:pt-0 dark:text-slate-200 sm:justify-start"
+                          className="flex justify-center gap-3 py-2.5 text-sm leading-snug first:pt-0 dark:text-white/90 sm:justify-start"
                         >
-                          <span className="w-7 shrink-0 tabular-nums text-slate-500 dark:text-slate-400">#{i + 1}</span>
-                          <span className="min-w-0 flex-1 text-slate-700 dark:text-slate-200">{note}</span>
+                          <span className="w-7 shrink-0 tabular-nums text-black/60 dark:text-white/65">#{i + 1}</span>
+                          <span className="min-w-0 flex-1 text-black/90 dark:text-white/90">{note}</span>
                         </li>
                       ))}
                     </ul>
-                    <div className="mx-auto mt-6 max-w-lg border-t border-slate-200/25 pt-4 text-left dark:border-white/10">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <div className="mx-auto mt-6 max-w-lg border-t border-black/12 pt-4 text-left dark:border-white/10">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
                         Yeni not ekle
                       </label>
                       <textarea
@@ -1427,55 +1422,64 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               </div>
               </div>
             ) : (
-              <p className="text-sm text-slate-600 dark:text-slate-300">Proje secin.</p>
+              <p className="text-sm text-black/75 dark:text-white/80">Proje secin.</p>
             )}
             </aside>
           </div>
         </div>
       </div>
-      {isProjectDialogOpen ? (
-        <div className="fixed inset-0 z-[95] flex items-end justify-center p-3 sm:items-center sm:p-6">
-          <button
-            type="button"
-            className="absolute inset-0 bg-slate-950/30 backdrop-blur-[2px]"
-            aria-label="Proje dialog kapat"
-            onClick={() => setIsProjectDialogOpen(false)}
-          />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={dialogMode === 'create' ? 'Proje oluştur' : 'Proje düzenle'}
-            className={
-              gl
-                ? 'glass-card glass-card--static relative z-10 w-full max-w-2xl'
-                : 'relative z-10 w-full max-w-2xl rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xl dark:border-slate-700/70 dark:bg-slate-900'
-            }
-          >
-            <div className="mb-4 flex items-start justify-between gap-2">
-              <div>
-                <h3 className="text-base font-semibold text-slate-900 dark:text-slate-50">
-                  {dialogMode === 'create' ? 'Proje oluştur' : 'Proje düzenle'}
-                </h3>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Genel bilgiler alanını doldurun.
-                </p>
-              </div>
+      {isProjectDialogOpen
+        ? createPortal(
+            <div className="fixed inset-0 z-[110] flex items-end justify-center p-3 sm:items-center sm:p-6">
               <button
                 type="button"
+                className="absolute inset-0 z-0 bg-black/40 backdrop-blur-[2px] dark:bg-black/60"
+                aria-label="Proje dialog kapat"
                 onClick={() => setIsProjectDialogOpen(false)}
+              />
+              <div
                 className={
                   gl
-                    ? 'card-button inline-flex size-8 items-center justify-center p-0'
-                    : 'inline-flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
+                    ? 'project-mgmt-glass-light relative z-10 w-full max-w-2xl'
+                    : 'relative z-10 w-full max-w-2xl'
                 }
               >
-                <X className="size-4" aria-hidden />
-              </button>
-            </div>
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={dialogMode === 'create' ? 'Proje oluştur' : 'Proje düzenle'}
+                  className={
+                    gl
+                      ? 'glass-card glass-card--static w-full'
+                      : 'w-full rounded-2xl border border-black/18 bg-white p-4 shadow-xl dark:border-white/12 dark:bg-black/85'
+                  }
+                >
+                  <div className="mb-4 flex items-start justify-between gap-2">
+                    <div className="min-w-0 pr-2">
+                      <h3 className="text-base font-semibold text-black dark:text-white">
+                        {dialogMode === 'create' ? 'Proje oluştur' : 'Proje düzenle'}
+                      </h3>
+                      <p className="mt-1 text-xs text-black/60 dark:text-white/65">
+                        Genel bilgiler alanını doldurun.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsProjectDialogOpen(false)}
+                      aria-label="Kapat"
+                      className={
+                        gl
+                          ? 'card-button inline-flex size-8 shrink-0 items-center justify-center p-0 text-black shadow-sm ring-1 ring-black/15 dark:text-white dark:ring-white/20'
+                          : 'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-black/20 text-black/80 shadow-sm hover:bg-black/5 dark:border-white/15 dark:text-white/85 dark:hover:bg-white/10'
+                      }
+                    >
+                      <X className="size-4 shrink-0" strokeWidth={2} aria-hidden />
+                    </button>
+                  </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="sm:col-span-2">
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Müşteri</span>
+                <span className="text-xs font-medium text-black/75 dark:text-white/80">Müşteri</span>
                 <select
                   value={dialogDraft.customer}
                   onChange={(event) => {
@@ -1490,7 +1494,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                   className={
                     gl
                       ? 'glass-input mt-1 w-full'
-                      : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950'
+                      : 'mt-1 w-full rounded-lg border border-black/22 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-black/80'
                   }
                 >
                   {customerOptions.map((customer) => (
@@ -1502,7 +1506,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               </label>
 
               <label>
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Lokasyon</span>
+                <span className="text-xs font-medium text-black/75 dark:text-white/80">Lokasyon</span>
                 <select
                   value={dialogDraft.location}
                   onChange={(event) => {
@@ -1512,7 +1516,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                   className={
                     gl
                       ? 'glass-input mt-1 w-full'
-                      : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950'
+                      : 'mt-1 w-full rounded-lg border border-black/22 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-black/80'
                   }
                 >
                   {locationOptions.map((location) => (
@@ -1524,7 +1528,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               </label>
 
               <label>
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Durum</span>
+                <span className="text-xs font-medium text-black/75 dark:text-white/80">Durum</span>
                 <select
                   value={dialogDraft.status}
                   onChange={(event) => {
@@ -1534,7 +1538,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                   className={
                     gl
                       ? 'glass-input mt-1 w-full'
-                      : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950'
+                      : 'mt-1 w-full rounded-lg border border-black/22 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-black/80'
                   }
                 >
                   {(['planlama', 'devam', 'riskli', 'beklemede', 'tamamlandi'] as const).map((status) => (
@@ -1546,7 +1550,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               </label>
 
               <label className="sm:col-span-2">
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Proje adı</span>
+                <span className="text-xs font-medium text-black/75 dark:text-white/80">Proje adı</span>
                 <input
                   value={dialogDraft.name}
                   onChange={(event) => {
@@ -1556,13 +1560,13 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                   className={
                     gl
                       ? 'glass-input mt-1 w-full'
-                      : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950'
+                      : 'mt-1 w-full rounded-lg border border-black/22 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-black/80'
                   }
                 />
               </label>
 
               <label>
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Proje kısa kodu</span>
+                <span className="text-xs font-medium text-black/75 dark:text-white/80">Proje kısa kodu</span>
                 <input
                   value={dialogDraft.shortCode}
                   maxLength={4}
@@ -1574,13 +1578,13 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                   className={
                     gl
                       ? 'glass-input mt-1 w-full uppercase'
-                      : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm uppercase dark:border-slate-600 dark:bg-slate-950'
+                      : 'mt-1 w-full rounded-lg border border-black/22 bg-white px-3 py-2 text-sm uppercase dark:border-white/15 dark:bg-black/80'
                   }
                 />
               </label>
 
               <label>
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Başlangıç tarihi</span>
+                <span className="text-xs font-medium text-black/75 dark:text-white/80">Başlangıç tarihi</span>
                 <input
                   type="date"
                   value={dialogDraft.startDate}
@@ -1591,13 +1595,13 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                   className={
                     gl
                       ? 'glass-input mt-1 w-full'
-                      : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950'
+                      : 'mt-1 w-full rounded-lg border border-black/22 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-black/80'
                   }
                 />
               </label>
 
               <label>
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Termin tarihi</span>
+                <span className="text-xs font-medium text-black/75 dark:text-white/80">Termin tarihi</span>
                 <input
                   type="date"
                   value={dialogDraft.dueDate}
@@ -1608,7 +1612,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                   className={
                     gl
                       ? 'glass-input mt-1 w-full'
-                      : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950'
+                      : 'mt-1 w-full rounded-lg border border-black/22 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-black/80'
                   }
                 />
               </label>
@@ -1625,7 +1629,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                 className={
                   gl
                     ? ['glass-btn', 'secondary', 'small'].join(' ')
-                    : 'rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200'
+                    : 'rounded-lg border border-black/22 px-3 py-2 text-sm font-semibold text-black dark:border-white/15 dark:text-white'
                 }
               >
                 Vazgeç
@@ -1636,7 +1640,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                 className={
                   gl
                     ? ['glass-btn', 'primary', 'small'].join(' ')
-                    : 'rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'
+                    : 'rounded-lg bg-black px-3 py-2 text-sm font-semibold text-white hover:bg-neutral-900 dark:bg-white dark:text-black dark:hover:bg-white/90'
                 }
               >
                 {dialogMode === 'create' ? 'Projeyi oluştur' : 'Değişiklikleri kaydet'}
@@ -1644,7 +1648,9 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
             </div>
           </div>
         </div>
-      ) : null}
+      </div>
+      , document.body)
+      : null}
     </div>
   )
 }

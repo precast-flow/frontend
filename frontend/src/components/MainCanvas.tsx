@@ -63,7 +63,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
           ? 'gm-glass-main-canvas gm-glass-main-canvas--full gm-glass-main-canvas--okan-liquid flex min-h-0 flex-1 flex-col overflow-hidden'
           : [
               `gm-glass-main-canvas flex min-h-0 flex-1 flex-col rounded-3xl ${
-                isProject ? 'project-mgmt-page-root overflow-hidden ' : ''
+                isProject || isCrm || isUnitWorkQueue ? 'project-mgmt-page-root overflow-hidden ' : ''
               }${
                 isProject || isCrm || isMaterialCatalog || isStandardSeriesCatalog || isApprovalFlow || isRolesPermissions || isUserManagement || isElementIdentityAdmin || isUnitWorkQueue
                   ? 'px-0 py-1 md:px-1 md:py-2'
@@ -78,23 +78,25 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
             ].join(' ')
       }
     >
-      <div
-        className={[
-          fullBleedInMainModule ? 'mb-2 shrink-0 pb-2' : 'mb-2 pb-2',
-          okanSplitHeadingAlign ? 'ps-[0.6875rem] pe-[0.6875rem]' : '',
-        ]
-          .filter(Boolean)
-          .join(' ')}
-      >
-        <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-50 md:text-2xl">
-          {title}
-        </h1>
-        {breadcrumbSegments ? (
-          <div className="mt-1.5">
-            <AppModuleBreadcrumb segments={breadcrumbSegments} />
-          </div>
-        ) : null}
-      </div>
+      {!isUnitWorkQueue ? (
+        <div
+          className={[
+            fullBleedInMainModule ? 'mb-2 shrink-0 pb-2' : 'mb-2 pb-2',
+            okanSplitHeadingAlign ? 'ps-[0.6875rem] pe-[0.6875rem]' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-50 md:text-2xl">
+            {title}
+          </h1>
+          {breadcrumbSegments ? (
+            <div className="mt-1.5">
+              <AppModuleBreadcrumb segments={breadcrumbSegments} />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {isCrm ? (
         <CrmModuleView onNavigate={onNavigate} />
