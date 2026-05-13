@@ -968,6 +968,12 @@ const shell: Record<string, string> = {
   'unitWorkQueue.detailTo': 'Hedef birim',
   'unitWorkQueue.detailFactory': 'Fabrika kodu',
   'unitWorkQueue.listTitle': 'İş listesi',
+  'unitWorkQueue.pagination.prev': 'Önceki',
+  'unitWorkQueue.pagination.next': 'Sonraki',
+  'unitWorkQueue.pagination.pageOf': 'Sayfa {{current}}/{{total}}',
+  'unitWorkQueue.pagination.pageSize': 'Sayfa boyutu',
+  'unitWorkQueue.pagination.footerRange': '{{start}}-{{end}} / {{total}} sonuç',
+  'unitWorkQueue.pagination.emptyFooter': 'Sonuç yok',
   'unitWorkQueue.selectedWorkEyebrow': 'Seçili iş',
   'unitWorkQueue.orgFilter': 'Hedef birim',
   'unitWorkQueue.unit.all': 'Tüm birimler',
@@ -1797,8 +1803,6 @@ const shell: Record<string, string> = {
 
   'approvalFlowDesigner.listTitle': 'Kayıtlı akışlar',
   'approvalFlowDesigner.legacyLink': 'Eski görünüm (?legacy=1)',
-  'approvalFlowDesigner.intro':
-    'Soldan şablon seçin veya yeni taslak başlatın; düzenleyici ve önizleme sağda. Veriler tarayıcıda saklanır (mock).',
   'approvalFlowDesigner.filtersTitle': 'Yardım',
   'approvalFlowDesigner.filtersSubtitle': 'Onay akışı tasarımcısı',
   'approvalFlowDesigner.filterBody':
@@ -2123,8 +2127,6 @@ const shell: Record<string, string> = {
   'standardSeries.pickTemplate': 'Şablon',
 
   'userManagement.listTitle': 'Kullanıcılar',
-  'userManagement.intro':
-    'Liste–detay (mock). Pasif kullanıcı yazma ve onay aksiyonlarını kullanamaz; davet ve oturumlar prototip durumudur.',
   'userManagement.newUser': 'Yeni kullanıcı (mock)',
   'userManagement.legacyLink': 'Eski görünüm (?legacy=1)',
   'userManagement.filtersTitle': 'Filtreler',
@@ -2192,8 +2194,6 @@ const shell: Record<string, string> = {
 
   'rolesPermissions.listTitle': 'Roller',
   'rolesPermissions.legacyLink': 'Eski görünüm (?legacy=1)',
-  'rolesPermissions.intro':
-    'Liste–detay (mock). RBAC izinleri bu oturumda yerel tutulur; sistem rolleri silinemez ve bazı izinler kilitlidir.',
   'rolesPermissions.filtersTitle': 'Filtreler',
   'rolesPermissions.filtersSubtitle': 'Rol listesi, modül ve izin araması',
   'rolesPermissions.roleListSearch': 'Rol listesinde ara',

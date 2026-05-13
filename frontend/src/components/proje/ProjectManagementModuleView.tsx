@@ -100,6 +100,7 @@ type ProjectDialogDraft = {
 }
 type ProjectRow = ProjectCardItem & { location: string; shortCode: string }
 const PROJECT_MANAGEMENT_VIEW_STATE_KEY = 'project-management:view-state'
+const PROJECT_MANAGEMENT_DEFAULT_SPLIT_RATIO = 40
 
 const CUSTOMER_LOCATIONS: Record<string, string[]> = {
   'Acme Altyapi': ['Merkez Kampüs', 'Saha-1', 'Saha-2'],
@@ -132,7 +133,6 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
   const detailPanelRef = useRef<HTMLElement | null>(null)
   const splitRef = useRef<HTMLDivElement | null>(null)
   const listRef = useRef<HTMLUListElement | null>(null)
-  const loadMoreSentinelRef = useRef<HTMLLIElement | null>(null)
   const [rows, setRows] = useState<ProjectRow[]>(
     projectManagementCardsMock.map((row) => ({
       ...row,
@@ -226,21 +226,23 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
   const [pageSize, setPageSize] = useState(() => {
     try {
       const raw = sessionStorage.getItem(PROJECT_MANAGEMENT_VIEW_STATE_KEY)
-      if (!raw) return 8
+      if (!raw) return 6
       const parsed = JSON.parse(raw) as { pageSize?: number }
-      return typeof parsed.pageSize === 'number' && parsed.pageSize > 0 ? parsed.pageSize : 8
+      return typeof parsed.pageSize === 'number' && parsed.pageSize > 0 ? parsed.pageSize : 6
     } catch {
-      return 8
+      return 6
     }
   })
   const [splitRatio, setSplitRatio] = useState(() => {
     try {
       const raw = sessionStorage.getItem(PROJECT_MANAGEMENT_VIEW_STATE_KEY)
-      if (!raw) return 40
+      if (!raw) return PROJECT_MANAGEMENT_DEFAULT_SPLIT_RATIO
       const parsed = JSON.parse(raw) as { splitRatio?: number }
-      return typeof parsed.splitRatio === 'number' ? Math.min(55, Math.max(30, parsed.splitRatio)) : 40
+      return typeof parsed.splitRatio === 'number'
+        ? Math.min(55, Math.max(30, parsed.splitRatio))
+        : PROJECT_MANAGEMENT_DEFAULT_SPLIT_RATIO
     } catch {
-      return 40
+      return PROJECT_MANAGEMENT_DEFAULT_SPLIT_RATIO
     }
   })
   const [isResizing, setIsResizing] = useState(false)
@@ -315,10 +317,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
   const safeListPage = Math.min(listPage, listPageCount)
 
   const visibleProjects = useMemo(() => {
-    return filtered.slice(0, safeListPage * pageSize)
+    const start = (safeListPage - 1) * pageSize
+    return filtered.slice(start, start + pageSize)
   }, [filtered, pageSize, safeListPage])
 
-  const listPageStart = filtered.length === 0 ? 0 : 1
+  const listPageStart = filtered.length === 0 ? 0 : (safeListPage - 1) * pageSize + 1
   const listPageEnd = Math.min(filtered.length, safeListPage * pageSize)
 
   const selected = filtered.find((r) => r.id === selectedId) ?? filtered[0] ?? null
@@ -450,14 +453,18 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
     setIsProjectDialogOpen(false)
   }
 
-  const onProjectListScroll = () => {
-    const el = listRef.current
-    if (!el) return
-    const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 64
-    if (!nearBottom) return
-    if (safeListPage >= listPageCount) return
-    setListPage((prev) => Math.min(listPageCount, prev + 1))
-  }
+  const skipListPageFilterReset = useRef(true)
+  useEffect(() => {
+    if (skipListPageFilterReset.current) {
+      skipListPageFilterReset.current = false
+      return
+    }
+    setListPage(1)
+  }, [statusFilter, ownerFilter, dateRange, searchQuery, sortMode])
+
+  useEffect(() => {
+    requestAnimationFrame(() => listRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
+  }, [safeListPage, pageSize])
 
   useEffect(() => {
     if (!filtersOpen) return
@@ -498,22 +505,6 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
       window.removeEventListener('mouseup', onMouseUp)
     }
   }, [isResizing])
-
-  useEffect(() => {
-    const root = listRef.current
-    const target = loadMoreSentinelRef.current
-    if (!root || !target || safeListPage >= listPageCount) return
-
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0]?.isIntersecting) return
-        setListPage((prev) => Math.min(listPageCount, prev + 1))
-      },
-      { root, rootMargin: '0px 0px 80px 0px', threshold: 0 },
-    )
-    io.observe(target)
-    return () => io.disconnect()
-  }, [filtersOpen, filtered.length, listPageCount, safeListPage, visibleProjects.length])
 
   const applyMockStatusChange = () => {
     if (!selected) return
@@ -566,11 +557,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
 
   return (
     <div
-      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl"
+      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-1 overflow-hidden rounded-3xl"
       data-neutral-shell={neutralShell ? 'true' : undefined}
     >
-      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-2">
-        <div className="px-[0.6875rem] py-1">
+      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-1">
+        <div className="px-[0.6875rem] pt-0 pb-0.5">
           <nav
             aria-label={t('project.breadcrumbAria')}
             className="mb-0"
@@ -892,7 +883,6 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                       ref={listRef}
                       className="flex h-full min-h-0 flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-100 ease-out"
                       style={{ paddingLeft: filtersOpen ? '18.5rem' : '0' }}
-                      onScroll={onProjectListScroll}
                       role="list"
                       aria-label="Proje listesi"
                     >
@@ -1017,14 +1007,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                           Filtreye uygun proje bulunamadi.
                         </li>
                       )}
-                      {safeListPage < listPageCount ? (
-                        <li ref={loadMoreSentinelRef} className="h-1 w-full shrink-0 list-none" aria-hidden />
-                      ) : null}
                     </ul>
                   </div>
                   {gl ? (
                     <div className="glass-card glass-card--static project-mgmt-footer-panel sticky bottom-0 z-10 mt-2 shrink-0 text-xs">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                         <p className="text-black dark:text-white/80">
                           {filtered.length > 0 ? (
                             <>
@@ -1045,31 +1032,60 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                             'Sonuc yok'
                           )}
                         </p>
-                        <label className="flex items-center gap-1 text-black dark:text-white/80">
-                          <span>Sayfa boyutu</span>
-                          <select
-                            value={pageSize}
-                            onChange={(event) => {
-                              setPageSize(Number(event.target.value))
-                              setListPage(1)
-                              requestAnimationFrame(() => {
-                                listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                              })
-                            }}
-                            className="glass-input px-2 py-1 text-xs"
-                          >
-                            {[6, 8, 10, 15].map((size) => (
-                              <option key={size} value={size}>
-                                {size}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {filtered.length > 0 ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                disabled={safeListPage <= 1}
+                                onClick={() => setListPage((p) => Math.max(1, p - 1))}
+                                className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
+                                  ' ',
+                                )}
+                              >
+                                Önceki
+                              </button>
+                              <span className="tabular-nums text-black/80 dark:text-white/75">
+                                Sayfa {safeListPage}/{listPageCount}
+                              </span>
+                              <button
+                                type="button"
+                                disabled={safeListPage >= listPageCount}
+                                onClick={() => setListPage((p) => Math.min(listPageCount, p + 1))}
+                                className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
+                                  ' ',
+                                )}
+                              >
+                                Sonraki
+                              </button>
+                            </div>
+                          ) : null}
+                          <label className="flex items-center gap-1 text-black dark:text-white/80">
+                            <span>Sayfa boyutu</span>
+                            <select
+                              value={pageSize}
+                              onChange={(event) => {
+                                setPageSize(Number(event.target.value))
+                                setListPage(1)
+                                requestAnimationFrame(() => {
+                                  listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+                                })
+                              }}
+                              className="glass-input px-2 py-1 text-xs"
+                            >
+                              {[6, 8, 10, 15].map((size) => (
+                                <option key={size} value={size}>
+                                  {size}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
                       </div>
                     </div>
                   ) : (
                     <div className="sticky bottom-0 z-10 mt-1 shrink-0 border-t border-black/15 bg-white/90 pt-2 text-xs backdrop-blur dark:border-white/12 dark:bg-black/75">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                         <p className="text-black/75 dark:text-white/80">
                           {filtered.length > 0 ? (
                             <>
@@ -1090,26 +1106,51 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                             'Sonuc yok'
                           )}
                         </p>
-                        <label className="flex items-center gap-1 text-black/75 dark:text-white/80">
-                          <span>Sayfa boyutu</span>
-                          <select
-                            value={pageSize}
-                            onChange={(event) => {
-                              setPageSize(Number(event.target.value))
-                              setListPage(1)
-                              requestAnimationFrame(() => {
-                                listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                              })
-                            }}
-                            className="rounded-md border border-black/22 bg-white px-1.5 py-1 text-xs text-black dark:border-white/15 dark:bg-black/80 dark:text-white"
-                          >
-                            {[6, 8, 10, 15].map((size) => (
-                              <option key={size} value={size}>
-                                {size}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {filtered.length > 0 ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                disabled={safeListPage <= 1}
+                                onClick={() => setListPage((p) => Math.max(1, p - 1))}
+                                className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
+                              >
+                                Önceki
+                              </button>
+                              <span className="tabular-nums text-black/70 dark:text-white/75">
+                                Sayfa {safeListPage}/{listPageCount}
+                              </span>
+                              <button
+                                type="button"
+                                disabled={safeListPage >= listPageCount}
+                                onClick={() => setListPage((p) => Math.min(listPageCount, p + 1))}
+                                className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
+                              >
+                                Sonraki
+                              </button>
+                            </div>
+                          ) : null}
+                          <label className="flex items-center gap-1 text-black/75 dark:text-white/80">
+                            <span>Sayfa boyutu</span>
+                            <select
+                              value={pageSize}
+                              onChange={(event) => {
+                                setPageSize(Number(event.target.value))
+                                setListPage(1)
+                                requestAnimationFrame(() => {
+                                  listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+                                })
+                              }}
+                              className="rounded-md border border-black/22 bg-white px-1.5 py-1 text-xs text-black dark:border-white/15 dark:bg-black/80 dark:text-white"
+                            >
+                              {[6, 8, 10, 15].map((size) => (
+                                <option key={size} value={size}>
+                                  {size}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1119,7 +1160,13 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               <button
                 type="button"
                 aria-label="Paneller arası genişliği ayarla"
+                title="Çift tıklayarak varsayılan sütun genişliğine dön"
                 onMouseDown={() => setIsResizing(true)}
+                onDoubleClick={(e) => {
+                  e.preventDefault()
+                  setIsResizing(false)
+                  setSplitRatio(PROJECT_MANAGEMENT_DEFAULT_SPLIT_RATIO)
+                }}
                 onMouseEnter={() => setIsResizerHover(true)}
                 onMouseLeave={() => setIsResizerHover(false)}
                 className={[

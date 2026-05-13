@@ -1,5 +1,5 @@
 import { useId, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Info, Lock, Search, Shield, Trash2, Users } from 'lucide-react'
 import {
   MOCK_ROLE_TEMPLATES,
@@ -8,7 +8,9 @@ import {
   isPermissionLockedForRole,
   type PermissionModuleKey,
 } from '../../data/mockRbac'
+import { activeModuleIdFromPathname } from '../../data/navigation'
 import { useI18n } from '../../i18n/I18nProvider'
+import { useThemeMode } from '../../theme/ThemeProvider'
 import { PmStyleDialog } from '../shared/PmStyleDialog'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import {
@@ -17,6 +19,7 @@ import {
   ElementIdentityPieceCodesLikeSplit,
 } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
+import '../proje/projectManagementGlassLight.css'
 import type { RolesPermissionsState } from './useRolesPermissionsState'
 
 const inputCls =
@@ -33,14 +36,18 @@ function tabPill(active: boolean) {
 
 export function RolesAndPermissionsModuleView(props: RolesPermissionsState) {
   const { t } = useI18n()
+  const { mode } = useThemeMode()
+  const gl = mode === 'light'
+  const location = useLocation()
+  const neutralShell = activeModuleIdFromPathname(location.pathname) === 'roles-permissions'
   const baseId = useId()
-  const rightRef = useRef<HTMLDivElement | null>(null)
+  const rightScrollRef = useRef<HTMLDivElement | null>(null)
   const [filterOpen, setFilterOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [roleListQuery, setRoleListQuery] = useState('')
 
   const scrollPanelTop = () => {
-    requestAnimationFrame(() => rightRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
+    requestAnimationFrame(() => rightScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
   }
 
   const {
@@ -89,35 +96,59 @@ export function RolesAndPermissionsModuleView(props: RolesPermissionsState) {
 
   return (
     <>
-      <ElementIdentityPieceCodesLikeSplit
-        persistKey="roles-permissions"
-        listTitle={t('rolesPermissions.listTitle')}
-        filterToolbarSearch={
-          <FilterToolbarSearch
-            id="roles-list-inline-search"
-            value={roleListQuery}
-            onValueChange={setRoleListQuery}
-            placeholder={t('rolesPermissions.roleListSearchPh')}
-            ariaLabel={t('rolesPermissions.roleListSearchAria')}
-          />
-        }
-        headerActions={
-          <Link
-            to="/roller-izinler?legacy=1"
-            className={`${eiSplitHeaderButtonPassive} no-underline`}
-          >
-            {t('rolesPermissions.legacyLink')}
-          </Link>
-        }
-        isFilterOpen={filterOpen}
-        onFilterOpenChange={setFilterOpen}
-        filterAside={
-          <div>
-            <ElementIdentityFilterSheetHeader
-              title={t('rolesPermissions.filtersTitle')}
-              subtitle={t('rolesPermissions.filtersSubtitle')}
-              onClose={() => setFilterOpen(false)}
-            />
+      <div
+        className="project-mgmt-glass-light flex min-h-0 min-w-0 flex-1 basis-0 flex-col gap-2 overflow-hidden rounded-3xl"
+        data-neutral-shell={neutralShell ? 'true' : undefined}
+      >
+        <div
+          className={[
+            'flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
+            gl
+              ? 'gap-2 rounded-3xl bg-transparent p-1 md:p-1.5'
+              : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
+          ].join(' ')}
+        >
+          <ElementIdentityPieceCodesLikeSplit
+            persistKey="roles-permissions"
+            visualVariant="project-mgmt"
+            neutralChrome={neutralShell}
+            listIndentWhenFilterOpen="18.5rem"
+            listTitle={t('rolesPermissions.listTitle')}
+            filterToolbarSearch={
+              <FilterToolbarSearch
+                id="roles-list-inline-search"
+                value={roleListQuery}
+                onValueChange={setRoleListQuery}
+                placeholder={t('rolesPermissions.roleListSearchPh')}
+                ariaLabel={t('rolesPermissions.roleListSearchAria')}
+                className={gl ? 'project-mgmt-toolbar-search' : ''}
+                inputClassName={gl ? 'glass-input' : ''}
+              />
+            }
+            headerActions={
+              <Link
+                to="/roller-izinler?legacy=1"
+                className={
+                  gl
+                    ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5', 'no-underline'].join(
+                        ' ',
+                      )
+                    : `${eiSplitHeaderButtonPassive} no-underline`
+                }
+              >
+                {t('rolesPermissions.legacyLink')}
+              </Link>
+            }
+            isFilterOpen={filterOpen}
+            onFilterOpenChange={setFilterOpen}
+            filterAside={
+              <div>
+                <ElementIdentityFilterSheetHeader
+                  glass={gl}
+                  title={t('rolesPermissions.filtersTitle')}
+                  subtitle={t('rolesPermissions.filtersSubtitle')}
+                  onClose={() => setFilterOpen(false)}
+                />
             <div className="grid gap-2.5">
               <label>
                 <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
@@ -263,14 +294,14 @@ export function RolesAndPermissionsModuleView(props: RolesPermissionsState) {
             </p>
           </div>
         }
-        rightPanelRef={rightRef}
         rightAside={
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-            <p className="mb-2 shrink-0 px-0.5 text-[11px] leading-relaxed text-slate-600 dark:text-slate-400 sm:px-1">
-              {t('rolesPermissions.intro')}
-            </p>
-            {role ? (
-              <div className="flex h-full min-h-0 flex-col">
+            <div
+              ref={rightScrollRef}
+              className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-2"
+            >
+              {role ? (
+                <div className="flex h-full min-h-0 flex-col">
                 <header className="shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10">
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     {t('rolesPermissions.selectedRole')}
@@ -609,9 +640,12 @@ export function RolesAndPermissionsModuleView(props: RolesPermissionsState) {
             ) : (
               <p className="text-sm text-slate-500 dark:text-slate-400">{t('rolesPermissions.selectHint')}</p>
             )}
+            </div>
           </div>
         }
-      />
+          />
+        </div>
+      </div>
 
       {deleteOpen && role && !role.isSystem ? (
         <PmStyleDialog

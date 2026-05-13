@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import { AlertTriangle, ChevronDown, ChevronRight, ChevronUp, Copy, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, ChevronUp, Copy, Pencil, Plus, Trash2 } from 'lucide-react'
 import {
   MOCK_APPROVAL_ROLES,
   MOCK_APPROVAL_USERS,
@@ -13,8 +13,6 @@ type Variant = 'neo' | 'liquid'
 function editorStyles(v: Variant) {
   if (v === 'neo') {
     return {
-      alertWrap:
-        'flex flex-col gap-2 rounded-2xl border border-amber-200/90 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 shadow-neo-in dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100',
       section: 'rounded-2xl bg-gray-50 p-5 shadow-neo-out-sm dark:bg-gray-950/80',
       sectionInset: 'rounded-2xl bg-gray-100 p-4 shadow-neo-in dark:bg-gray-900/80',
       insetSelect:
@@ -32,12 +30,14 @@ function editorStyles(v: Variant) {
       h2: 'text-sm font-semibold text-gray-900 dark:text-gray-50',
       muted: 'text-sm text-gray-600 dark:text-gray-300',
       mutedXs: 'text-xs text-gray-600 dark:text-gray-400',
+      sectionSpaced:
+        'rounded-2xl bg-gray-50 p-5 shadow-neo-out-sm dark:bg-gray-950/80',
     }
   }
   return {
-    alertWrap:
-      'flex flex-col gap-2 rounded-xl border border-amber-200/80 bg-amber-50/90 px-3 py-2.5 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/35 dark:text-amber-100',
-    section: 'rounded-xl border border-slate-200/70 bg-white/55 p-4 dark:border-slate-600/60 dark:bg-slate-900/45',
+    section: 'min-w-0',
+    sectionSpaced:
+      'min-w-0 mt-4 border-t border-slate-200/60 pt-4 dark:border-slate-700/50 sm:pt-5',
     sectionInset: 'rounded-xl border border-slate-200/70 bg-slate-50/50 p-4 dark:border-slate-600/60 dark:bg-slate-900/35',
     insetSelect:
       'mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none ring-sky-300/50 focus:ring-2 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100',
@@ -79,7 +79,8 @@ function asideStyles(v: Variant) {
   }
   return {
     section: 'rounded-xl border border-slate-200/70 bg-white/55 p-4 dark:border-slate-600/60 dark:bg-slate-900/45',
-    sectionPreview: 'rounded-xl border border-slate-200/70 bg-slate-50/50 p-4 dark:border-slate-600/60 dark:bg-slate-900/35',
+    sectionPreview:
+      'min-w-0 mt-4 border-t border-slate-200/60 pt-4 dark:border-slate-700/50 sm:pt-5',
     li: (active: boolean) =>
       [
         'rounded-lg border px-2 py-2 text-left transition',
@@ -130,21 +131,6 @@ export function ApprovalFlowDesignerEditorSection(props: EditorProps) {
 
   return (
     <>
-      <div className={s.alertWrap} role="status">
-        <div className="flex items-start gap-2">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-300" />
-          <div>
-            <p className="font-semibold text-amber-950 dark:text-amber-50">Erişim (mock)</p>
-            <p className="mt-1 text-amber-900/95 dark:text-amber-100/95">
-              Bu ekranı yalnızca <strong className="font-semibold">Yönetici</strong> ve{' '}
-              <strong className="font-semibold">Süreç yöneticisi</strong> rolleri görür (üretimde RBAC).
-              Onay akışı yapılandırması, modül izin matrisinden ayrıdır: akış <em>kimin sırayla onayladığı</em>
-              ; izinler <em>hangi ekran/aksiyon</em> anlamına gelir.
-            </p>
-          </div>
-        </div>
-      </div>
-
       <section className={s.section}>
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
@@ -263,7 +249,7 @@ export function ApprovalFlowDesignerEditorSection(props: EditorProps) {
         </div>
       </section>
 
-      <section className={s.section}>
+      <section className={s.sectionSpaced}>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className={s.h2}>Adımlar (sıralı)</h2>

@@ -970,6 +970,12 @@ const shell: Record<string, string> = {
   'unitWorkQueue.detailTo': 'Target unit',
   'unitWorkQueue.detailFactory': 'Factory code',
   'unitWorkQueue.listTitle': 'Work list',
+  'unitWorkQueue.pagination.prev': 'Previous',
+  'unitWorkQueue.pagination.next': 'Next',
+  'unitWorkQueue.pagination.pageOf': 'Page {{current}}/{{total}}',
+  'unitWorkQueue.pagination.pageSize': 'Page size',
+  'unitWorkQueue.pagination.footerRange': '{{start}}-{{end}} / {{total}} results',
+  'unitWorkQueue.pagination.emptyFooter': 'No results',
   'unitWorkQueue.selectedWorkEyebrow': 'Selected work',
   'unitWorkQueue.orgFilter': 'Target unit',
   'unitWorkQueue.unit.all': 'All units',
@@ -1799,8 +1805,6 @@ const shell: Record<string, string> = {
 
   'approvalFlowDesigner.listTitle': 'Saved flows',
   'approvalFlowDesigner.legacyLink': 'Legacy view (?legacy=1)',
-  'approvalFlowDesigner.intro':
-    'Pick a template on the left or start a new draft; editor and preview are on the right. Data is stored in the browser (mock).',
   'approvalFlowDesigner.filtersTitle': 'Help',
   'approvalFlowDesigner.filtersSubtitle': 'Approval flow designer',
   'approvalFlowDesigner.filterBody':
@@ -2125,8 +2129,6 @@ const shell: Record<string, string> = {
   'standardSeries.pickTemplate': 'Template',
 
   'userManagement.listTitle': 'Users',
-  'userManagement.intro':
-    'List–detail (mock). Inactive users cannot use write/approval actions; invites and sessions are prototype data.',
   'userManagement.newUser': 'New user (mock)',
   'userManagement.legacyLink': 'Legacy view (?legacy=1)',
   'userManagement.filtersTitle': 'Filters',
@@ -2194,8 +2196,6 @@ const shell: Record<string, string> = {
 
   'rolesPermissions.listTitle': 'Roles',
   'rolesPermissions.legacyLink': 'Legacy view (?legacy=1)',
-  'rolesPermissions.intro':
-    'List–detail (mock). RBAC permissions are kept locally for this session; system roles cannot be deleted and some permissions are locked.',
   'rolesPermissions.filtersTitle': 'Filters',
   'rolesPermissions.filtersSubtitle': 'Role list, module, and permission search',
   'rolesPermissions.roleListSearch': 'Search role list',

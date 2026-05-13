@@ -158,8 +158,10 @@ export function ElementIdentityPieceCodesLikeSplit({
 
   const sectionClass =
     isPm && gl
-      ? 'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden glass-card glass-card--static project-mgmt-split-panel min-h-0'
-      : 'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden p-3'
+      ? 'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 self-stretch flex-col overflow-hidden glass-card glass-card--static project-mgmt-split-panel min-h-0'
+      : isPm
+        ? 'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 self-stretch flex-col overflow-hidden p-3'
+        : 'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden p-3'
 
   const filterAsideClass = [
     'absolute inset-y-0 left-0 z-20 overflow-y-auto shadow-xl backdrop-blur-sm',
@@ -239,11 +241,19 @@ export function ElementIdentityPieceCodesLikeSplit({
         <button
           type="button"
           aria-label="Paneller arası genişliği ayarla"
+          title="Çift tıklayarak varsayılan sütun genişliğine dön"
           onMouseDown={() => setIsResizing(true)}
+          onDoubleClick={(e) => {
+            e.preventDefault()
+            setIsResizing(false)
+            setSplitRatio(Math.min(55, Math.max(30, defaultSplitRatio)))
+          }}
           onMouseEnter={() => setIsResizerHover(true)}
           onMouseLeave={() => setIsResizerHover(false)}
           className={[
-            'group absolute inset-y-3 left-1/2 -translate-x-1/2 rounded-full border transition',
+            isPm
+              ? 'group absolute inset-y-0 left-1/2 -translate-x-1/2 rounded-full border transition'
+              : 'group absolute inset-y-3 left-1/2 -translate-x-1/2 rounded-full border transition',
             isResizing || isResizerHover
               ? isPm
                 ? gl
@@ -277,8 +287,10 @@ export function ElementIdentityPieceCodesLikeSplit({
         ref={rightPanelRef}
         className={
           isPm && gl
-            ? 'okan-project-split-aside glass-card glass-card--static project-mgmt-split-panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
-            : 'okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:pl-2'
+            ? 'okan-project-split-aside glass-card glass-card--static project-mgmt-split-panel flex h-full min-h-0 min-w-0 flex-1 flex-col self-stretch overflow-hidden'
+            : isPm
+              ? 'okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col self-stretch overflow-hidden p-3 lg:pl-2'
+              : 'okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:pl-2'
         }
       >
         {rightAside}

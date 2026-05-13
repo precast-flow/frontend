@@ -36,8 +36,10 @@ function GlassAppShellInner() {
    */
   const useNeutralGlassBackdrop = mode === 'light'
 
-  /** Proje/CRM/Teklif (alt path dahil) + Üretim planlama: üst boşluk `pt-14 md:pt-16`, outlet padding 0 — navbar–başlık hizası */
+  /** Proje/CRM/Teklif (alt path dahil) + Üretim planlama: üst boşluk (proje listesi hariç) `pt-14 md:pt-16`, outlet padding 0 — navbar–başlık hizası */
   const isOkanPlanSplitPage =
+    /** `/` → `DEFAULT_MODULE_ID` proje; aksi halde `pt-20` ile çift üst boşluk oluşur */
+    location.pathname === '/' ||
     location.pathname.startsWith('/proje') ||
     location.pathname.startsWith('/crm') ||
     location.pathname.startsWith('/musteri-detay') ||
@@ -54,13 +56,32 @@ function GlassAppShellInner() {
     location.pathname === '/settings' ||
     effectiveActiveId === 'planning-design'
 
+  /** Proje liste (`/`, `/proje`) ve birim iş kuyruğu: üst `padding` / dış `gap` proje ile aynı (navbar altı hizası). */
+  const isProjectListRoute =
+    location.pathname === '/proje' || location.pathname === '/proje/' || location.pathname === '/'
+  const isWorkQueueListRoute =
+    location.pathname === '/birim-is-kuyrugu' || location.pathname === '/birim-is-kuyrugu/'
+  const isTightListShellRoute = isProjectListRoute || isWorkQueueListRoute
+
   return (
     <GlassLayout backdrop={useNeutralGlassBackdrop ? 'neutral-grid' : 'blobs'}>
-      <div className="flex min-h-dvh w-full min-w-0 flex-col gap-3 p-3 text-[var(--glass-text-primary)] md:gap-4 md:p-5">
+      <div
+        className={[
+          'flex min-h-dvh w-full min-w-0 flex-col text-[var(--glass-text-primary)]',
+          isTightListShellRoute && isOkanPlanSplitPage
+            ? 'gap-1.5 px-3 pt-0 pb-3 md:gap-2 md:px-5 md:pt-0 md:pb-5'
+            : 'gap-3 p-3 md:gap-4 md:p-5',
+        ].join(' ')}
+      >
         <div
           className={[
-            'relative z-0 flex min-h-0 min-w-0 flex-1 flex-col gap-3 pb-[var(--gm-footer-clear)] md:min-h-0 md:gap-4',
-            isOkanPlanSplitPage ? 'pt-14 md:pt-16' : 'pt-20 md:pt-24',
+            'relative z-0 flex min-h-0 min-w-0 flex-1 flex-col pb-[var(--gm-footer-clear)] md:min-h-0',
+            isTightListShellRoute && isOkanPlanSplitPage ? 'gap-1 md:gap-1.5' : 'gap-3 md:gap-4',
+            isOkanPlanSplitPage
+              ? isTightListShellRoute
+                ? 'pt-[calc(env(safe-area-inset-top,0px)+3.5rem+1rem)] md:pt-[calc(env(safe-area-inset-top,0px)+3.625rem+1.125rem)]'
+                : 'pt-14 md:pt-16'
+              : 'pt-20 md:pt-24',
           ].join(' ')}
         >
           <main

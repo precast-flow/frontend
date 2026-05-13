@@ -31,7 +31,7 @@ type Props = {
   onNavigate: (moduleId: string) => void
 }
 
-const CRM_LIST_PAGE_SIZE = 8
+const CRM_LIST_PAGE_SIZE = 6
 
 const detailTabDefs = [
   { id: 'genel', label: 'Genel' },
@@ -109,7 +109,6 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
   const locationPopoverPanelRef = useRef<HTMLDivElement | null>(null)
   const newLocationNameInputRef = useRef<HTMLInputElement | null>(null)
   const listRef = useRef<HTMLUListElement | null>(null)
-  const loadMoreSentinelRef = useRef<HTMLLIElement | null>(null)
   const splitRef = useRef<HTMLDivElement | null>(null)
 
   const list = useMemo(() => {
@@ -151,9 +150,10 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
   const listTotalPages = Math.max(1, Math.ceil(list.length / pageSize))
   const safeListPage = Math.min(listPage, listTotalPages)
   const listPageSlice = useMemo(() => {
-    return list.slice(0, safeListPage * pageSize)
+    const start = (safeListPage - 1) * pageSize
+    return list.slice(start, start + pageSize)
   }, [list, safeListPage, pageSize])
-  const listPageStart = list.length === 0 ? 0 : 1
+  const listPageStart = list.length === 0 ? 0 : (safeListPage - 1) * pageSize + 1
   const listPageEnd = Math.min(list.length, safeListPage * pageSize)
 
   useEffect(() => {
@@ -293,29 +293,9 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
     }
   }, [isResizing])
 
-  const onListScroll = () => {
-    const el = listRef.current
-    if (!el) return
-    const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 64
-    if (!nearBottom) return
-    if (safeListPage >= listTotalPages) return
-    setListPage((prev) => Math.min(listTotalPages, prev + 1))
-  }
-
   useEffect(() => {
-    const root = listRef.current
-    const target = loadMoreSentinelRef.current
-    if (!root || !target || safeListPage >= listTotalPages) return
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0]?.isIntersecting) return
-        setListPage((prev) => Math.min(listTotalPages, prev + 1))
-      },
-      { root, rootMargin: '0px 0px 80px 0px', threshold: 0 },
-    )
-    io.observe(target)
-    return () => io.disconnect()
-  }, [safeListPage, listTotalPages, listPageSlice.length, filtersOpen])
+    requestAnimationFrame(() => listRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
+  }, [safeListPage, pageSize])
 
   const clearFilters = () => {
     setSearch('')
@@ -726,7 +706,6 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                       ref={listRef}
                       className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-100 ease-out"
                       style={{ paddingLeft: filtersOpen ? '18.5rem' : '0' }}
-                      onScroll={onListScroll}
                     >
                       {listPageSlice.map((row) => (
                       <li
@@ -783,11 +762,10 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                         </button>
                       </li>
                       ))}
-                      {safeListPage < listTotalPages ? <li ref={loadMoreSentinelRef} className="h-5" aria-hidden /> : null}
                     </ul>
                     {gl ? (
                       <div className="glass-card glass-card--static project-mgmt-footer-panel sticky bottom-0 z-10 mt-2 shrink-0 text-xs">
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                           <p className="text-black dark:text-white/80">
                             <span className="tabular-nums font-semibold text-black dark:text-white">
                               {listPageStart}
@@ -802,38 +780,88 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                             </span>{' '}
                             sonuç
                           </p>
-                          <label className="flex items-center gap-1 text-black dark:text-white/80">
-                            <span>Sayfa boyutu</span>
-                            <select
-                              value={pageSize}
-                              onChange={(event) => setPageSize(Number(event.target.value))}
-                              className="glass-input px-2 py-1 text-xs"
-                            >
-                              <option value={6}>6</option>
-                              <option value={8}>8</option>
-                              <option value={12}>12</option>
-                              <option value={16}>16</option>
-                            </select>
-                          </label>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                disabled={safeListPage <= 1}
+                                onClick={() => setListPage((p) => Math.max(1, p - 1))}
+                                className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
+                                  ' ',
+                                )}
+                              >
+                                Önceki
+                              </button>
+                              <span className="tabular-nums text-black/80 dark:text-white/75">
+                                Sayfa {safeListPage}/{listTotalPages}
+                              </span>
+                              <button
+                                type="button"
+                                disabled={safeListPage >= listTotalPages}
+                                onClick={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
+                                className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
+                                  ' ',
+                                )}
+                              >
+                                Sonraki
+                              </button>
+                            </div>
+                            <label className="flex items-center gap-1 text-black dark:text-white/80">
+                              <span>Sayfa boyutu</span>
+                              <select
+                                value={pageSize}
+                                onChange={(event) => setPageSize(Number(event.target.value))}
+                                className="glass-input px-2 py-1 text-xs"
+                              >
+                                <option value={6}>6</option>
+                                <option value={8}>8</option>
+                                <option value={12}>12</option>
+                                <option value={16}>16</option>
+                              </select>
+                            </label>
+                          </div>
                         </div>
                       </div>
                     ) : (
-                    <div className="mt-1.5 flex shrink-0 items-center justify-between gap-2 border-t border-black/15 pt-2.5 text-[11px] dark:border-white/12">
+                    <div className="mt-1.5 flex shrink-0 flex-col gap-2 border-t border-black/15 pt-2.5 text-[11px] dark:border-white/12 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                       <span className="text-black/75 dark:text-white/80">
                         {listPageStart}-{listPageEnd} / {list.length} sonuç
                       </span>
-                      <div className="flex items-center gap-2">
-                        <label className="text-black/55 dark:text-white/65">Sayfa boyutu:</label>
-                        <select
-                          value={pageSize}
-                          onChange={(event) => setPageSize(Number(event.target.value))}
-                          className="rounded-md border border-black/22 bg-white px-1.5 py-0.5 text-[11px] text-black dark:border-white/15 dark:bg-black/80 dark:text-white"
-                        >
-                          <option value={6}>6</option>
-                          <option value={8}>8</option>
-                          <option value={12}>12</option>
-                          <option value={16}>16</option>
-                        </select>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            disabled={safeListPage <= 1}
+                            onClick={() => setListPage((p) => Math.max(1, p - 1))}
+                            className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
+                          >
+                            Önceki
+                          </button>
+                          <span className="tabular-nums text-black/70 dark:text-white/75">
+                            Sayfa {safeListPage}/{listTotalPages}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={safeListPage >= listTotalPages}
+                            onClick={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
+                            className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
+                          >
+                            Sonraki
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <label className="text-black/55 dark:text-white/65">Sayfa boyutu:</label>
+                          <select
+                            value={pageSize}
+                            onChange={(event) => setPageSize(Number(event.target.value))}
+                            className="rounded-md border border-black/22 bg-white px-1.5 py-0.5 text-[11px] text-black dark:border-white/15 dark:bg-black/80 dark:text-white"
+                          >
+                            <option value={6}>6</option>
+                            <option value={8}>8</option>
+                            <option value={12}>12</option>
+                            <option value={16}>16</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
                     )}
@@ -846,7 +874,13 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
               <button
                 type="button"
                 aria-label="Paneller arası genişliği ayarla"
+                title="Çift tıklayarak varsayılan sütun genişliğine dön"
                 onMouseDown={() => setIsResizing(true)}
+                onDoubleClick={(e) => {
+                  e.preventDefault()
+                  setIsResizing(false)
+                  setSplitRatio(40)
+                }}
                 onMouseEnter={() => setIsResizerHover(true)}
                 onMouseLeave={() => setIsResizerHover(false)}
                 className={[
