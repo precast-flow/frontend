@@ -929,8 +929,6 @@ const shell: Record<string, string> = {
   'qualityShortcuts.confirmSample': 'Create sample',
   'qualityShortcuts.toastSampleCreated': 'Draft sample queued — {{batch}} (mock)',
 
-  'unitWorkQueue.intro':
-    'One screen for planning, procurement, drawing, production, quality, logistics/site, and CRM flows in the demo. Default tab is assigned to me; the unit filter narrows by target department.',
   'unitWorkQueue.unitContext': 'Unit context (mock)',
   'unitWorkQueue.factoryScope': 'Factory',
   'unitWorkQueue.allFactories': 'All factories',
@@ -948,6 +946,7 @@ const shell: Record<string, string> = {
   'unitWorkQueue.colUpdated': 'Last update',
   'unitWorkQueue.colTargetUnit': 'Target unit',
   'unitWorkQueue.empty': 'No rows for this filter (mock).',
+  'unitWorkQueue.filterPerspective': 'View',
   'unitWorkQueue.rbacNote':
     'RBAC (mock): every role sees the same template; production may add role-based columns or tab limits.',
   'unitWorkQueue.rbacTabs':
@@ -971,6 +970,7 @@ const shell: Record<string, string> = {
   'unitWorkQueue.detailTo': 'Target unit',
   'unitWorkQueue.detailFactory': 'Factory code',
   'unitWorkQueue.listTitle': 'Work list',
+  'unitWorkQueue.selectedWorkEyebrow': 'Selected work',
   'unitWorkQueue.orgFilter': 'Target unit',
   'unitWorkQueue.unit.all': 'All units',
   'unitWorkQueue.org.planning': 'Planning',

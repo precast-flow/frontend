@@ -927,8 +927,6 @@ const shell: Record<string, string> = {
   'qualityShortcuts.confirmSample': 'Numune oluştur',
   'qualityShortcuts.toastSampleCreated': 'Taslak numune kuyruğa alındı — {{batch}} (mock)',
 
-  'unitWorkQueue.intro':
-    'Aynı ekran planlama, satın alma, çizim, üretim, kalite, lojistik–saha ve CRM akışlarını demoda birlikte gösterir. Varsayılan sekme bana atanan işlerdir; birim filtresi hedef birime göre daraltır.',
   'unitWorkQueue.unitContext': 'Birim bağlamı (mock)',
   'unitWorkQueue.factoryScope': 'Fabrika',
   'unitWorkQueue.allFactories': 'Tüm fabrikalar',
@@ -946,6 +944,7 @@ const shell: Record<string, string> = {
   'unitWorkQueue.colUpdated': 'Son güncelleme',
   'unitWorkQueue.colTargetUnit': 'Hedef birim',
   'unitWorkQueue.empty': 'Bu filtrede satır yok (mock).',
+  'unitWorkQueue.filterPerspective': 'Görünüm',
   'unitWorkQueue.rbacNote':
     'RBAC (mock): Tüm roller aynı şablonu görür; üretimde rol bazlı sütun veya sekme kısıtı eklenebilir.',
   'unitWorkQueue.rbacTabs':
@@ -969,6 +968,7 @@ const shell: Record<string, string> = {
   'unitWorkQueue.detailTo': 'Hedef birim',
   'unitWorkQueue.detailFactory': 'Fabrika kodu',
   'unitWorkQueue.listTitle': 'İş listesi',
+  'unitWorkQueue.selectedWorkEyebrow': 'Seçili iş',
   'unitWorkQueue.orgFilter': 'Hedef birim',
   'unitWorkQueue.unit.all': 'Tüm birimler',
   'unitWorkQueue.org.planning': 'Planlama',
