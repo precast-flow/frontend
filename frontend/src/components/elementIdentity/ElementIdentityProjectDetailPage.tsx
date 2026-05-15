@@ -1,6 +1,7 @@
 import { ChevronRight, LayoutList, Plus, Shapes, Tags } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { activeModuleIdFromPathname } from '../../data/navigation'
 import { projectManagementCardsMock } from '../../data/projectManagementCardsMock'
 import { ALL_ELEMENT_TYPES } from '../../elementIdentity/catalog/allElementTypes'
 import { SIZE_FORMATS, sizeFormatCatalogCode } from '../../elementIdentity/catalog/sizeFormats'
@@ -14,13 +15,17 @@ import type {
   ProjectLike,
 } from '../../elementIdentity/types'
 import { useI18n } from '../../i18n/I18nProvider'
+import { useThemeMode } from '../../theme/ThemeProvider'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
+import '../proje/projectManagementGlassLight.css'
 import { BulkProductImportDialog } from './BulkProductImportDialog'
 import {
   eiSplitHeaderButtonPassive,
   ElementIdentityFilterSheetHeader,
   ElementIdentityPieceCodesLikeSplit,
 } from './ElementIdentityPieceCodesLikeSplit'
+import { ElementIdentitySplitListPaginationFooter } from './ElementIdentitySplitListPaginationFooter'
+import { useElementIdentitySplitListPagination } from './useElementIdentitySplitListPagination'
 import { ElementIdentityProductsTab } from './ElementIdentityProductsTab'
 import { NewProductDialog } from './NewProductDialog'
 import { TemplateBuilderPanel } from './TemplateBuilderPanel'
@@ -94,6 +99,10 @@ function productSourceBar(source: string) {
 
 export function ElementIdentityProjectDetailPage() {
   const { t, locale } = useI18n()
+  const { mode } = useThemeMode()
+  const gl = mode === 'light'
+  const location = useLocation()
+  const neutralShell = activeModuleIdFromPathname(location.pathname) === 'element-identity'
   const navigate = useNavigate()
   const { projectId } = useParams()
   const {
@@ -158,6 +167,8 @@ export function ElementIdentityProjectDetailPage() {
   const rightGeneralRef = useRef<HTMLDivElement | null>(null)
   const rightCodeRef = useRef<HTMLDivElement | null>(null)
   const rightLabelsRef = useRef<HTMLDivElement | null>(null)
+  const codeListRef = useRef<HTMLUListElement | null>(null)
+  const labelsListRef = useRef<HTMLUListElement | null>(null)
 
   const scrollTop = (ref: RefObject<HTMLDivElement | null>) => {
     requestAnimationFrame(() => ref.current?.scrollTo({ top: 0, behavior: 'auto' }))
@@ -205,6 +216,14 @@ export function ElementIdentityProjectDetailPage() {
     })
   }, [groupFilter, codeTypeQuery, locale])
 
+  const codeListResetKey = `${codeTypeQuery}:${[...groupFilter].sort().join(',')}`
+  const codeListPagination = useElementIdentitySplitListPagination(filteredTypes, codeListResetKey)
+  const { visible: visibleTypes } = codeListPagination
+
+  const scrollCodeListTop = () => {
+    requestAnimationFrame(() => codeListRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
+  }
+
   const selectedType = filteredTypes.find((x) => x.id === selectedTypeId) ?? filteredTypes[0] ?? null
 
   useEffect(() => {
@@ -217,6 +236,17 @@ export function ElementIdentityProjectDetailPage() {
     const q = labelFilterQuery.trim().toLocaleLowerCase('tr-TR')
     return firmTemplates.filter((tm) => !q || tm.name.toLocaleLowerCase('tr-TR').includes(q))
   }, [firmTemplates, labelFilterQuery])
+
+  const labelListPagination = useElementIdentitySplitListPagination(filteredTemplates, labelFilterQuery)
+  const { visible: visibleLabelTemplates } = labelListPagination
+
+  const scrollLabelsListTop = () => {
+    requestAnimationFrame(() => labelsListRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
+  }
+
+  const headerBtnCls = gl
+    ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5', 'shrink-0'].join(' ')
+    : eiSplitHeaderButtonPassive
 
   const generalSectionDefs = useMemo(() => {
     const defs = [
@@ -303,21 +333,48 @@ export function ElementIdentityProjectDetailPage() {
         ? 'elementIdentity.detail.generalStats'
         : 'elementIdentity.detail.generalNote'
 
+  const detailSectionCard = gl
+    ? 'rounded-xl border border-black/10 bg-white/45 p-4 shadow-[inset_0_1px_0_rgb(255_255_255/0.48)] dark:border-white/10 dark:bg-white/[0.06] dark:shadow-none'
+    : 'rounded-xl border border-slate-200/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5'
+  const infoDt = gl ? 'text-[11px] font-medium text-black/50 dark:text-white/55' : 'text-xs text-slate-500 dark:text-slate-400'
+  const infoDd = gl ? 'font-semibold text-black dark:text-slate-50' : 'font-medium text-slate-900 dark:text-slate-50'
+
+  const crumbMuted = gl ? 'text-black/60 dark:text-white/65' : 'text-slate-500 dark:text-slate-400'
+  const crumbLink = gl
+    ? 'font-medium text-black/75 underline-offset-2 transition hover:text-black hover:underline dark:text-white/75 dark:hover:text-white'
+    : 'font-medium text-slate-600 underline-offset-2 transition hover:text-sky-600 hover:underline dark:text-slate-300 dark:hover:text-sky-400'
+  const crumbCurrent = gl
+    ? 'max-w-[40ch] truncate font-semibold text-black dark:text-white'
+    : 'max-w-[40ch] truncate font-semibold text-slate-800 dark:text-slate-100'
+  const tabBase =
+    'shrink-0 rounded-full border px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 dark:focus-visible:ring-cyan-400/60'
+  const tabActive = gl
+    ? 'border-black/18 bg-white/55 text-black shadow-[inset_0_1px_0_rgb(255_255_255/0.65)] dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50 dark:shadow-none'
+    : 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
+  const tabIdle = gl
+    ? 'border-black/10 bg-white/35 text-black/70 hover:border-black/16 hover:bg-white/50 hover:text-black dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
+    : 'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
+
+  const mainTabUsesSplit = mainTab === 'general' || mainTab === 'products' || mainTab === 'code' || mainTab === 'labels'
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-[1.25rem]">
-      <div className="px-[0.6875rem] py-1">
-        <div className="mb-2 pb-2">
-          <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-50 md:text-2xl">
+    <div
+      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-1 overflow-hidden rounded-3xl"
+      data-neutral-shell={neutralShell ? 'true' : undefined}
+    >
+      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-1">
+      <div className="px-[0.6875rem] pt-0 pb-0.5">
+        <div className="mb-1.5 pb-1.5">
+          <h1
+            className={`text-xl font-semibold tracking-tight md:text-2xl ${gl ? 'text-black dark:text-white' : 'text-gray-900 dark:text-gray-50'}`}
+          >
             {card.name} — {t('elementIdentity.detail.titleSuffix')}
           </h1>
         </div>
         <nav aria-label="Breadcrumb" className="mb-0">
-          <ol className="flex flex-wrap items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+          <ol className={`flex flex-wrap items-center gap-1 text-xs ${crumbMuted}`}>
             <li>
-              <Link
-                to="/tanimlar"
-                className="font-medium text-slate-600 underline-offset-2 transition hover:text-sky-600 hover:underline dark:text-slate-300 dark:hover:text-sky-400"
-              >
+              <Link to="/tanimlar" className={crumbLink}>
                 {t('elementIdentity.detail.breadcrumbHub')}
               </Link>
             </li>
@@ -325,27 +382,39 @@ export function ElementIdentityProjectDetailPage() {
               <ChevronRight className="size-3.5 shrink-0 opacity-70" />
             </li>
             <li>
-              <button
-                type="button"
-                onClick={() => navigate('/eleman-kimlik')}
-                className="font-medium text-slate-600 underline-offset-2 transition hover:text-sky-600 hover:underline dark:text-slate-300 dark:hover:text-sky-400"
-              >
+              <button type="button" onClick={() => navigate('/eleman-kimlik')} className={crumbLink}>
                 {t('elementIdentity.detail.breadcrumbModule')}
               </button>
             </li>
             <li className="flex items-center gap-1" aria-hidden>
               <ChevronRight className="size-3.5 shrink-0 opacity-70" />
             </li>
-            <li className="max-w-[40ch] truncate font-semibold text-slate-800 dark:text-slate-100" aria-current="page">
+            <li className={crumbCurrent} aria-current="page">
               {card.code}
             </li>
           </ol>
         </nav>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
-        <div className="flex h-full min-h-0 flex-col gap-3 px-1 sm:px-2">
-          <div className="flex shrink-0 gap-1 overflow-x-auto" role="tablist">
+      <div
+        className={[
+          'min-h-0 overflow-hidden',
+          gl
+            ? 'flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl bg-transparent p-1 md:p-1.5'
+            : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
+        ].join(' ')}
+      >
+        <div
+          className={[
+            'flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
+            gl ? 'glass-card glass-card--static project-mgmt-split-panel gap-3' : 'gap-3 px-1 sm:px-2',
+          ].join(' ')}
+        >
+          <div
+            className="flex shrink-0 gap-1 overflow-x-auto px-0.5 sm:px-0"
+            role="tablist"
+            aria-label="Eleman kimlik detay sekmeleri"
+          >
             {mainTabs.map((tab) => (
               <button
                 key={tab.id}
@@ -353,21 +422,24 @@ export function ElementIdentityProjectDetailPage() {
                 role="tab"
                 aria-selected={mainTab === tab.id}
                 onClick={() => setMainTab(tab.id)}
-                className={`shrink-0 rounded-full border px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
-                  mainTab === tab.id
-                    ? 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
-                    : 'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
-                }`}
+                className={`${tabBase} ${mainTab === tab.id ? tabActive : tabIdle}`}
               >
                 {t(tab.labelKey)}
               </button>
             ))}
           </div>
 
-          <div className="min-h-0 flex-1 overflow-hidden text-sm">
+          <div
+            className={`min-h-0 flex-1 overflow-x-hidden text-sm ${mainTabUsesSplit ? 'flex min-h-0 flex-col overflow-hidden' : 'overflow-y-auto overscroll-y-contain'} ${gl ? 'px-0.5 sm:px-1' : ''}`}
+          >
             {mainTab === 'general' ? (
               <ElementIdentityPieceCodesLikeSplit
                 persistKey={`${projectId}:general`}
+                visualVariant="project-mgmt"
+                neutralChrome={neutralShell}
+                embedded
+                fillParentHeight
+                listIndentWhenFilterOpen="18.5rem"
                 listTitle={t('elementIdentity.detail.splitGeneralTitle')}
                 filterToolbarSearch={
                   <FilterToolbarSearch
@@ -376,6 +448,8 @@ export function ElementIdentityProjectDetailPage() {
                     onValueChange={setGeneralListQuery}
                     placeholder={t('elementIdentity.detail.generalSearchPh')}
                     ariaLabel={t('elementIdentity.detail.generalSearchAria')}
+                    className={['min-w-0 sm:max-w-[14rem]', gl ? 'project-mgmt-toolbar-search' : ''].filter(Boolean).join(' ')}
+                    inputClassName={gl ? 'glass-input' : ''}
                   />
                 }
                 isFilterOpen={filterOpenGeneral}
@@ -383,12 +457,19 @@ export function ElementIdentityProjectDetailPage() {
                 filterAside={
                   <div>
                     <ElementIdentityFilterSheetHeader
+                      glass={gl}
                       title={t('elementIdentity.detail.generalFiltersTitle')}
                       subtitle={t('elementIdentity.detail.generalFiltersSubtitle')}
                       onClose={() => setFilterOpenGeneral(false)}
                     />
                     <label className="mb-3 block">
-                      <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                      <span
+                        className={
+                          gl
+                            ? 'text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80'
+                            : 'text-[11px] font-medium text-slate-600 dark:text-slate-300'
+                        }
+                      >
                         {t('elementIdentity.detail.generalSearchLabel')}
                       </span>
                       <input
@@ -397,7 +478,11 @@ export function ElementIdentityProjectDetailPage() {
                         onChange={(e) => setGeneralListQuery(e.target.value)}
                         placeholder={t('elementIdentity.detail.generalSearchPh')}
                         autoComplete="off"
-                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
+                        className={
+                          gl
+                            ? 'glass-input mt-2 w-full'
+                            : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100'
+                        }
                       />
                     </label>
                     <div className="grid gap-2">
@@ -408,8 +493,13 @@ export function ElementIdentityProjectDetailPage() {
                           onClick={() => {
                             setGeneralSection(id)
                             setFilterOpenGeneral(false)
+                            scrollTop(rightGeneralRef)
                           }}
-                          className="rounded-lg border border-slate-200/70 bg-white/80 px-2 py-2 text-left text-xs font-semibold text-slate-800 hover:bg-sky-50 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-sky-950/40"
+                          className={
+                            gl
+                              ? ['glass-btn', 'secondary', 'small', 'w-full', 'justify-start', 'text-left'].join(' ')
+                              : 'rounded-lg border border-slate-200/70 bg-white/80 px-2 py-2 text-left text-xs font-semibold text-slate-800 hover:bg-sky-50 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-sky-950/40'
+                          }
                         >
                           {t(key)}
                         </button>
@@ -420,23 +510,59 @@ export function ElementIdentityProjectDetailPage() {
                 listBody={
                   <>
                     {generalSectionDefs.map(([id, key]) => (
-                      <li key={id} className="rounded-lg border border-slate-200/50 bg-white/50 dark:border-slate-700/50 dark:bg-slate-900/25">
+                      <li
+                        key={id}
+                        className={[
+                          gl
+                            ? 'glass-card glass-card--static project-mgmt-list-row-card flex min-h-0 shrink-0 items-stretch gap-1.5'
+                            : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
+                          generalSection === id ? 'okan-project-list-row--active' : '',
+                        ].join(' ')}
+                      >
                         <button
                           type="button"
-                          onClick={() => setGeneralSection(id)}
+                          onClick={() => {
+                            setGeneralSection(id)
+                            scrollTop(rightGeneralRef)
+                          }}
+                          aria-current={generalSection === id ? 'true' : undefined}
                           className={[
-                            'flex w-full items-stretch gap-2.5 px-3 py-2 text-left text-sm transition',
-                            generalSection === id
+                            'flex min-w-0 flex-1 items-stretch gap-2.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-cyan-400/50',
+                            gl ? 'rounded-md px-0.5 py-0.5 hover:bg-white/50 dark:hover:bg-white/8' : 'px-3 py-2',
+                            !gl && generalSection === id
                               ? 'okan-project-list-row--active bg-sky-500/10 dark:bg-sky-400/10'
-                              : 'hover:bg-white/50 dark:hover:bg-slate-900/35',
-                          ].join(' ')}
+                              : '',
+                            !gl && generalSection !== id ? 'hover:bg-white/50 dark:hover:bg-slate-900/35' : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
                         >
-                          <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-300/70 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600/60">
+                          <span
+                            className={
+                              gl
+                                ? 'mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-black/8 text-black ring-1 ring-inset ring-black/12 dark:bg-white/10 dark:text-white dark:ring-white/15'
+                                : 'mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-300/70 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600/60'
+                            }
+                          >
                             <LayoutList className="size-4" aria-hidden />
                           </span>
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-slate-900 dark:text-slate-50">{t(key)}</p>
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400">{card.code}</p>
+                            <p
+                              className={
+                                gl
+                                  ? 'font-semibold text-black dark:text-white'
+                                  : 'font-semibold text-slate-900 dark:text-slate-50'
+                              }
+                            >
+                              {t(key)}
+                            </p>
+                            <p
+                              className={
+                                gl ? 'text-xs text-black/65 dark:text-white/70' : 'text-xs text-slate-600 dark:text-slate-400'
+                              }
+                            >
+                              {card.code}
+                            </p>
                           </div>
                         </button>
                       </li>
@@ -444,76 +570,128 @@ export function ElementIdentityProjectDetailPage() {
                   </>
                 }
                 footer={
-                  <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[11px] text-slate-600 dark:text-slate-300">
-                    <span>
-                      {t('elementIdentity.list.elementsCount')}:{' '}
-                      <span className="font-semibold tabular-nums text-slate-900 dark:text-slate-50">{stats.total}</span>
-                    </span>
-                    <span>
-                      {t('elementIdentity.list.productsCount')}:{' '}
-                      <span className="font-semibold tabular-nums text-slate-900 dark:text-slate-50">{prd.length}</span>
-                    </span>
-                  </div>
+                  gl ? (
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-black/75 dark:text-white/80">
+                      <span>
+                        {t('elementIdentity.list.elementsCount')}:{' '}
+                        <span className="font-semibold tabular-nums text-black dark:text-white">{stats.total}</span>
+                      </span>
+                      <span>
+                        {t('elementIdentity.list.productsCount')}:{' '}
+                        <span className="font-semibold tabular-nums text-black dark:text-white">{prd.length}</span>
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[11px] text-slate-600 dark:text-slate-300">
+                      <span>
+                        {t('elementIdentity.list.elementsCount')}:{' '}
+                        <span className="font-semibold tabular-nums text-slate-900 dark:text-slate-50">{stats.total}</span>
+                      </span>
+                      <span>
+                        {t('elementIdentity.list.productsCount')}:{' '}
+                        <span className="font-semibold tabular-nums text-slate-900 dark:text-slate-50">{prd.length}</span>
+                      </span>
+                    </div>
+                  )
                 }
                 rightPanelRef={rightGeneralRef}
                 rightAside={
-                  <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-                    <header className="shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        {t('elementIdentity.detail.tabGeneral')}
-                      </p>
-                      <h3 className="mt-1.5 text-lg font-semibold text-slate-900 dark:text-slate-50">
-                        {t(generalTitleKey)}
-                      </h3>
-                    </header>
-                    <div
-                      role="tabpanel"
-                      className="okan-project-tab-panel mt-3 min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 text-left sm:px-1"
-                    >
+                  <div className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
+                    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3 overflow-hidden sm:gap-4">
+                      <header
+                        className={
+                          gl
+                            ? 'shrink-0 border-b border-black/12 pb-3 text-left dark:border-white/10'
+                            : 'shrink-0 border-b border-slate-200/25 pb-3 text-left dark:border-white/10'
+                        }
+                      >
+                        <p
+                          className={
+                            gl
+                              ? 'text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65'
+                              : 'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'
+                          }
+                        >
+                          {t('elementIdentity.detail.tabGeneral')}
+                        </p>
+                        <h3
+                          className={
+                            gl
+                              ? 'mt-1.5 text-xl font-semibold leading-tight text-black dark:text-white'
+                              : 'mt-1.5 text-lg font-semibold text-slate-900 dark:text-slate-50'
+                          }
+                        >
+                          {t(generalTitleKey)}
+                        </h3>
+                        <p
+                          className={
+                            gl
+                              ? 'mt-1 text-sm leading-snug text-black/75 dark:text-white/80'
+                              : 'mt-1 text-sm leading-snug text-slate-600 dark:text-slate-300'
+                          }
+                        >
+                          {card.name} · {card.customer}
+                        </p>
+                      </header>
+                      <div
+                        role="tabpanel"
+                        className="okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden text-left"
+                      >
                       {generalSection === 'summary' ? (
-                        <section className="rounded-xl border border-slate-200/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <section className={detailSectionCard}>
+                          <p
+                            className={
+                              gl
+                                ? 'text-xs font-semibold uppercase tracking-wide text-black/55 dark:text-white/60'
+                                : 'text-xs font-semibold uppercase tracking-wide text-slate-500'
+                            }
+                          >
                             {t('elementIdentity.list.summaryTitle')}
                           </p>
-                          <dl className="mt-3 space-y-2 text-slate-800 dark:text-slate-100">
+                          <dl className="mt-3 space-y-2">
                             <div className="flex justify-between gap-2">
-                              <dt className="text-slate-500">{t('elementIdentity.detail.code')}</dt>
-                              <dd className="font-mono font-semibold">{card.code}</dd>
+                              <dt className={infoDt}>{t('elementIdentity.detail.code')}</dt>
+                              <dd className={`font-mono ${infoDd}`}>{card.code}</dd>
                             </div>
                             <div className="flex justify-between gap-2">
-                              <dt className="text-slate-500">{t('elementIdentity.detail.customer')}</dt>
-                              <dd>{card.customer}</dd>
+                              <dt className={infoDt}>{t('elementIdentity.detail.customer')}</dt>
+                              <dd className={infoDd}>{card.customer}</dd>
                             </div>
                             <div className="flex justify-between gap-2">
-                              <dt className="text-slate-500">{t('elementIdentity.list.elementsCount')}</dt>
-                              <dd className="font-semibold">{stats.total}</dd>
+                              <dt className={infoDt}>{t('elementIdentity.list.elementsCount')}</dt>
+                              <dd className={`tabular-nums ${infoDd}`}>{stats.total}</dd>
                             </div>
                             <div className="flex justify-between gap-2">
-                              <dt className="text-slate-500">{t('elementIdentity.list.productsCount')}</dt>
-                              <dd className="font-semibold">{prd.length}</dd>
+                              <dt className={infoDt}>{t('elementIdentity.list.productsCount')}</dt>
+                              <dd className={`tabular-nums ${infoDd}`}>{prd.length}</dd>
                             </div>
                           </dl>
                         </section>
                       ) : null}
                       {generalSection === 'stats' ? (
-                        <section className="rounded-xl border border-slate-200/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5">
-                          <dl className="space-y-2 text-sm text-slate-800 dark:text-slate-100">
+                        <section className={detailSectionCard}>
+                          <dl className="space-y-2 text-sm">
                             <div className="flex justify-between gap-2">
-                              <dt className="text-slate-500">{t('elementIdentity.detail.ifcCount')}</dt>
-                              <dd className="font-semibold tabular-nums">{stats.ifc}</dd>
+                              <dt className={infoDt}>{t('elementIdentity.detail.ifcCount')}</dt>
+                              <dd className={`tabular-nums ${infoDd}`}>{stats.ifc}</dd>
                             </div>
                             <div className="flex justify-between gap-2">
-                              <dt className="text-slate-500">{t('elementIdentity.detail.manualCount')}</dt>
-                              <dd className="font-semibold tabular-nums">{stats.manual}</dd>
+                              <dt className={infoDt}>{t('elementIdentity.detail.manualCount')}</dt>
+                              <dd className={`tabular-nums ${infoDd}`}>{stats.manual}</dd>
                             </div>
                           </dl>
                         </section>
                       ) : null}
                       {generalSection === 'note' ? (
-                        <section className="rounded-xl border border-slate-200/40 bg-white/40 p-4 text-xs leading-relaxed text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                        <section
+                          className={`${detailSectionCard} text-xs leading-relaxed ${
+                            gl ? 'text-black/75 dark:text-white/80' : 'text-slate-600 dark:text-slate-300'
+                          }`}
+                        >
                           {card.note}
                         </section>
                       ) : null}
+                      </div>
                     </div>
                   </div>
                 }
@@ -523,6 +701,7 @@ export function ElementIdentityProjectDetailPage() {
             {mainTab === 'products' ? (
               <ElementIdentityProductsTab
                 projectId={projectId}
+                neutralChrome={neutralShell}
                 onOpenNewProduct={() => setNewProductOpen(true)}
                 onOpenBulkImport={() => setBulkOpen(true)}
               />
@@ -531,6 +710,12 @@ export function ElementIdentityProjectDetailPage() {
             {mainTab === 'code' ? (
               <ElementIdentityPieceCodesLikeSplit
                 persistKey={`${projectId}:code`}
+                listRef={codeListRef}
+                visualVariant="project-mgmt"
+                neutralChrome={neutralShell}
+                embedded
+                fillParentHeight
+                listIndentWhenFilterOpen="18.5rem"
                 listTitle={t('elementIdentity.detail.splitCodeTitle')}
                 filterToolbarSearch={
                   <FilterToolbarSearch
@@ -539,6 +724,8 @@ export function ElementIdentityProjectDetailPage() {
                     onValueChange={setCodeTypeQuery}
                     placeholder={t('elementIdentity.detail.codeSearchPh')}
                     ariaLabel={t('elementIdentity.detail.codeSearchAria')}
+                    className={['min-w-0 sm:max-w-[14rem]', gl ? 'project-mgmt-toolbar-search' : ''].filter(Boolean).join(' ')}
+                    inputClassName={gl ? 'glass-input' : ''}
                   />
                 }
                 isFilterOpen={filterOpenCode}
@@ -546,12 +733,19 @@ export function ElementIdentityProjectDetailPage() {
                 filterAside={
                   <div>
                     <ElementIdentityFilterSheetHeader
+                      glass={gl}
                       title={t('elementIdentity.detail.codeFiltersTitle')}
                       subtitle={t('elementIdentity.detail.codeFiltersSubtitle')}
                       onClose={() => setFilterOpenCode(false)}
                     />
                     <label className="mb-3 block">
-                      <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                      <span
+                        className={
+                          gl
+                            ? 'text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80'
+                            : 'text-[11px] font-medium text-slate-600 dark:text-slate-300'
+                        }
+                      >
                         {t('elementIdentity.detail.codeSearchLabel')}
                       </span>
                       <input
@@ -560,31 +754,51 @@ export function ElementIdentityProjectDetailPage() {
                         onChange={(e) => setCodeTypeQuery(e.target.value)}
                         placeholder={t('elementIdentity.detail.codeSearchPh')}
                         autoComplete="off"
-                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
+                        className={
+                          gl
+                            ? 'glass-input mt-2 w-full'
+                            : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100'
+                        }
                       />
                     </label>
-                    <p className="mb-2 text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                    <p
+                      className={
+                        gl
+                          ? 'mb-2 text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80'
+                          : 'mb-2 text-[11px] font-medium text-slate-600 dark:text-slate-300'
+                      }
+                    >
                       {t('elementIdentity.code.filterTitle')}
                     </p>
                     <div className="flex flex-col gap-2">
                       {GROUP_ORDER.map((g) => (
                         <label
                           key={g.id}
-                          className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200/70 bg-white/80 px-2 py-2 text-[11px] dark:border-slate-600 dark:bg-slate-900/50"
+                          className={
+                            gl
+                              ? 'flex cursor-pointer items-center gap-2 rounded-lg border border-black/12 bg-white/45 px-2 py-2 text-[11px] text-black dark:border-white/12 dark:bg-white/[0.06] dark:text-white'
+                              : 'flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200/70 bg-white/80 px-2 py-2 text-[11px] dark:border-slate-600 dark:bg-slate-900/50'
+                          }
                         >
                           <input type="checkbox" checked={groupFilter.has(g.id)} onChange={() => toggleGroup(g.id)} />
                           {t(g.labelKey)}
                         </label>
                       ))}
                     </div>
-                    <div className="mt-3 border-t border-slate-200/60 pt-2 dark:border-slate-700/60">
+                    <div
+                      className={`mt-3 border-t pt-2 ${gl ? 'border-black/10 dark:border-white/10' : 'border-slate-200/60 dark:border-slate-700/60'}`}
+                    >
                       <button
                         type="button"
                         onClick={() => {
                           setCodeTypeQuery('')
                           setGroupFilter(new Set(GROUP_ORDER.map((x) => x.id)))
                         }}
-                        className="w-full rounded-md border border-slate-300 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+                        className={
+                          gl
+                            ? ['glass-btn', 'secondary', 'small', 'w-full'].join(' ')
+                            : 'w-full rounded-md border border-slate-300 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800'
+                        }
                       >
                         {t('elementIdentity.reset')}
                       </button>
@@ -592,17 +806,28 @@ export function ElementIdentityProjectDetailPage() {
                   </div>
                 }
                 listBody={
-                  filteredTypes.length === 0 ? (
-                    <li className="rounded-lg border border-dashed px-3 py-6 text-center text-xs text-slate-500">
+                  codeListPagination.totalCount === 0 ? (
+                    <li
+                      className={
+                        gl
+                          ? 'list-none rounded-xl border border-dashed border-black/20 bg-white/25 px-3 py-8 text-center text-xs text-black/60 dark:border-white/15 dark:bg-white/5 dark:text-white/65'
+                          : 'list-none rounded-lg border border-dashed border-slate-300/60 px-3 py-6 text-center text-xs text-slate-500'
+                      }
+                    >
                       —
                     </li>
                   ) : (
-                    filteredTypes.map((et) => {
+                    visibleTypes.map((et) => {
                       const bar = productSourceBar(et.category === 'superstructure' ? 'IFC' : 'MANUAL')
                       return (
                         <li
                           key={et.id}
-                          className="rounded-lg border border-slate-200/50 bg-white/50 dark:border-slate-700/50 dark:bg-slate-900/25"
+                          className={[
+                            gl
+                              ? 'glass-card glass-card--static project-mgmt-list-row-card flex min-h-0 shrink-0 items-stretch gap-1.5'
+                              : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
+                            selectedType?.id === et.id ? 'okan-project-list-row--active' : '',
+                          ].join(' ')}
                         >
                           <button
                             type="button"
@@ -613,22 +838,46 @@ export function ElementIdentityProjectDetailPage() {
                             }}
                             aria-current={selectedType?.id === et.id ? 'true' : undefined}
                             className={[
-                              'flex w-full items-stretch gap-2.5 px-3 py-2 text-left text-sm transition',
-                              selectedType?.id === et.id
+                              'flex min-w-0 flex-1 items-stretch gap-2.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-cyan-400/50',
+                              gl ? 'rounded-md px-0.5 py-0.5 hover:bg-white/50 dark:hover:bg-white/8' : 'px-3 py-2',
+                              !gl && selectedType?.id === et.id
                                 ? 'okan-project-list-row--active bg-sky-500/10 dark:bg-sky-400/10'
-                                : 'hover:bg-white/50 dark:hover:bg-slate-900/35',
-                            ].join(' ')}
+                                : '',
+                              !gl && selectedType?.id !== et.id ? 'hover:bg-white/50 dark:hover:bg-slate-900/35' : '',
+                            ]
+                              .filter(Boolean)
+                              .join(' ')}
                           >
                             <div className="flex min-w-0 flex-1 gap-2">
-                              <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-300/70 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600/60">
+                              <span
+                                className={
+                                  gl
+                                    ? 'mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-black/8 text-black ring-1 ring-inset ring-black/12 dark:bg-white/10 dark:text-white dark:ring-white/15'
+                                    : 'mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-300/70 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600/60'
+                                }
+                              >
                                 <Shapes className="size-4" aria-hidden />
                               </span>
                               <div className="min-w-0 flex-1">
-                                <span className="inline-flex w-fit rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                <span
+                                  className={
+                                    gl
+                                      ? 'inline-flex w-fit rounded-md bg-black/8 px-1.5 py-0.5 text-[10px] font-semibold text-black dark:bg-white/12 dark:text-white'
+                                      : 'inline-flex w-fit rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                                  }
+                                >
                                   {t(categoryLabelKey(et.category))}
                                 </span>
-                                <p className="mt-1 font-semibold text-slate-900 dark:text-slate-50">{et.nameTr}</p>
-                                <p className="font-mono text-[11px] text-slate-500">{et.defaultCode}</p>
+                                <p
+                                  className={`mt-1 font-semibold ${gl ? 'text-black dark:text-white' : 'text-slate-900 dark:text-slate-50'}`}
+                                >
+                                  {locale === 'en' ? et.nameEn : et.nameTr}
+                                </p>
+                                <p
+                                  className={`font-mono text-[11px] ${gl ? 'text-black/65 dark:text-white/70' : 'text-slate-500'}`}
+                                >
+                                  {et.defaultCode}
+                                </p>
                               </div>
                             </div>
                             <div className="flex w-[min(38%,7.5rem)] max-w-[7.5rem] shrink-0 flex-col justify-center gap-1">
@@ -646,27 +895,65 @@ export function ElementIdentityProjectDetailPage() {
                   )
                 }
                 footer={
-                  <div className="px-1 text-[11px] text-slate-600 dark:text-slate-300">
-                    {t('elementIdentity.table.elementType')}:{' '}
-                    <span className="font-semibold tabular-nums text-slate-900 dark:text-slate-50">
-                      {filteredTypes.length}
-                    </span>
-                  </div>
+                  <ElementIdentitySplitListPaginationFooter
+                    gl={gl}
+                    locale={locale}
+                    pageStart={codeListPagination.pageStart}
+                    pageEnd={codeListPagination.pageEnd}
+                    totalCount={codeListPagination.totalCount}
+                    safePage={codeListPagination.safePage}
+                    pageCount={codeListPagination.pageCount}
+                    onPrev={() => {
+                      codeListPagination.setPage((p) => Math.max(1, p - 1))
+                      scrollCodeListTop()
+                    }}
+                    onNext={() => {
+                      codeListPagination.setPage((p) => Math.min(codeListPagination.pageCount, p + 1))
+                      scrollCodeListTop()
+                    }}
+                  />
                 }
                 rightPanelRef={rightCodeRef}
                 rightAside={
                   selectedType ? (
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-                      <header className="shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <div className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
+                      <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3 overflow-hidden sm:gap-4">
+                      <header
+                        className={
+                          gl
+                            ? 'shrink-0 border-b border-black/12 pb-3 text-left dark:border-white/10'
+                            : 'shrink-0 border-b border-slate-200/25 pb-3 text-left dark:border-white/10'
+                        }
+                      >
+                        <p
+                          className={
+                            gl
+                              ? 'text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65'
+                              : 'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'
+                          }
+                        >
                           {t('elementIdentity.table.elementType')}
                         </p>
-                        <h3 className="mt-1.5 text-lg font-semibold text-slate-900 dark:text-slate-50">
+                        <h3
+                          className={
+                            gl
+                              ? 'mt-1.5 text-xl font-semibold leading-tight text-black dark:text-white'
+                              : 'mt-1.5 text-lg font-semibold text-slate-900 dark:text-slate-50'
+                          }
+                        >
                           {locale === 'en' ? selectedType.nameEn : selectedType.nameTr}
                         </h3>
+                        <p
+                          className={
+                            gl
+                              ? 'mt-1 font-mono text-sm text-black/75 dark:text-white/80'
+                              : 'mt-1 font-mono text-sm text-slate-600 dark:text-slate-300'
+                          }
+                        >
+                          {selectedType.defaultCode}
+                        </p>
                       </header>
-                      <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-3">
-                        <div className="flex max-w-full gap-1 overflow-x-auto" role="tablist">
+                      <div className="flex shrink-0 gap-1 overflow-x-auto" role="tablist" aria-label={t('elementIdentity.detail.tabCode')}>
                           {(
                             [
                               ['detail', 'elementIdentity.code.subDetail'],
@@ -683,25 +970,28 @@ export function ElementIdentityProjectDetailPage() {
                                 setCodeSub(id)
                                 scrollTop(rightCodeRef)
                               }}
-                              className={`shrink-0 rounded-full border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
-                                codeSub === id
-                                  ? 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
-                                  : 'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
-                              }`}
+                              className={`${tabBase} ${codeSub === id ? tabActive : tabIdle}`}
                             >
                               {t(key)}
                             </button>
                           ))}
-                        </div>
                       </div>
-                      <div className="okan-project-tab-panel mt-3 min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 text-left sm:px-1">
+                      <div className="okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden text-left">
                         {codeSub === 'detail' ? (
                           <div className="space-y-4 text-left">
-                            <div className="rounded-xl border border-slate-200/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                            <div className={detailSectionCard}>
+                              <p
+                                className={
+                                  gl
+                                    ? 'text-xs font-semibold uppercase tracking-wide text-black/55 dark:text-white/60'
+                                    : 'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'
+                                }
+                              >
                                 IFC
                               </p>
-                              <p className="mt-1 font-mono text-sm text-slate-900 dark:text-slate-100">
+                              <p
+                                className={`mt-1 font-mono text-sm ${gl ? 'text-black dark:text-white' : 'text-slate-900 dark:text-slate-100'}`}
+                              >
                                 {selectedType.ifcClass} / {selectedType.defaultIfcPredefinedType ?? '—'}
                               </p>
                               {selectedType.description ? (
@@ -710,19 +1000,13 @@ export function ElementIdentityProjectDetailPage() {
                                 </p>
                               ) : null}
                             </div>
-                            <dl className="grid gap-3 rounded-xl border border-slate-200/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5 sm:grid-cols-2">
+                            <dl className={`grid gap-3 sm:grid-cols-2 ${detailSectionCard}`}>
                               <div>
-                                <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                  {t('elementIdentity.table.default')}
-                                </dt>
-                                <dd className="mt-1 font-mono text-sm font-semibold text-slate-900 dark:text-slate-50">
-                                  {selectedType.defaultCode}
-                                </dd>
+                                <dt className={infoDt}>{t('elementIdentity.table.default')}</dt>
+                                <dd className={`mt-1 font-mono text-sm ${infoDd}`}>{selectedType.defaultCode}</dd>
                               </div>
                               <div>
-                                <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                  {t('elementIdentity.table.override')}
-                                </dt>
+                                <dt className={infoDt}>{t('elementIdentity.table.override')}</dt>
                                 <dd className="mt-1">
                                   {(() => {
                                     const ovRec = overrides.find(
@@ -767,7 +1051,7 @@ export function ElementIdentityProjectDetailPage() {
                           </div>
                         ) : null}
                         {codeSub === 'typologies' ? (
-                          <div className="overflow-x-auto rounded-xl border border-slate-200/40 bg-white/40 dark:border-white/10 dark:bg-white/5">
+                          <div className={`overflow-x-auto ${detailSectionCard}`}>
                             <table className="w-full min-w-[48rem] text-left text-xs">
                               <thead>
                                 <tr className="border-b border-slate-200/50 dark:border-white/10">
@@ -858,7 +1142,7 @@ export function ElementIdentityProjectDetailPage() {
                           </div>
                         ) : null}
                         {codeSub === 'label' ? (
-                          <div className="rounded-xl border border-slate-200/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5">
+                          <div className={detailSectionCard}>
                             <p className="text-xs text-slate-600 dark:text-slate-300">{t('elementIdentity.detail.codeLabelHint')}</p>
                             <label className="mt-3 block text-xs font-semibold text-slate-700 dark:text-slate-200">
                               {t('elementIdentity.labels.title')}
@@ -887,9 +1171,10 @@ export function ElementIdentityProjectDetailPage() {
                           </div>
                         ) : null}
                       </div>
+                      </div>
                     </div>
                   ) : (
-                    <p className="text-center text-xs text-slate-500">—</p>
+                    <p className={`px-1 text-left text-xs ${gl ? 'text-black/60 dark:text-white/65' : 'text-slate-500'}`}>—</p>
                   )
                 }
               />
@@ -898,6 +1183,12 @@ export function ElementIdentityProjectDetailPage() {
             {mainTab === 'labels' ? (
               <ElementIdentityPieceCodesLikeSplit
                 persistKey={`${projectId}:labels`}
+                listRef={labelsListRef}
+                visualVariant="project-mgmt"
+                neutralChrome={neutralShell}
+                embedded
+                fillParentHeight
+                listIndentWhenFilterOpen="18.5rem"
                 defaultSplitRatio={30}
                 listTitle={t('elementIdentity.detail.splitLabelsTitle')}
                 filterToolbarSearch={
@@ -907,6 +1198,8 @@ export function ElementIdentityProjectDetailPage() {
                     onValueChange={setLabelFilterQuery}
                     placeholder={t('elementIdentity.detail.labelSearchPh')}
                     ariaLabel={t('elementIdentity.detail.labelSearchAria')}
+                    className={['min-w-0 sm:max-w-[14rem]', gl ? 'project-mgmt-toolbar-search' : ''].filter(Boolean).join(' ')}
+                    inputClassName={gl ? 'glass-input' : ''}
                   />
                 }
                 headerActions={
@@ -918,7 +1211,7 @@ export function ElementIdentityProjectDetailPage() {
                       setNewLabelName('')
                       setNewLabelOpen(true)
                     }}
-                    className={eiSplitHeaderButtonPassive}
+                    className={headerBtnCls}
                   >
                     <Plus className="size-3.5 shrink-0" aria-hidden />
                     {t('elementIdentity.labels.new')}
@@ -929,26 +1222,43 @@ export function ElementIdentityProjectDetailPage() {
                 filterAside={
                   <div>
                     <ElementIdentityFilterSheetHeader
+                      glass={gl}
                       title={t('elementIdentity.detail.labelFiltersTitle')}
                       subtitle={t('elementIdentity.detail.labelFiltersSubtitle')}
                       onClose={() => setFilterOpenLabels(false)}
                     />
                     <label>
-                      <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                      <span
+                        className={
+                          gl
+                            ? 'text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80'
+                            : 'text-[11px] font-medium text-slate-600 dark:text-slate-300'
+                        }
+                      >
                         {t('elementIdentity.ifc.sourceName')}
                       </span>
                       <input
                         type="text"
                         value={labelFilterQuery}
                         onChange={(e) => setLabelFilterQuery(e.target.value)}
-                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
+                        className={
+                          gl
+                            ? 'glass-input mt-2 w-full'
+                            : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100'
+                        }
                       />
                     </label>
-                    <div className="mt-3 border-t border-slate-200/60 pt-2 dark:border-slate-700/60">
+                    <div
+                      className={`mt-3 border-t pt-2 ${gl ? 'border-black/10 dark:border-white/10' : 'border-slate-200/60 dark:border-slate-700/60'}`}
+                    >
                       <button
                         type="button"
                         onClick={() => setLabelFilterQuery('')}
-                        className="w-full rounded-md border border-slate-300 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+                        className={
+                          gl
+                            ? ['glass-btn', 'secondary', 'small', 'w-full'].join(' ')
+                            : 'w-full rounded-md border border-slate-300 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800'
+                        }
                       >
                         {t('elementIdentity.reset')}
                       </button>
@@ -956,12 +1266,29 @@ export function ElementIdentityProjectDetailPage() {
                   </div>
                 }
                 listBody={
-                  filteredTemplates.map((tm) => {
+                  labelListPagination.totalCount === 0 ? (
+                    <li
+                      className={
+                        gl
+                          ? 'list-none rounded-xl border border-dashed border-black/20 bg-white/25 px-3 py-8 text-center text-xs text-black/60 dark:border-white/15 dark:bg-white/5 dark:text-white/65'
+                          : 'list-none rounded-lg border border-dashed border-slate-300/60 px-3 py-8 text-center text-xs text-slate-500'
+                      }
+                    >
+                      —
+                    </li>
+                  ) : (
+                    visibleLabelTemplates.map((tm) => {
                     const previewLine = templateListPreviewMark(tm, activeFirm, activeProject, overrides)
+                    const isActive = activeTemplate.id === tm.id
                     return (
                       <li
                         key={tm.id}
-                        className="rounded-lg border border-slate-200/50 bg-white/50 dark:border-slate-700/50 dark:bg-slate-900/25"
+                        className={[
+                          gl
+                            ? 'glass-card glass-card--static project-mgmt-list-row-card flex min-h-0 shrink-0 items-stretch gap-1.5'
+                            : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
+                          isActive ? 'okan-project-list-row--active' : '',
+                        ].join(' ')}
                       >
                         <button
                           type="button"
@@ -970,59 +1297,122 @@ export function ElementIdentityProjectDetailPage() {
                             setLabelSub('overview')
                             scrollTop(rightLabelsRef)
                           }}
-                          aria-current={activeTemplate.id === tm.id ? 'true' : undefined}
+                          aria-current={isActive ? 'true' : undefined}
                           className={[
-                            'flex w-full flex-col gap-1.5 px-3 py-2 text-left text-sm transition',
-                            activeTemplate.id === tm.id
+                            'flex min-w-0 flex-1 flex-col gap-1.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-cyan-400/50',
+                            gl ? 'rounded-md px-0.5 py-0.5 hover:bg-white/50 dark:hover:bg-white/8' : 'px-3 py-2',
+                            !gl && isActive
                               ? 'okan-project-list-row--active bg-sky-500/10 dark:bg-sky-400/10'
-                              : 'hover:bg-white/50 dark:hover:bg-slate-900/35',
-                          ].join(' ')}
+                              : '',
+                            !gl && !isActive ? 'hover:bg-white/50 dark:hover:bg-slate-900/35' : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
                         >
                           <div className="flex items-start gap-2.5">
-                            <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-300/70 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600/60">
+                            <span
+                              className={
+                                gl
+                                  ? 'mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-black/8 text-black ring-1 ring-inset ring-black/12 dark:bg-white/10 dark:text-white dark:ring-white/15'
+                                  : 'mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-300/70 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600/60'
+                              }
+                            >
                               <Tags className="size-4" aria-hidden />
                             </span>
                             <div className="min-w-0 flex-1">
-                              <p className="font-semibold text-slate-900 dark:text-slate-50">{tm.name}</p>
+                              <p
+                                className={`font-semibold ${gl ? 'text-black dark:text-white' : 'text-slate-900 dark:text-slate-50'}`}
+                              >
+                                {tm.name}
+                              </p>
                               <div className="mt-0.5 flex flex-wrap gap-1">
                                 {tm.id === activeFirm.defaultTemplateId ? (
-                                  <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800 dark:text-emerald-300">
+                                  <span
+                                    className={
+                                      gl
+                                        ? 'rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-900 dark:text-emerald-200'
+                                        : 'rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800 dark:text-emerald-300'
+                                    }
+                                  >
                                     {t('elementIdentity.labels.default')}
                                   </span>
                                 ) : null}
                                 {projectId && tm.id === projectDefaultTemplateId ? (
-                                  <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-sky-800 dark:text-sky-300">
+                                  <span
+                                    className={
+                                      gl
+                                        ? 'rounded bg-sky-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-sky-900 dark:text-sky-200'
+                                        : 'rounded bg-sky-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-sky-800 dark:text-sky-300'
+                                    }
+                                  >
                                     {t('elementIdentity.labels.projectDefaultBadge')}
                                   </span>
                                 ) : null}
                               </div>
                             </div>
                           </div>
-                          <p className="truncate pl-10 font-mono text-[10px] text-slate-600 dark:text-slate-400" title={previewLine}>
+                          <p
+                            className={`truncate pl-10 font-mono text-[10px] ${gl ? 'text-black/65 dark:text-white/70' : 'text-slate-600 dark:text-slate-400'}`}
+                            title={previewLine}
+                          >
                             {previewLine}
                           </p>
                         </button>
                       </li>
                     )
                   })
+                  )
                 }
                 footer={
-                  <div className="px-1 text-[11px] text-slate-600 dark:text-slate-300">
-                    {t('elementIdentity.labels.title')}:{' '}
-                    <span className="font-semibold tabular-nums">{filteredTemplates.length}</span>
-                  </div>
+                  <ElementIdentitySplitListPaginationFooter
+                    gl={gl}
+                    locale={locale}
+                    pageStart={labelListPagination.pageStart}
+                    pageEnd={labelListPagination.pageEnd}
+                    totalCount={labelListPagination.totalCount}
+                    safePage={labelListPagination.safePage}
+                    pageCount={labelListPagination.pageCount}
+                    onPrev={() => {
+                      labelListPagination.setPage((p) => Math.max(1, p - 1))
+                      scrollLabelsListTop()
+                    }}
+                    onNext={() => {
+                      labelListPagination.setPage((p) => Math.min(labelListPagination.pageCount, p + 1))
+                      scrollLabelsListTop()
+                    }}
+                  />
                 }
                 rightPanelRef={rightLabelsRef}
                 rightAside={
-                  <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-                    <header className="shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        {t('elementIdentity.labels.title')}
-                      </p>
-                      <h3 className="mt-1.5 text-lg font-semibold text-slate-900 dark:text-slate-50">{activeTemplate.name}</h3>
-                    </header>
-                    <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-3">
-                      <div className="flex max-w-full gap-1 overflow-x-auto" role="tablist">
+                  <div className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
+                    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3 overflow-hidden sm:gap-4">
+                      <header
+                        className={
+                          gl
+                            ? 'shrink-0 border-b border-black/12 pb-3 text-left dark:border-white/10'
+                            : 'shrink-0 border-b border-slate-200/25 pb-3 text-left dark:border-white/10'
+                        }
+                      >
+                        <p
+                          className={
+                            gl
+                              ? 'text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65'
+                              : 'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'
+                          }
+                        >
+                          {t('elementIdentity.labels.title')}
+                        </p>
+                        <h3
+                          className={
+                            gl
+                              ? 'mt-1.5 text-xl font-semibold leading-tight text-black dark:text-white'
+                              : 'mt-1.5 text-lg font-semibold text-slate-900 dark:text-slate-50'
+                          }
+                        >
+                          {activeTemplate.name}
+                        </h3>
+                      </header>
+                      <div className="flex shrink-0 gap-1 overflow-x-auto" role="tablist" aria-label={t('elementIdentity.detail.tabLabels')}>
                         {(
                           [
                             ['overview', 'elementIdentity.labels.tabOverview'],
@@ -1038,35 +1428,38 @@ export function ElementIdentityProjectDetailPage() {
                               setLabelSub(id)
                               scrollTop(rightLabelsRef)
                             }}
-                            className={`shrink-0 rounded-full border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
-                              labelSub === id
-                                ? 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
-                                : 'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
-                            }`}
+                            className={`${tabBase} ${labelSub === id ? tabActive : tabIdle}`}
                           >
                             {t(key)}
                           </button>
                         ))}
                       </div>
-                    </div>
-                    <div
-                      role="tabpanel"
-                      className="okan-project-tab-panel mt-3 min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 text-left sm:px-1"
-                    >
+                      <div
+                        role="tabpanel"
+                        className="okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden text-left"
+                      >
                       {labelSub === 'overview' ? (
-                        <div className="flex flex-col items-center gap-8 px-1 py-1">
-                          <div className="flex w-full max-w-sm flex-col gap-2">
+                        <div className="space-y-4 text-left">
+                          <div className="flex flex-col gap-2">
                             <button
                               type="button"
                               onClick={assignTemplateAsProjectDefault}
-                              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                              className={
+                                gl
+                                  ? ['glass-btn', 'secondary', 'w-full'].join(' ')
+                                  : 'w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800'
+                              }
                             >
                               {t('elementIdentity.labels.setProjectDefault')}
                             </button>
                             <button
                               type="button"
                               onClick={assignTemplateAsFirmDefaultFuture}
-                              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                              className={
+                                gl
+                                  ? ['glass-btn', 'secondary', 'w-full'].join(' ')
+                                  : 'w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800'
+                              }
                             >
                               {t('elementIdentity.labels.setFirmAllFuture')}
                             </button>
@@ -1078,25 +1471,51 @@ export function ElementIdentityProjectDetailPage() {
                                 setNewLabelName('')
                                 setNewLabelOpen(true)
                               }}
-                              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                              className={
+                                gl
+                                  ? ['glass-btn', 'secondary', 'w-full'].join(' ')
+                                  : 'w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800'
+                              }
                             >
                               {t('elementIdentity.labels.createFromLabel')}
                             </button>
                           </div>
-                          <div className="w-full max-w-lg space-y-2 text-center">
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          <div className={detailSectionCard}>
+                            <p
+                              className={
+                                gl
+                                  ? 'text-xs font-semibold uppercase tracking-wide text-black/55 dark:text-white/60'
+                                  : 'text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'
+                              }
+                            >
                               {t('elementIdentity.labels.codeStructureTitle')}
                             </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                            <p
+                              className={
+                                gl
+                                  ? 'mt-1 text-xs text-black/65 dark:text-white/70'
+                                  : 'mt-1 text-xs text-slate-500 dark:text-slate-400'
+                              }
+                            >
                               {t('elementIdentity.labels.codeStructureHint')}
                             </p>
-                            <p className="text-sm leading-relaxed text-slate-800 dark:text-slate-100">
+                            <p
+                              className={`mt-3 text-sm leading-relaxed ${gl ? 'text-black dark:text-white' : 'text-slate-800 dark:text-slate-100'}`}
+                            >
                               {tokenSequenceReadable(activeTemplate, t)}
                             </p>
-                            <p className="pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                            <p
+                              className={
+                                gl
+                                  ? 'mt-4 text-xs font-semibold uppercase tracking-wide text-black/55 dark:text-white/60'
+                                  : 'mt-4 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'
+                              }
+                            >
                               {t('elementIdentity.livePreview.title')}
                             </p>
-                            <p className="break-all font-mono text-sm font-semibold text-slate-900 dark:text-slate-50">
+                            <p
+                              className={`mt-1 break-all font-mono text-sm font-semibold ${gl ? 'text-black dark:text-white' : 'text-slate-900 dark:text-slate-50'}`}
+                            >
                               {templateListPreviewMark(activeTemplate, activeFirm, activeProject, overrides)}
                             </p>
                           </div>
@@ -1106,6 +1525,7 @@ export function ElementIdentityProjectDetailPage() {
                           <TemplateBuilderPanel layout="embedded" />
                         </div>
                       )}
+                      </div>
                     </div>
                   </div>
                 }
@@ -1113,6 +1533,7 @@ export function ElementIdentityProjectDetailPage() {
             ) : null}
           </div>
         </div>
+      </div>
       </div>
 
       <NewProductDialog open={newProductOpen} projectId={projectId} onClose={() => setNewProductOpen(false)} />

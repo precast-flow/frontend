@@ -37,6 +37,14 @@ export type ElementIdentityPieceCodesLikeSplitProps = {
   visualVariant?: 'legacy' | 'project-mgmt'
   /** Açık temada nötr (siyah) filtre düğmesi vurgusu — `ProjectManagementModuleView` `neutralShell` ile aynı rol */
   neutralChrome?: boolean
+  /**
+   * `project-mgmt` variant'inde her iki panelin ebeveynin tüm yüksekliğini doldurmasını ister.
+   * Varsayılan davranışta (false) sol panelin doğal yüksekliği ölçülür ve sağ panel buna eşitlenir;
+   * liste kısa olduğunda kartlar da kısa kalır. Profil gibi kısa içerikli sayfalarda `true` verin.
+   */
+  fillParentHeight?: boolean
+  /** Üst kabuk zaten cam kart içindeyse (proje / eleman kimlik detay) ekstra sarmalayıcı kullanma */
+  embedded?: boolean
 }
 
 /**
@@ -61,10 +69,13 @@ export function ElementIdentityPieceCodesLikeSplit({
   defaultSplitRatio = 40,
   visualVariant = 'legacy',
   neutralChrome = false,
+  fillParentHeight = false,
+  embedded = false,
 }: ElementIdentityPieceCodesLikeSplitProps) {
   const { mode } = useThemeMode()
   const gl = mode === 'light'
   const isPm = visualVariant === 'project-mgmt'
+  const fillFull = isPm && fillParentHeight
   const splitRef = useRef<HTMLDivElement | null>(null)
   const internalListRef = useRef<HTMLUListElement | null>(null)
   const ulRef = listRef ?? internalListRef
@@ -87,7 +98,7 @@ export function ElementIdentityPieceCodesLikeSplit({
   const [rightPanelHeightPx, setRightPanelHeightPx] = useState<number | null>(null)
 
   useLayoutEffect(() => {
-    if (!isPm) {
+    if (!isPm || fillFull) {
       setRightPanelHeightPx(null)
       return
     }
@@ -101,7 +112,7 @@ export function ElementIdentityPieceCodesLikeSplit({
     const ro = new ResizeObserver(measure)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [isPm])
+  }, [isPm, fillFull])
 
   useEffect(() => {
     if (!isResizing) return
@@ -160,6 +171,8 @@ export function ElementIdentityPieceCodesLikeSplit({
           'inline-flex',
           'items-center',
           'gap-1.5',
+          'self-center',
+          'shrink-0',
           isFilterOpen ? 'outline' : 'secondary',
         ].join(' ')
       : isPm && !gl
@@ -175,25 +188,20 @@ export function ElementIdentityPieceCodesLikeSplit({
           ? eiSplitHeaderButtonActive
           : eiSplitHeaderButtonPassive
 
-  const sectionClass =
-    isPm && gl
-      ? 'okan-project-split-list okan-split-list-active-lift flex h-auto max-h-full min-h-0 shrink-0 self-start flex-col overflow-x-hidden overflow-y-auto glass-card glass-card--static project-mgmt-split-panel min-h-0'
-      : isPm
-        ? 'okan-project-split-list okan-split-list-active-lift flex h-auto max-h-full min-h-0 shrink-0 self-start flex-col overflow-x-hidden overflow-y-auto p-3'
-        : 'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden p-3'
+  const sectionClass = !isPm
+    ? 'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden p-3'
+    : 'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 self-stretch flex-col overflow-hidden glass-card glass-card--static project-mgmt-split-panel min-h-0'
 
   const filterAsideClass = [
     'absolute inset-y-0 left-0 z-20 overflow-y-auto shadow-xl backdrop-blur-sm',
-    isPm && gl
+    isPm
       ? 'w-72 transition-transform duration-150 ease-out glass-card glass-card--static project-mgmt-split-panel project-mgmt-filter-drawer'
-      : isPm && !gl
-        ? 'w-72 rounded-xl border border-black/15 bg-white/95 p-3 shadow-xl backdrop-blur-sm transition-transform duration-150 ease-out dark:border-white/12 dark:bg-black/70'
-        : 'w-64 rounded-xl border border-slate-200/70 bg-white/95 p-3 shadow-xl backdrop-blur-sm transition-transform dark:border-slate-700/70 dark:bg-slate-900/95',
+      : 'w-64 rounded-xl border border-slate-200/70 bg-white/95 p-3 shadow-xl backdrop-blur-sm transition-transform dark:border-slate-700/70 dark:bg-slate-900/95',
     isFilterOpen ? 'translate-x-0' : '-translate-x-[105%]',
   ].join(' ')
 
   const ulPadClass = isPm
-    ? 'flex min-h-0 max-h-full flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-100 ease-out'
+    ? 'flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-100 ease-out'
     : 'flex h-full min-h-0 flex-col gap-1 overflow-y-auto pr-1 transition-[padding] duration-300'
 
   const splitRow = (
@@ -231,20 +239,22 @@ export function ElementIdentityPieceCodesLikeSplit({
         </div>
         {!isPm ? <div className="mb-3 shrink-0" /> : null}
 
-        <div className={isPm ? 'relative min-h-0 overflow-hidden' : 'relative min-h-0 flex-1 overflow-hidden'}>
+        <div className="relative min-h-0 flex-1 overflow-hidden">
           <aside className={filterAsideClass} aria-hidden={!isFilterOpen}>
             {filterAside}
           </aside>
-          <ul
-            ref={ulRef}
-            className={ulPadClass}
-            style={{ paddingLeft: isFilterOpen ? listIndentWhenFilterOpen : '0' }}
-            onScroll={onListScroll}
-            role="list"
-            aria-label={listTitle}
-          >
-            {listBody}
-          </ul>
+          <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+            <ul
+              ref={ulRef}
+              className={ulPadClass}
+              style={{ paddingLeft: isFilterOpen ? listIndentWhenFilterOpen : '0' }}
+              onScroll={onListScroll}
+              role="list"
+              aria-label={listTitle}
+            >
+              {listBody}
+            </ul>
+          </div>
         </div>
 
         {footer ? (
@@ -333,6 +343,19 @@ export function ElementIdentityPieceCodesLikeSplit({
   )
 
   if (isPm) {
+    const splitHostClass = [
+      'relative flex h-full min-h-0 min-w-0 flex-1 overflow-hidden',
+      gl ? 'gap-3 lg:gap-4' : 'gap-0',
+    ].join(' ')
+
+    if (embedded) {
+      return (
+        <div ref={splitRef} data-split-dragging={isResizing ? 'true' : undefined} className={splitHostClass}>
+          {splitRow}
+        </div>
+      )
+    }
+
     const paddedShell = gl
       ? 'flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl bg-transparent p-1 md:p-1.5'
       : 'flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5'
@@ -340,14 +363,7 @@ export function ElementIdentityPieceCodesLikeSplit({
     return (
       <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden">
         <div className={['min-h-0 w-full overflow-hidden', paddedShell].join(' ')}>
-          <div
-            ref={splitRef}
-            data-split-dragging={isResizing ? 'true' : undefined}
-            className={[
-              'relative flex h-full min-h-0 min-w-0 overflow-hidden',
-              gl ? 'gap-3 rounded-3xl lg:gap-4' : 'gap-0',
-            ].join(' ')}
-          >
+          <div ref={splitRef} data-split-dragging={isResizing ? 'true' : undefined} className={splitHostClass}>
             {splitRow}
           </div>
         </div>

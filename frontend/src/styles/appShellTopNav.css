@@ -169,20 +169,21 @@ html[data-ui-template='glass'].dark .gm-topnav-chrome-btn--open {
 
 html[data-ui-template='glass']:not(.dark) .gm-topnav-dropdown-panel {
   border-color: rgb(15 23 42 / 0.1);
-  background-color: rgb(255 255 255 / 0.72);
+  /* @layer components içindeki header [role=menu] !important ile çakışmaması için !important */
+  background-color: rgb(255 255 255 / 0.88) !important;
   box-shadow:
     0 12px 40px rgb(15 23 42 / 0.1),
-    inset 0 1px 0 rgb(255 255 255 / 0.85);
-  backdrop-filter: blur(22px) saturate(1.25);
-  -webkit-backdrop-filter: blur(22px) saturate(1.25);
+    inset 0 1px 0 rgb(255 255 255 / 0.85) !important;
+  backdrop-filter: blur(22px) saturate(1.25) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.25) !important;
 }
 
 html[data-ui-template='glass'].dark .gm-topnav-dropdown-panel {
   border-color: rgb(255 255 255 / 0.12);
-  background-color: rgb(15 23 42 / 0.85);
-  box-shadow: 0 16px 48px rgb(0 0 0 / 0.45);
-  backdrop-filter: blur(22px) saturate(1.2);
-  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+  background-color: rgb(15 23 42 / 0.85) !important;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.45) !important;
+  backdrop-filter: blur(22px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.2) !important;
 }
 
 /* glassmorphism.css header [role=menu] !important — üst bar nav için daha “dolu” cam */

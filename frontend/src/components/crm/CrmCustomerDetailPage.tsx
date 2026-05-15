@@ -1,13 +1,16 @@
-import { ChevronRight, Globe, Mail, MapPin, Phone, StickyNote, User } from 'lucide-react'
+import { ChevronRight, Globe, Mail, MapPin, Phone, User } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { crmCustomers } from '../../data/crmCustomers'
 import { useI18n } from '../../i18n/I18nProvider'
+import { useThemeMode } from '../../theme/ThemeProvider'
+import { CustomerNotesGlassPanel } from './CustomerNotesGlassPanel'
 import { CustomerProjectsCommercialPanel } from './CustomerProjectsCommercialPanel'
 import { DocumentExplorerSplit } from '../shared/DocumentExplorerSplit'
 import type { ExplorerDocument } from '../shared/documentExplorerTypes'
 import { QuoteModuleView } from '../teklif/QuoteModuleView'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
+import '../proje/projectManagementGlassLight.css'
 
 const detailTabs = [
   { id: 'genel', label: 'Genel' },
@@ -22,6 +25,8 @@ type DetailTabId = (typeof detailTabs)[number]['id']
 
 export function CrmCustomerDetailPage() {
   const { t } = useI18n()
+  const { mode } = useThemeMode()
+  const gl = mode === 'light'
   const navigate = useNavigate()
   const location = useLocation()
   const { customerId } = useParams<{ customerId: string }>()
@@ -59,7 +64,10 @@ export function CrmCustomerDetailPage() {
   }
 
   const tabScrollClass =
-    detailTab === 'dokumanlar' || detailTab === 'teklifler' || detailTab === 'projeler'
+    detailTab === 'dokumanlar' ||
+    detailTab === 'teklifler' ||
+    detailTab === 'projeler' ||
+    detailTab === 'notlar'
       ? 'min-h-0 flex-1 flex flex-col overflow-hidden'
       : 'min-h-0 flex-1 overflow-y-auto text-sm text-slate-700 dark:text-slate-200'
 
@@ -289,10 +297,20 @@ export function CrmCustomerDetailPage() {
                 </div>
               ) : null}
 
-              {detailTab === 'projeler' ? <CustomerProjectsCommercialPanel customerId={customer.id} /> : null}
+              {detailTab === 'projeler' ? (
+                <div
+                  className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl"
+                  data-neutral-shell="true"
+                >
+                  <CustomerProjectsCommercialPanel customerId={customer.id} />
+                </div>
+              ) : null}
 
               {detailTab === 'teklifler' ? (
-                <div className="min-h-0 flex-1 overflow-hidden">
+                <div
+                  className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl"
+                  data-neutral-shell="true"
+                >
                   <QuoteModuleView
                     embedded
                     customerName={customer.name}
@@ -302,24 +320,21 @@ export function CrmCustomerDetailPage() {
               ) : null}
 
               {detailTab === 'notlar' ? (
-                <div className="space-y-4">
-                  <section>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Notlar</p>
-                    <div className="mt-2 flex items-start gap-2 rounded-xl border border-slate-200/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5">
-                      <StickyNote className="size-5 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden />
-                      <p className="text-slate-700 dark:text-slate-200">{customer.notes || 'Not yok.'}</p>
-                    </div>
-                  </section>
-                  <textarea
-                    rows={3}
-                    placeholder="Yeni not ekle... (mock)"
-                    className="okan-liquid-input w-full resize-none border-0 px-3 py-2.5 text-sm shadow-none focus:outline-none"
-                  />
-                </div>
+                <CustomerNotesGlassPanel customer={customer} gl={gl} />
               ) : null}
 
               {detailTab === 'dokumanlar' ? (
-                <DocumentExplorerSplit documents={explorerDocs} persistKey={docPersistKey} listAriaLabel="Müşteri döküman listesi" />
+                <div
+                  className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl"
+                  data-neutral-shell="true"
+                >
+                  <DocumentExplorerSplit
+                    documents={explorerDocs}
+                    persistKey={docPersistKey}
+                    listAriaLabel="Müşteri döküman listesi"
+                    gl={gl}
+                  />
+                </div>
               ) : null}
             </div>
           </div>

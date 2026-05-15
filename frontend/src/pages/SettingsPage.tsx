@@ -48,7 +48,7 @@ export function SettingsPage() {
           <AppModuleBreadcrumb segments={settingsCrumbs} />
         </div>
       </div>
-      <div className="min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 flex-col">
         <SettingsModuleView {...state} onNavigate={onNavigate} />
       </div>
     </div>

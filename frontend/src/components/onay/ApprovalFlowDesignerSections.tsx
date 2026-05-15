@@ -8,9 +8,30 @@ import {
 } from '../../data/mockApprovalFlow'
 import type { ApprovalFlowDesignerState } from './useApprovalFlowDesignerState'
 
-type Variant = 'neo' | 'liquid'
+type Variant = 'neo' | 'liquid' | 'glass'
 
 function editorStyles(v: Variant) {
+  if (v === 'glass') {
+    return {
+      section: 'min-w-0',
+      sectionSpaced: 'min-w-0 mt-4 border-t border-black/12 pt-4 dark:border-white/10 sm:pt-5',
+      sectionInset: 'glass-card glass-card--static rounded-xl p-4',
+      insetSelect: 'glass-input mt-1 w-full',
+      input: 'glass-input mt-1 w-full',
+      thresholdBox: 'glass-card glass-card--static mt-3 rounded-xl p-4',
+      slaBox:
+        'mt-3 rounded-xl border border-dashed border-black/20 bg-white/30 p-3 dark:border-white/15 dark:bg-white/[0.06]',
+      stepCard: 'glass-card glass-card--static rounded-xl p-3',
+      btnPrimary: ['glass-btn', 'primary', 'small'].join(' '),
+      btnSecondary: ['glass-btn', 'secondary', 'small'].join(' '),
+      badge:
+        'inline-flex rounded-full border border-black/15 bg-black/8 px-2.5 py-0.5 text-[11px] font-medium text-black dark:border-white/15 dark:bg-white/10 dark:text-white',
+      labelUpper: 'text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65',
+      h2: 'text-sm font-semibold text-black dark:text-white',
+      muted: 'text-sm text-black/75 dark:text-white/80',
+      mutedXs: 'text-xs text-black/65 dark:text-white/70',
+    }
+  }
   if (v === 'neo') {
     return {
       section: 'rounded-2xl bg-gray-50 p-5 shadow-neo-out-sm dark:bg-gray-950/80',
@@ -59,6 +80,26 @@ function editorStyles(v: Variant) {
 }
 
 function asideStyles(v: Variant) {
+  if (v === 'glass') {
+    return {
+      section: 'glass-card glass-card--static rounded-xl p-4',
+      sectionPreview: 'min-w-0',
+      li: (active: boolean) =>
+        [
+          'glass-card glass-card--static list-none flex min-h-0 shrink-0 items-stretch gap-1.5',
+          active ? 'okan-project-list-row--active' : '',
+        ].join(' '),
+      h2: 'text-sm font-semibold text-black dark:text-white',
+      hint: 'mt-1 text-xs text-black/65 dark:text-white/70',
+      name: 'font-medium text-black dark:text-white',
+      sub: 'mt-0.5 text-[11px] text-black/70 dark:text-white/70',
+      stepCircle:
+        'flex size-9 items-center justify-center rounded-full bg-black/8 text-[11px] font-semibold text-black ring-1 ring-inset ring-black/12 dark:bg-white/10 dark:text-white dark:ring-white/15',
+      stepLabel: 'max-w-[5rem] text-center text-[10px] leading-tight text-black/75 dark:text-white/75',
+      monoJoin:
+        'mt-2 rounded-lg border border-black/12 bg-black/5 px-2 py-2 font-mono text-[10px] leading-relaxed text-black/80 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/80',
+    }
+  }
   if (v === 'neo') {
     return {
       section: 'rounded-2xl bg-gray-50 p-5 shadow-neo-out-sm dark:bg-gray-950/80',

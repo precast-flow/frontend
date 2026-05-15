@@ -41,6 +41,7 @@ function GlassAppShellInner() {
     /** `/` → `DEFAULT_MODULE_ID` proje; aksi halde `pt-20` ile çift üst boşluk oluşur */
     location.pathname === '/' ||
     location.pathname.startsWith('/proje') ||
+    location.pathname.startsWith('/proje-detay') ||
     location.pathname.startsWith('/crm') ||
     location.pathname.startsWith('/musteri-detay') ||
     location.pathname.startsWith('/teklif') ||
