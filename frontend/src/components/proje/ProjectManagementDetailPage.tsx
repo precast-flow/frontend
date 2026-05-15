@@ -1,10 +1,12 @@
-import { BarChart3, ChevronsLeftRight, ChevronRight, FileCode2, FileSpreadsheet, FileText, Filter, GripVertical, ScrollText, Search, ShieldCheck, X } from 'lucide-react'
+import { BarChart3, ChevronsLeftRight, ChevronRight, FileCode2, FileSpreadsheet, FileText, Filter, GripVertical, ScrollText, ShieldCheck, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { projectManagementActivitiesMock, projectManagementCardsMock } from '../../data/projectManagementCardsMock'
 import { useI18n } from '../../i18n/I18nProvider'
+import { useThemeMode } from '../../theme/ThemeProvider'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
+import './projectManagementGlassLight.css'
 import { ProjectDetailPieceCodesPanel } from './ProjectDetailPieceCodesPanel'
 
 type ProjectDetailTabId =
@@ -56,6 +58,8 @@ function documentIcon(type: (typeof DOCUMENT_TYPE_ORDER)[number], ext: string) {
 
 export function ProjectManagementDetailPage() {
   const { t } = useI18n()
+  const { mode } = useThemeMode()
+  const gl = mode === 'light'
   const navigate = useNavigate()
   const location = useLocation()
   const { projectId } = useParams()
@@ -164,7 +168,18 @@ export function ProjectManagementDetailPage() {
   const [isDocResizerHover, setIsDocResizerHover] = useState(false)
   const docSplitRef = useRef<HTMLDivElement | null>(null)
   const docListRef = useRef<HTMLUListElement | null>(null)
-  const docSentinelRef = useRef<HTMLLIElement | null>(null)
+  const takipListRef = useRef<HTMLUListElement | null>(null)
+  const [takipSearch, setTakipSearch] = useState('')
+  const [takipFiltersOpen, setTakipFiltersOpen] = useState(false)
+  const [takipOwnerFilter, setTakipOwnerFilter] = useState<string>('all')
+  const [selectedTakipId, setSelectedTakipId] = useState('f1')
+  const mesajListRef = useRef<HTMLUListElement | null>(null)
+  const [mesajSearch, setMesajSearch] = useState('')
+  const [mesajFiltersOpen, setMesajFiltersOpen] = useState(false)
+  const [mesajKindFilter, setMesajKindFilter] = useState<'all' | 'not' | 'mesaj'>('all')
+  const [mesajPinFilter, setMesajPinFilter] = useState<'all' | 'pinned'>('all')
+  const [mesajByFilter, setMesajByFilter] = useState<string>('all')
+  const [selectedMesajId, setSelectedMesajId] = useState('m1')
 
   const cameFromList = Boolean((location.state as { fromProjectList?: boolean } | null)?.fromProjectList)
   const project = projectManagementCardsMock.find((x) => x.id === projectId)
@@ -187,6 +202,21 @@ export function ProjectManagementDetailPage() {
     ],
     [],
   )
+  const takipOwnerOptions = useMemo(() => [...new Set(followUpRows.map((r) => r.owner))], [followUpRows])
+  const takipFilteredRows = useMemo(() => {
+    const q = takipSearch.trim().toLocaleLowerCase('tr-TR')
+    return followUpRows.filter((row) => {
+      if (takipOwnerFilter !== 'all' && row.owner !== takipOwnerFilter) return false
+      if (!q) return true
+      return (
+        row.title.toLocaleLowerCase('tr-TR').includes(q) ||
+        row.detail.toLocaleLowerCase('tr-TR').includes(q) ||
+        row.owner.toLocaleLowerCase('tr-TR').includes(q) ||
+        row.at.toLocaleLowerCase('tr-TR').includes(q)
+      )
+    })
+  }, [followUpRows, takipOwnerFilter, takipSearch])
+  const takipActiveFilterCount = (takipSearch.trim() ? 1 : 0) + (takipOwnerFilter !== 'all' ? 1 : 0)
   const messageRows = useMemo(
     () => [
       { id: 'm1', pinned: true, by: 'Selin Güler', at: '14.04 08:30', text: 'Montaj sırası değişiklikleri sahaya iletildi. Bu not pinned.', kind: 'not' },
@@ -196,6 +226,31 @@ export function ProjectManagementDetailPage() {
     ],
     [],
   )
+  const mesajByOptions = useMemo(() => [...new Set(messageRows.map((r) => r.by))], [messageRows])
+  const mesajFilteredRows = useMemo(() => {
+    const q = mesajSearch.trim().toLocaleLowerCase('tr-TR')
+    const filtered = messageRows.filter((row) => {
+      if (mesajKindFilter !== 'all' && row.kind !== mesajKindFilter) return false
+      if (mesajPinFilter === 'pinned' && !row.pinned) return false
+      if (mesajByFilter !== 'all' && row.by !== mesajByFilter) return false
+      if (!q) return true
+      const kindLabel = row.kind === 'not' ? 'not' : 'mesaj'
+      return (
+        row.text.toLocaleLowerCase('tr-TR').includes(q) ||
+        row.by.toLocaleLowerCase('tr-TR').includes(q) ||
+        row.at.toLocaleLowerCase('tr-TR').includes(q) ||
+        kindLabel.includes(q)
+      )
+    })
+    const pin = filtered.filter((r) => r.pinned)
+    const rest = filtered.filter((r) => !r.pinned)
+    return [...pin, ...rest]
+  }, [messageRows, mesajByFilter, mesajKindFilter, mesajPinFilter, mesajSearch])
+  const mesajActiveFilterCount =
+    (mesajSearch.trim() ? 1 : 0) +
+    (mesajKindFilter !== 'all' ? 1 : 0) +
+    (mesajPinFilter !== 'all' ? 1 : 0) +
+    (mesajByFilter !== 'all' ? 1 : 0)
   const documents = useMemo<ProjectDetailDocument[]>(
     () => [
       { id: 'd1', type: 'Sözleşme', name: 'Sozlesme_RevB.pdf', size: '3.2 MB', ext: 'PDF', uploadedAt: '10.04.2026 09:15', uploadedBy: 'Selin Güler', revision: 'B', note: 'Ek protokol eklendi.', previewUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf' },
@@ -263,20 +318,24 @@ export function ProjectManagementDetailPage() {
         return docSort === 'date-asc' ? ad - bd : bd - ad
       })
   }, [docExtFilter, docQuery, docSort, docTypeFilter, documents])
+  const docActiveFilterCount =
+    (docQuery.trim() ? 1 : 0) + (docTypeFilter !== 'all' ? 1 : 0) + (docExtFilter !== 'all' ? 1 : 0)
   const docPageCount = useMemo(
     () => Math.max(1, Math.ceil(filteredDocuments.length / docPageSize)),
     [docPageSize, filteredDocuments.length],
   )
   const safeDocPage = Math.min(docPage, docPageCount)
   const visibleDocuments = useMemo(
-    () => filteredDocuments.slice(0, safeDocPage * docPageSize),
+    () =>
+      filteredDocuments.slice((safeDocPage - 1) * docPageSize, safeDocPage * docPageSize),
     [docPageSize, filteredDocuments, safeDocPage],
   )
   const selectedDoc = useMemo(
-    () => visibleDocuments.find((doc) => doc.id === selectedDocId) ?? filteredDocuments[0] ?? null,
-    [filteredDocuments, selectedDocId, visibleDocuments],
+    () => filteredDocuments.find((doc) => doc.id === selectedDocId) ?? filteredDocuments[0] ?? null,
+    [filteredDocuments, selectedDocId],
   )
-  const docPageStart = filteredDocuments.length === 0 ? 0 : 1
+  const docPageStart =
+    filteredDocuments.length === 0 ? 0 : (safeDocPage - 1) * docPageSize + 1
   const docPageEnd = Math.min(filteredDocuments.length, safeDocPage * docPageSize)
   const projectProgress = project?.progress ?? 0
   const startDate = parseTurkishDate(project?.startDate ?? '01.01.2026')
@@ -314,19 +373,40 @@ export function ProjectManagementDetailPage() {
   }, [isDocFilterOpen])
 
   useEffect(() => {
-    const root = docListRef.current
-    const target = docSentinelRef.current
-    if (!root || !target || safeDocPage >= docPageCount) return
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0]?.isIntersecting) return
-        setDocPage((prev) => Math.min(docPageCount, prev + 1))
-      },
-      { root, rootMargin: '0px 0px 80px 0px', threshold: 0 },
-    )
-    io.observe(target)
-    return () => io.disconnect()
-  }, [docPageCount, safeDocPage, visibleDocuments.length])
+    if (!takipFiltersOpen) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setTakipFiltersOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [takipFiltersOpen])
+
+  useEffect(() => {
+    if (takipFilteredRows.length === 0) return
+    if (takipFilteredRows.some((r) => r.id === selectedTakipId)) return
+    setSelectedTakipId(takipFilteredRows[0]!.id)
+  }, [takipFilteredRows, selectedTakipId])
+
+  useEffect(() => {
+    if (!mesajFiltersOpen) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMesajFiltersOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [mesajFiltersOpen])
+
+  useEffect(() => {
+    if (mesajFilteredRows.length === 0) return
+    if (mesajFilteredRows.some((r) => r.id === selectedMesajId)) return
+    setSelectedMesajId(mesajFilteredRows[0]!.id)
+  }, [mesajFilteredRows, selectedMesajId])
+
+  useEffect(() => {
+    if (filteredDocuments.length === 0) return
+    if (filteredDocuments.some((d) => d.id === selectedDocId)) return
+    setSelectedDocId(filteredDocuments[0]!.id)
+  }, [filteredDocuments, selectedDocId])
 
   useEffect(() => {
     if (!isDocResizing) return
@@ -384,22 +464,50 @@ export function ProjectManagementDetailPage() {
   if (!cameFromList) return <Navigate to="/proje" replace />
   if (!project) return <Navigate to="/proje" replace />
 
+  const crumbMuted = gl ? 'text-black/60 dark:text-white/65' : 'text-slate-500 dark:text-slate-400'
+  const crumbLink = gl
+    ? 'font-medium text-black/75 underline-offset-2 transition hover:text-black hover:underline dark:text-white/75 dark:hover:text-white'
+    : 'font-medium text-slate-600 underline-offset-2 transition hover:text-sky-600 hover:underline dark:text-slate-300 dark:hover:text-sky-400'
+  const crumbCurrent = gl ? 'max-w-[40ch] truncate font-semibold text-black dark:text-white' : 'max-w-[40ch] truncate font-semibold text-slate-800 dark:text-slate-100'
+  const tabBase =
+    'shrink-0 rounded-full border px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 dark:focus-visible:ring-cyan-400/60'
+  const tabActive = gl
+    ? 'border-black/18 bg-white/55 text-black shadow-[inset_0_1px_0_rgb(255_255_255/0.65)] dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50 dark:shadow-none'
+    : 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
+  const tabIdle = gl
+    ? 'border-black/10 bg-white/35 text-black/70 hover:border-black/16 hover:bg-white/50 hover:text-black dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
+    : 'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
+
+  const infoSectionTitle = gl
+    ? 'text-xs font-semibold uppercase tracking-wide text-black/55 dark:text-white/60'
+    : 'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'
+  const infoSectionCard = gl
+    ? 'rounded-xl border border-black/10 bg-white/45 p-4 shadow-[inset_0_1px_0_rgb(255_255_255/0.48)] dark:border-white/10 dark:bg-white/[0.06] dark:shadow-none'
+    : 'rounded-xl border border-slate-200/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5'
+  const infoFieldCell = gl
+    ? 'rounded-lg border border-black/8 bg-white/55 px-3 py-2.5 dark:border-white/10 dark:bg-slate-900/40'
+    : 'rounded-lg border border-slate-200/45 bg-white/60 px-3 py-2.5 dark:border-slate-700/50 dark:bg-slate-900/35'
+  const infoDt = gl ? 'text-[11px] font-medium text-black/50 dark:text-white/55' : 'text-xs text-slate-500 dark:text-slate-400'
+  const infoDd = gl ? 'mt-1 text-sm font-semibold leading-snug text-black dark:text-slate-50' : 'mt-0.5 text-sm font-medium text-slate-900 dark:text-slate-50'
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-[1.25rem]">
-      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-2">
-        <div className="px-[0.6875rem] py-1">
-          <div className="mb-2 pb-2">
-            <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-50 md:text-2xl">
+    <div
+      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-1 overflow-hidden rounded-3xl"
+      data-neutral-shell="true"
+    >
+      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-1">
+        <div className="px-[0.6875rem] pt-0 pb-0.5">
+          <div className="mb-1.5 pb-1.5">
+            <h1
+              className={`text-xl font-semibold tracking-tight md:text-2xl ${gl ? 'text-black dark:text-white' : 'text-gray-900 dark:text-gray-50'}`}
+            >
               {project.name} Proje Detayı
             </h1>
           </div>
           <nav aria-label={t('project.breadcrumbAria')} className="mb-0">
-            <ol className="flex flex-wrap items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+            <ol className={`flex flex-wrap items-center gap-1 text-xs ${crumbMuted}`}>
               <li>
-                <Link
-                  to="/planlama"
-                  className="font-medium text-slate-600 underline-offset-2 transition hover:text-sky-600 hover:underline dark:text-slate-300 dark:hover:text-sky-400"
-                >
+                <Link to="/planlama" className={crumbLink}>
                   {t('nav.sidebar.section.planning')}
                 </Link>
               </li>
@@ -407,50 +515,52 @@ export function ProjectManagementDetailPage() {
                 <ChevronRight className="size-3.5 shrink-0 opacity-70" />
               </li>
               <li>
-            <button
-              type="button"
-              onClick={() => navigate('/proje')}
-                  className="font-medium text-slate-600 underline-offset-2 transition hover:text-sky-600 hover:underline dark:text-slate-300 dark:hover:text-sky-400"
-            >
+                <button type="button" onClick={() => navigate('/proje')} className={crumbLink}>
                   {t('nav.project')}
-            </button>
+                </button>
               </li>
               <li className="flex items-center gap-1" aria-hidden>
                 <ChevronRight className="size-3.5 shrink-0 opacity-70" />
               </li>
-              <li className="max-w-[40ch] truncate font-semibold text-slate-800 dark:text-slate-100" aria-current="page">
+              <li className={crumbCurrent} aria-current="page">
                 {project.name} Proje Detayı
               </li>
             </ol>
           </nav>
         </div>
 
-        <div className="min-h-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
-          <div className="flex h-full min-h-0 flex-col gap-3 px-1 sm:px-2">
-            <div
-              className="flex shrink-0 gap-1 overflow-x-auto"
-          role="tablist"
-          aria-label="Proje detay sekmeleri"
+        <div
+          className={[
+            'min-h-0 overflow-hidden',
+            gl
+              ? 'flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl bg-transparent p-1 md:p-1.5'
+              : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
+          ].join(' ')}
         >
-          {PROJECT_DETAIL_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              onClick={() => setActiveTab(tab.id)}
-                  className={`shrink-0 rounded-full border px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
-                activeTab === tab.id
-                      ? 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
-                      : 'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+          <div
+            className={[
+              'flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
+              gl ? 'glass-card glass-card--static project-mgmt-split-panel gap-3' : 'gap-3 px-1 sm:px-2',
+            ].join(' ')}
+          >
+            <div className="flex shrink-0 gap-1 overflow-x-auto px-0.5 sm:px-0" role="tablist" aria-label="Proje detay sekmeleri">
+              {PROJECT_DETAIL_TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`${tabBase} ${activeTab === tab.id ? tabActive : tabIdle}`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
 
-            <div className={`min-h-0 flex-1 ${activeTab === 'urun-listesi' || activeTab === 'dokumanlar' ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'}`}>
+            <div
+              className={`min-h-0 flex-1 overflow-x-hidden ${activeTab === 'urun-listesi' || activeTab === 'dokumanlar' || activeTab === 'takip' || activeTab === 'mesajlar' ? 'flex min-h-0 flex-col overflow-hidden' : 'overflow-y-auto overscroll-y-contain'} ${gl ? 'px-0.5 sm:px-1' : ''}`}
+            >
               {activeTab === 'ozet' ? (
                 <div className="grid gap-4 lg:grid-cols-2">
                   <section className="rounded-xl border border-slate-200/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5">
@@ -609,11 +719,9 @@ export function ProjectManagementDetailPage() {
           ) : null}
 
               {activeTab === 'bilgi' ? (
-                <div className="space-y-5">
-                  <section className="pb-4 border-b border-slate-200/25 dark:border-white/10">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Temel bilgiler
-                    </p>
+                <div className="space-y-4">
+                  <section className={infoSectionCard}>
+                    <p className={infoSectionTitle}>Temel bilgiler</p>
                     <dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                       {[
                         ['Proje adı', project.name],
@@ -621,18 +729,16 @@ export function ProjectManagementDetailPage() {
                         ['Müşteri', project.customer],
                         ['Sorumlu', project.owner],
                       ].map(([label, value]) => (
-                        <div key={label}>
-                          <dt className="text-xs text-slate-500 dark:text-slate-400">{label}</dt>
-                          <dd className="mt-0.5 text-sm font-medium text-slate-900 dark:text-slate-50">{value}</dd>
-                </div>
-              ))}
+                        <div key={label} className={infoFieldCell}>
+                          <dt className={infoDt}>{label}</dt>
+                          <dd className={infoDd}>{value}</dd>
+                        </div>
+                      ))}
                     </dl>
                   </section>
-                  <section className="pb-4 border-b border-slate-200/25 dark:border-white/10">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Takvim & ilerleme
-                    </p>
-                    <dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <section className={infoSectionCard}>
+                    <p className={infoSectionTitle}>Takvim & ilerleme</p>
+                    <dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                       {[
                         ['Durum', project.status],
                         ['Öncelik', project.priority],
@@ -641,28 +747,32 @@ export function ProjectManagementDetailPage() {
                         ['İlerleme', `%${project.progress}`],
                         ['Güncelleme', project.updatedAt],
                       ].map(([label, value]) => (
-                        <div key={label}>
-                          <dt className="text-xs text-slate-500 dark:text-slate-400">{label}</dt>
-                          <dd className="mt-0.5 text-sm font-medium text-slate-900 dark:text-slate-50">{value}</dd>
-                </div>
-              ))}
+                        <div key={label} className={infoFieldCell}>
+                          <dt className={infoDt}>{label}</dt>
+                          <dd className={infoDd}>{value}</dd>
+                        </div>
+                      ))}
                     </dl>
                   </section>
-                  <section>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Operasyon notları
-                    </p>
+                  <section className={infoSectionCard}>
+                    <p className={infoSectionTitle}>Operasyon notları</p>
                     <dl className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <dt className="text-xs text-slate-500 dark:text-slate-400">Bütçe</dt>
-                        <dd className="mt-0.5 text-sm font-medium text-slate-900 dark:text-slate-50">
-                          Henüz tanımlanmadı
+                      <div className={infoFieldCell}>
+                        <dt className={infoDt}>Bütçe</dt>
+                        <dd className={infoDd}>Henüz tanımlanmadı</dd>
+                      </div>
+                      <div className={`sm:col-span-2 ${infoFieldCell}`}>
+                        <dt className={infoDt}>Açıklama</dt>
+                        <dd
+                          className={
+                            gl
+                              ? 'mt-1 text-sm font-medium leading-relaxed text-black dark:text-slate-100'
+                              : 'mt-0.5 text-sm font-medium text-slate-900 dark:text-slate-50'
+                          }
+                        >
+                          {project.note}
                         </dd>
                       </div>
-                      <div className="sm:col-span-2">
-                        <dt className="text-xs text-slate-500 dark:text-slate-400">Açıklama</dt>
-                        <dd className="mt-0.5 text-sm font-medium text-slate-900 dark:text-slate-50">{project.note}</dd>
-                  </div>
                     </dl>
                   </section>
                 </div>
@@ -671,90 +781,685 @@ export function ProjectManagementDetailPage() {
               {activeTab === 'urun-listesi' ? <ProjectDetailPieceCodesPanel /> : null}
 
               {activeTab === 'takip' ? (
-                <ul className="divide-y divide-slate-200/30 dark:divide-white/10">
-                  {followUpRows.map((row) => (
-                    <li key={row.id} className="py-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{row.title}</p>
-                        <span className="text-xs tabular-nums text-slate-500 dark:text-slate-400">{row.at}</span>
+                <div
+                  className={[
+                    'relative flex h-full min-h-0 min-w-0 flex-1 overflow-hidden',
+                    gl ? 'gap-3 rounded-3xl lg:gap-4' : 'gap-0',
+                  ].join(' ')}
+                >
+                  <section
+                    className={[
+                      'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
+                      gl ? 'glass-card glass-card--static project-mgmt-split-panel min-h-0' : 'p-3',
+                    ].join(' ')}
+                  >
+                    <div className="mb-2 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
+                      <h2 className="min-w-0 shrink-0 text-sm font-semibold text-black dark:text-white sm:text-base">
+                        Proje takibi
+                      </h2>
+                      <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
+                        <FilterToolbarSearch
+                          id="project-takip-inline-search"
+                          value={takipSearch}
+                          onValueChange={setTakipSearch}
+                          placeholder="Başlık, açıklama, ekip, tarih…"
+                          ariaLabel="Takip kayıtlarında ara"
+                          className={gl ? 'project-mgmt-toolbar-search' : ''}
+                          inputClassName={gl ? 'glass-input' : ''}
+                        />
+                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setTakipFiltersOpen((v) => !v)}
+                            aria-expanded={takipFiltersOpen}
+                            className={
+                              gl
+                                ? [
+                                    'glass-btn',
+                                    'small',
+                                    'inline-flex',
+                                    'items-center',
+                                    'gap-1.5',
+                                    takipFiltersOpen ? 'outline' : 'secondary',
+                                  ].join(' ')
+                                : [
+                                    'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25',
+                                    takipFiltersOpen
+                                      ? 'border-black/35 bg-black/10 text-black dark:border-white/20 dark:bg-black/50 dark:text-white'
+                                      : 'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
+                                  ].join(' ')
+                            }
+                          >
+                            <Filter className="size-3.5 shrink-0" aria-hidden />
+                            <span>Filtrele</span>
+                            {takipActiveFilterCount > 0 ? (
+                              <span
+                                className={
+                                  gl
+                                    ? 'rounded-full bg-black/8 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black dark:bg-white/10 dark:text-white'
+                                    : 'rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black dark:bg-white/10 dark:text-white'
+                                }
+                              >
+                                {takipActiveFilterCount}
+                              </span>
+                            ) : null}
+                          </button>
+                        </div>
                       </div>
-                      <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">{row.detail}</p>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Sorumlu ekip: {row.owner}</p>
-                    </li>
-                  ))}
-                  {activities.length ? (
-                    <li className="py-3">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Aktivite logları
-                      </p>
-                      <ul className="mt-2 divide-y divide-slate-200/30 dark:divide-white/10">
-                        {activities.slice(0, 6).map((a) => (
-                          <li key={a.id} className="flex gap-3 py-2 text-sm text-slate-700 dark:text-slate-200">
-                            <span className="w-20 shrink-0 tabular-nums text-slate-500 dark:text-slate-400">{a.at}</span>
-                            <span className="min-w-0 flex-1">{a.text}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </li>
-                  ) : null}
-                </ul>
-          ) : null}
+                    </div>
+
+                    <div className="relative min-h-0 flex-1 overflow-hidden">
+                      <aside
+                        className={[
+                          'absolute inset-y-0 left-0 z-20 w-72 overflow-y-auto shadow-xl backdrop-blur-sm transition-transform duration-150 ease-out',
+                          gl
+                            ? 'glass-card glass-card--static project-mgmt-split-panel project-mgmt-filter-drawer'
+                            : 'rounded-xl border border-black/15 bg-white/95 p-3 dark:border-white/12 dark:bg-black/70',
+                          takipFiltersOpen ? 'translate-x-0' : '-translate-x-[105%]',
+                        ].join(' ')}
+                        aria-hidden={!takipFiltersOpen}
+                      >
+                        <div className="mb-3 flex items-start justify-between gap-2">
+                          <div>
+                            <h4 className="text-sm font-semibold text-black dark:text-white">Takip filtreleri</h4>
+                            <p className="mt-1 text-[11px] text-black/60 dark:text-white/65">Arama ve sorumlu ekip</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setTakipFiltersOpen(false)}
+                            className={
+                              gl
+                                ? 'card-button inline-flex size-7 items-center justify-center p-0'
+                                : 'inline-flex size-7 items-center justify-center rounded-lg border border-black/20 text-black/80 hover:bg-black/5 dark:border-white/15 dark:text-white/80 dark:hover:bg-white/10'
+                            }
+                            aria-label="Filtreyi kapat"
+                          >
+                            <X className="size-3.5" aria-hidden />
+                          </button>
+                        </div>
+                        <div className="space-y-4">
+                          <label className="block">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80">
+                              Ara
+                            </span>
+                            <input
+                              type="search"
+                              value={takipSearch}
+                              onChange={(e) => setTakipSearch(e.target.value)}
+                              placeholder="Başlık, açıklama, ekip, tarih…"
+                              className={
+                                gl
+                                  ? 'glass-input mt-2 w-full'
+                                  : 'okan-liquid-input mt-2 w-full border-0 px-3 py-2.5 text-sm shadow-none focus:outline-none'
+                              }
+                            />
+                          </label>
+                          <label>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80">
+                              Sorumlu ekip
+                            </span>
+                            <select
+                              value={takipOwnerFilter}
+                              onChange={(e) => setTakipOwnerFilter(e.target.value)}
+                              className={
+                                gl
+                                  ? 'glass-input mt-2 w-full'
+                                  : 'okan-liquid-select mt-2 w-full border-0 px-3 py-2.5 text-sm shadow-none'
+                              }
+                            >
+                              <option value="all">Tümü</option>
+                              {takipOwnerOptions.map((owner) => (
+                                <option key={owner} value={owner}>
+                                  {owner}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTakipSearch('')
+                              setTakipOwnerFilter('all')
+                              setTakipFiltersOpen(false)
+                              requestAnimationFrame(() => {
+                                takipListRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+                              })
+                            }}
+                            className={
+                              gl
+                                ? ['glass-btn', 'secondary', 'small', 'w-full', 'sm:w-auto'].join(' ')
+                                : 'okan-liquid-btn-secondary w-full px-4 py-2.5 text-sm font-semibold sm:w-auto'
+                            }
+                          >
+                            Sıfırla
+                          </button>
+                        </div>
+                      </aside>
+
+                      {takipFilteredRows.length === 0 ? (
+                        <div className="flex h-full flex-col items-center justify-center gap-3 py-6 text-center">
+                          <p
+                            className={
+                              gl
+                                ? 'text-sm text-black dark:text-white/80'
+                                : 'text-sm text-black/80 dark:text-white/80'
+                            }
+                          >
+                            Filtreye uygun takip kaydı bulunamadı.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTakipSearch('')
+                              setTakipOwnerFilter('all')
+                            }}
+                            className={
+                              gl
+                                ? ['glass-btn', 'secondary', 'small', 'px-5', 'py-2.5', 'text-sm', 'font-semibold'].join(' ')
+                                : 'okan-liquid-btn-secondary px-5 py-2.5 text-sm font-semibold'
+                            }
+                          >
+                            Filtreleri temizle
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+                          <ul
+                            ref={takipListRef}
+                            className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-100 ease-out"
+                            style={{ paddingLeft: takipFiltersOpen ? '18.5rem' : '0' }}
+                          >
+                            {takipFilteredRows.map((row) => (
+                              <li
+                                key={row.id}
+                                className={[
+                                  gl
+                                    ? [
+                                        'glass-card',
+                                        'glass-card--static',
+                                        'project-mgmt-list-row-card',
+                                        'flex',
+                                        'min-h-0',
+                                        'shrink-0',
+                                        'items-stretch',
+                                        'gap-1.5',
+                                      ].join(' ')
+                                    : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
+                                  selectedTakipId === row.id ? 'okan-project-list-row--active' : '',
+                                ].join(' ')}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedTakipId(row.id)}
+                                  aria-current={selectedTakipId === row.id ? 'true' : undefined}
+                                  className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/8"
+                                >
+                                  <p className="truncate text-sm font-semibold leading-snug text-black dark:text-white">
+                                    {row.title}
+                                  </p>
+                                  <p className="mt-0.5 line-clamp-2 text-xs text-black/70 dark:text-white/70">{row.detail}</p>
+                                  <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] font-medium text-black/55 dark:text-white/65">
+                                    <span className="tabular-nums">{row.at}</span>
+                                    <span>·</span>
+                                    <span>{row.owner}</span>
+                                  </p>
+                                </button>
+                              </li>
+                            ))}
+                            {activities.length ? (
+                              <li
+                                className={[
+                                  gl
+                                    ? [
+                                        'glass-card',
+                                        'glass-card--static',
+                                        'project-mgmt-list-row-card',
+                                        'mt-1',
+                                        'flex',
+                                        'min-h-0',
+                                        'shrink-0',
+                                        'flex-col',
+                                        'gap-1',
+                                        'px-2',
+                                        'py-2',
+                                      ].join(' ')
+                                    : 'mt-2 rounded-lg border border-black/15 bg-white/70 p-3 dark:border-white/12 dark:bg-black/45',
+                                ].join(' ')}
+                              >
+                                <p
+                                  className={
+                                    gl
+                                      ? 'text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80'
+                                      : infoSectionTitle
+                                  }
+                                >
+                                  Aktivite logları
+                                </p>
+                                <ul
+                                  className={
+                                    gl
+                                      ? 'mt-1 divide-y divide-black/10 dark:divide-white/10'
+                                      : 'mt-1 divide-y divide-slate-200/30 dark:divide-white/10'
+                                  }
+                                >
+                                  {activities.slice(0, 6).map((a) => (
+                                    <li
+                                      key={a.id}
+                                      className={
+                                        gl
+                                          ? 'flex gap-3 py-2 text-left text-sm text-black/85 dark:text-white/85'
+                                          : 'flex gap-3 py-2 text-left text-sm text-slate-700 dark:text-slate-200'
+                                      }
+                                    >
+                                      <span
+                                        className={
+                                          gl
+                                            ? 'w-20 shrink-0 tabular-nums text-black/55 dark:text-white/65'
+                                            : 'w-20 shrink-0 tabular-nums text-slate-500 dark:text-slate-400'
+                                        }
+                                      >
+                                        {a.at}
+                                      </span>
+                                      <span className="min-w-0 flex-1">{a.text}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </li>
+                            ) : null}
+                          </ul>
+                          {gl ? (
+                            <div className="glass-card glass-card--static project-mgmt-footer-panel sticky bottom-0 z-10 mt-2 shrink-0 text-xs">
+                              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                                <p className="text-black dark:text-white/80">
+                                  <span className="tabular-nums font-semibold text-black dark:text-white">
+                                    {takipFilteredRows.length}
+                                  </span>{' '}
+                                  kayıt
+                                  {activities.length ? (
+                                    <>
+                                      {' '}
+                                      ·{' '}
+                                      <span className="tabular-nums font-semibold text-black dark:text-white">
+                                        {activities.length}
+                                      </span>{' '}
+                                      aktivite
+                                    </>
+                                  ) : null}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="mt-1.5 flex shrink-0 flex-col gap-2 border-t border-slate-200/60 pt-2.5 text-[11px] text-slate-600 dark:border-slate-700/60 dark:text-slate-300 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                              <span>
+                                {takipFilteredRows.length} kayıt
+                                {activities.length ? ` · ${activities.length} aktivite` : ''}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                </div>
+              ) : null}
 
               {activeTab === 'mesajlar' ? (
-                <div className="space-y-4">
-                  <section>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Pinlenen notlar
-                    </p>
-                    <ul className="mt-2 divide-y divide-slate-200/30 dark:divide-white/10">
-                      {messageRows
-                        .filter((row) => row.pinned)
-                        .map((row) => (
-                          <li key={row.id} className="py-2 text-sm">
-                            <p className="font-medium text-slate-900 dark:text-slate-50">{row.text}</p>
-                            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                              {row.by} · {row.at}
-                            </p>
-                          </li>
-                        ))}
-                    </ul>
-                  </section>
-                  <section>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Mesaj akışı
-                    </p>
-                    <ul className="mt-2 divide-y divide-slate-200/30 dark:divide-white/10">
-                      {messageRows.map((row) => (
-                        <li key={row.id} className="py-2 text-sm">
-                          <p className="text-slate-800 dark:text-slate-100">{row.text}</p>
-                          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                            {row.kind === 'not' ? 'Not' : 'Mesaj'} · {row.by} · {row.at}
+                <div
+                  className={[
+                    'relative flex h-full min-h-0 min-w-0 flex-1 overflow-hidden',
+                    gl ? 'gap-3 rounded-3xl lg:gap-4' : 'gap-0',
+                  ].join(' ')}
+                >
+                  <section
+                    className={[
+                      'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
+                      gl ? 'glass-card glass-card--static project-mgmt-split-panel min-h-0' : 'p-3',
+                    ].join(' ')}
+                  >
+                    <div className="mb-2 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
+                      <h2
+                        className={
+                          gl
+                            ? 'min-w-0 shrink-0 text-sm font-semibold text-black dark:text-white sm:text-base'
+                            : 'min-w-0 shrink-0 text-sm font-semibold text-slate-900 dark:text-slate-50 sm:text-base'
+                        }
+                      >
+                        Mesajlar & notlar
+                      </h2>
+                      <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
+                        <FilterToolbarSearch
+                          id="project-mesaj-inline-search"
+                          value={mesajSearch}
+                          onValueChange={setMesajSearch}
+                          placeholder="Metin, gönderen, tarih…"
+                          ariaLabel="Mesaj ve notlarda ara"
+                          className={gl ? 'project-mgmt-toolbar-search' : ''}
+                          inputClassName={gl ? 'glass-input' : ''}
+                        />
+                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setMesajFiltersOpen((v) => !v)}
+                            aria-expanded={mesajFiltersOpen}
+                            className={
+                              gl
+                                ? [
+                                    'glass-btn',
+                                    'small',
+                                    'inline-flex',
+                                    'items-center',
+                                    'gap-1.5',
+                                    mesajFiltersOpen ? 'outline' : 'secondary',
+                                  ].join(' ')
+                                : [
+                                    'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25',
+                                    mesajFiltersOpen
+                                      ? 'border-black/35 bg-black/10 text-black dark:border-white/20 dark:bg-black/50 dark:text-white'
+                                      : 'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
+                                  ].join(' ')
+                            }
+                          >
+                            <Filter className="size-3.5 shrink-0" aria-hidden />
+                            <span>Filtrele</span>
+                            {mesajActiveFilterCount > 0 ? (
+                              <span
+                                className={
+                                  gl
+                                    ? 'rounded-full bg-black/8 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black dark:bg-white/10 dark:text-white'
+                                    : 'rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black dark:bg-white/10 dark:text-white'
+                                }
+                              >
+                                {mesajActiveFilterCount}
+                              </span>
+                            ) : null}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="relative min-h-0 flex-1 overflow-hidden">
+                      <aside
+                        className={[
+                          'absolute inset-y-0 left-0 z-20 w-72 overflow-y-auto shadow-xl backdrop-blur-sm transition-transform duration-150 ease-out',
+                          gl
+                            ? 'glass-card glass-card--static project-mgmt-split-panel project-mgmt-filter-drawer'
+                            : 'rounded-xl border border-black/15 bg-white/95 p-3 dark:border-white/12 dark:bg-black/70',
+                          mesajFiltersOpen ? 'translate-x-0' : '-translate-x-[105%]',
+                        ].join(' ')}
+                        aria-hidden={!mesajFiltersOpen}
+                      >
+                        <div className="mb-3 flex items-start justify-between gap-2">
+                          <div>
+                            <h4 className="text-sm font-semibold text-black dark:text-white">Mesaj filtreleri</h4>
+                            <p className="mt-1 text-[11px] text-black/60 dark:text-white/65">Arama, tür, pin ve gönderen</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setMesajFiltersOpen(false)}
+                            className={
+                              gl
+                                ? 'card-button inline-flex size-7 items-center justify-center p-0'
+                                : 'inline-flex size-7 items-center justify-center rounded-lg border border-black/20 text-black/80 hover:bg-black/5 dark:border-white/15 dark:text-white/80 dark:hover:bg-white/10'
+                            }
+                            aria-label="Filtreyi kapat"
+                          >
+                            <X className="size-3.5" aria-hidden />
+                          </button>
+                        </div>
+                        <div className="space-y-4">
+                          <label className="block">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80">
+                              Ara
+                            </span>
+                            <input
+                              type="search"
+                              value={mesajSearch}
+                              onChange={(e) => setMesajSearch(e.target.value)}
+                              placeholder="Metin, gönderen, tarih…"
+                              className={
+                                gl
+                                  ? 'glass-input mt-2 w-full'
+                                  : 'okan-liquid-input mt-2 w-full border-0 px-3 py-2.5 text-sm shadow-none focus:outline-none'
+                              }
+                            />
+                          </label>
+                          <label>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80">
+                              Tür
+                            </span>
+                            <select
+                              value={mesajKindFilter}
+                              onChange={(e) => setMesajKindFilter(e.target.value as 'all' | 'not' | 'mesaj')}
+                              className={
+                                gl
+                                  ? 'glass-input mt-2 w-full'
+                                  : 'okan-liquid-select mt-2 w-full border-0 px-3 py-2.5 text-sm shadow-none'
+                              }
+                            >
+                              <option value="all">Tümü</option>
+                              <option value="not">Not</option>
+                              <option value="mesaj">Mesaj</option>
+                            </select>
+                          </label>
+                          <label>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80">
+                              Pin
+                            </span>
+                            <select
+                              value={mesajPinFilter}
+                              onChange={(e) => setMesajPinFilter(e.target.value as 'all' | 'pinned')}
+                              className={
+                                gl
+                                  ? 'glass-input mt-2 w-full'
+                                  : 'okan-liquid-select mt-2 w-full border-0 px-3 py-2.5 text-sm shadow-none'
+                              }
+                            >
+                              <option value="all">Tümü</option>
+                              <option value="pinned">Yalnız pinli</option>
+                            </select>
+                          </label>
+                          <label>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80">
+                              Gönderen
+                            </span>
+                            <select
+                              value={mesajByFilter}
+                              onChange={(e) => setMesajByFilter(e.target.value)}
+                              className={
+                                gl
+                                  ? 'glass-input mt-2 w-full'
+                                  : 'okan-liquid-select mt-2 w-full border-0 px-3 py-2.5 text-sm shadow-none'
+                              }
+                            >
+                              <option value="all">Tümü</option>
+                              {mesajByOptions.map((by) => (
+                                <option key={by} value={by}>
+                                  {by}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMesajSearch('')
+                              setMesajKindFilter('all')
+                              setMesajPinFilter('all')
+                              setMesajByFilter('all')
+                              setMesajFiltersOpen(false)
+                              requestAnimationFrame(() => {
+                                mesajListRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+                              })
+                            }}
+                            className={
+                              gl
+                                ? ['glass-btn', 'secondary', 'small', 'w-full', 'sm:w-auto'].join(' ')
+                                : 'okan-liquid-btn-secondary w-full px-4 py-2.5 text-sm font-semibold sm:w-auto'
+                            }
+                          >
+                            Sıfırla
+                          </button>
+                        </div>
+                      </aside>
+
+                      {mesajFilteredRows.length === 0 ? (
+                        <div className="flex h-full flex-col items-center justify-center gap-3 py-6 text-center">
+                          <p
+                            className={
+                              gl
+                                ? 'text-sm text-black dark:text-white/80'
+                                : 'text-sm text-black/80 dark:text-white/80'
+                            }
+                          >
+                            Filtreye uygun kayıt bulunamadı.
                           </p>
-                        </li>
-                      ))}
-                    </ul>
-                    <textarea
-                      rows={3}
-                      placeholder="Yeni mesaj / not ekle... (mock)"
-                      className="okan-liquid-input mt-3 w-full resize-none border-0 px-3 py-2.5 text-sm shadow-none focus:outline-none"
-                    />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMesajSearch('')
+                              setMesajKindFilter('all')
+                              setMesajPinFilter('all')
+                              setMesajByFilter('all')
+                            }}
+                            className={
+                              gl
+                                ? ['glass-btn', 'secondary', 'small', 'px-5', 'py-2.5', 'text-sm', 'font-semibold'].join(' ')
+                                : 'okan-liquid-btn-secondary px-5 py-2.5 text-sm font-semibold'
+                            }
+                          >
+                            Filtreleri temizle
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+                          <ul
+                            ref={mesajListRef}
+                            className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-100 ease-out"
+                            style={{ paddingLeft: mesajFiltersOpen ? '18.5rem' : '0' }}
+                          >
+                            {mesajFilteredRows.map((row) => (
+                              <li
+                                key={row.id}
+                                className={[
+                                  gl
+                                    ? [
+                                        'glass-card',
+                                        'glass-card--static',
+                                        'project-mgmt-list-row-card',
+                                        'flex',
+                                        'min-h-0',
+                                        'shrink-0',
+                                        'items-stretch',
+                                        'gap-1.5',
+                                      ].join(' ')
+                                    : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
+                                  selectedMesajId === row.id ? 'okan-project-list-row--active' : '',
+                                ].join(' ')}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedMesajId(row.id)}
+                                  aria-current={selectedMesajId === row.id ? 'true' : undefined}
+                                  className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/8"
+                                >
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span
+                                      className={
+                                        gl
+                                          ? 'rounded-full bg-black/10 px-2 py-0.5 text-[10px] font-semibold text-black dark:bg-white/15 dark:text-white'
+                                          : 'rounded-full bg-slate-200/80 px-2 py-0.5 text-[10px] font-semibold text-slate-800 dark:bg-slate-700/80 dark:text-slate-100'
+                                      }
+                                    >
+                                      {row.kind === 'not' ? 'Not' : 'Mesaj'}
+                                    </span>
+                                    {row.pinned ? (
+                                      <span className="rounded-full bg-amber-500/25 px-2 py-0.5 text-[10px] font-semibold text-amber-900 dark:bg-amber-400/20 dark:text-amber-100">
+                                        Pinli
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <p
+                                    className={
+                                      gl
+                                        ? 'mt-1 line-clamp-3 text-sm font-medium leading-snug text-black dark:text-white'
+                                        : 'mt-1 line-clamp-3 text-sm font-medium leading-snug text-slate-900 dark:text-slate-50'
+                                    }
+                                  >
+                                    {row.text}
+                                  </p>
+                                  <p
+                                    className={
+                                      gl
+                                        ? 'mt-0.5 truncate text-xs text-black/70 dark:text-white/70'
+                                        : 'mt-0.5 truncate text-xs text-slate-600 dark:text-slate-400'
+                                    }
+                                  >
+                                    {row.by} · {row.at}
+                                  </p>
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                          {gl ? (
+                            <div className="glass-card glass-card--static project-mgmt-footer-panel sticky bottom-0 z-10 mt-2 shrink-0 text-xs">
+                              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                                <p className="text-black dark:text-white/80">
+                                  <span className="tabular-nums font-semibold text-black dark:text-white">
+                                    {mesajFilteredRows.length}
+                                  </span>{' '}
+                                  kayıt
+                                </p>
+                              </div>
+                              <label className="mt-2 block text-left">
+                                <span className="text-[11px] font-medium text-black/60 dark:text-white/65">
+                                  Yeni mesaj / not (mock)
+                                </span>
+                                <textarea
+                                  rows={3}
+                                  placeholder="Yeni mesaj / not ekle... (mock)"
+                                  className="glass-input mt-1.5 w-full resize-none text-sm"
+                                />
+                              </label>
+                            </div>
+                          ) : (
+                            <div className="mt-2 shrink-0 space-y-2 border-t border-slate-200/60 pt-2 dark:border-slate-700/60">
+                              <span className="text-[11px] text-slate-600 dark:text-slate-300">
+                                {mesajFilteredRows.length} kayıt
+                              </span>
+                              <textarea
+                                rows={3}
+                                placeholder="Yeni mesaj / not ekle... (mock)"
+                                className="okan-liquid-input w-full resize-none border-0 px-3 py-2.5 text-sm shadow-none focus:outline-none"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </section>
-            </div>
-          ) : null}
+                </div>
+              ) : null}
 
               {activeTab === 'dokumanlar' ? (
                 <div
                   ref={docSplitRef}
-                  className="relative flex h-full min-h-0 min-w-0 overflow-hidden gap-0"
+                  data-split-dragging={isDocResizing ? 'true' : undefined}
+                  className={[
+                    'relative flex h-full min-h-0 min-w-0 flex-1 overflow-hidden',
+                    gl ? 'gap-3 rounded-3xl lg:gap-4' : 'gap-0',
+                  ].join(' ')}
                 >
                   <section
-                    className="okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden p-3"
+                    className={[
+                      'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden',
+                      gl ? 'glass-card glass-card--static project-mgmt-split-panel min-h-0' : 'p-3',
+                    ].join(' ')}
                     style={{ width: `calc(${docSplitRatio}% - 5px)` }}
                   >
-                    <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
-                      <p className="shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <div className="mb-2 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
+                      <h2 className="min-w-0 shrink-0 text-sm font-semibold text-black dark:text-white sm:text-base">
                         Döküman listesi
-                      </p>
+                      </h2>
                       <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
                         <FilterToolbarSearch
                           id="project-detail-doc-inline-search"
@@ -765,68 +1470,113 @@ export function ProjectManagementDetailPage() {
                           }}
                           placeholder="ad, yükleyen, not..."
                           ariaLabel="Dökümanlarda ara"
-                          className="min-w-0 sm:max-w-[14rem]"
+                          className={['min-w-0 sm:max-w-[14rem]', gl ? 'project-mgmt-toolbar-search' : ''].filter(Boolean).join(' ')}
+                          inputClassName={gl ? 'glass-input' : undefined}
                         />
-                        <button
-                          type="button"
-                          onClick={() => setIsDocFilterOpen((prev) => !prev)}
-                          className={[
-                            'inline-flex shrink-0 items-center gap-1 self-center rounded-lg border px-2 py-1 text-[11px] font-semibold transition',
-                            isDocFilterOpen
-                              ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
-                              : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
-                          ].join(' ')}
-                        >
-                          <Filter className="size-3" aria-hidden />
-                          Filtrele
-                        </button>
+                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setIsDocFilterOpen((prev) => !prev)}
+                            aria-expanded={isDocFilterOpen}
+                            className={
+                              gl
+                                ? [
+                                    'glass-btn',
+                                    'small',
+                                    'inline-flex',
+                                    'items-center',
+                                    'gap-1.5',
+                                    isDocFilterOpen ? 'outline' : 'secondary',
+                                  ].join(' ')
+                                : [
+                                    'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25',
+                                    isDocFilterOpen
+                                      ? 'border-black/35 bg-black/10 text-black dark:border-white/20 dark:bg-black/50 dark:text-white'
+                                      : 'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
+                                  ].join(' ')
+                            }
+                          >
+                            <Filter className="size-3.5 shrink-0" aria-hidden />
+                            <span>Filtrele</span>
+                            {docActiveFilterCount > 0 ? (
+                              <span
+                                className={
+                                  gl
+                                    ? 'rounded-full bg-black/8 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black dark:bg-white/10 dark:text-white'
+                                    : 'rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black dark:bg-white/10 dark:text-white'
+                                }
+                              >
+                                {docActiveFilterCount}
+                              </span>
+                            ) : null}
+                          </button>
+                        </div>
                       </div>
                     </div>
                     <div className="relative min-h-0 flex-1 overflow-hidden">
                       <aside
                         className={[
-                          'absolute inset-y-0 left-0 z-20 w-60 overflow-y-auto rounded-xl border border-slate-200/70 bg-white/95 p-3 shadow-xl backdrop-blur-sm transition-transform dark:border-slate-700/70 dark:bg-slate-900/95',
+                          'absolute inset-y-0 left-0 z-20 w-72 overflow-y-auto shadow-xl backdrop-blur-sm transition-transform duration-150 ease-out',
+                          gl
+                            ? 'glass-card glass-card--static project-mgmt-split-panel project-mgmt-filter-drawer'
+                            : 'rounded-xl border border-black/15 bg-white/95 p-3 dark:border-white/12 dark:bg-black/70',
                           isDocFilterOpen ? 'translate-x-0' : '-translate-x-[105%]',
                         ].join(' ')}
                         aria-hidden={!isDocFilterOpen}
                       >
-                        <div className="mb-2 flex items-start justify-between gap-2">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                            Döküman filtreleri
-                          </p>
+                        <div className="mb-3 flex items-start justify-between gap-2">
+                          <div>
+                            <h4 className="text-sm font-semibold text-black dark:text-white">Döküman filtreleri</h4>
+                            <p className="mt-1 text-[11px] text-black/60 dark:text-white/65">Arama, tür, uzantı ve sıralama</p>
+                          </div>
                           <button
                             type="button"
                             onClick={() => setIsDocFilterOpen(false)}
-                            className="inline-flex size-6 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                            className={
+                              gl
+                                ? 'card-button inline-flex size-7 items-center justify-center p-0'
+                                : 'inline-flex size-7 items-center justify-center rounded-lg border border-black/20 text-black/80 hover:bg-black/5 dark:border-white/15 dark:text-white/80 dark:hover:bg-white/10'
+                            }
+                            aria-label="Filtreyi kapat"
                           >
                             <X className="size-3.5" aria-hidden />
                           </button>
                         </div>
-            <div className="space-y-2">
+                        <div className="space-y-4">
                           <label className="block">
-                            <span className="text-[11px] text-slate-600 dark:text-slate-300">Ara</span>
-                            <div className="mt-1 flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2 dark:border-slate-600 dark:bg-slate-950">
-                              <Search className="size-3 text-slate-500" aria-hidden />
-                              <input
-                                value={docQuery}
-                                onChange={(event) => {
-                                  setDocQuery(event.target.value)
-                                  setDocPage(1)
-                                }}
-                                className="w-full bg-transparent py-1.5 text-xs outline-none"
-                                placeholder="ad, yükleyen, not..."
-                              />
-                            </div>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80">
+                              Ara
+                            </span>
+                            <input
+                              type="search"
+                              value={docQuery}
+                              onChange={(event) => {
+                                setDocQuery(event.target.value)
+                                setDocPage(1)
+                              }}
+                              placeholder="ad, yükleyen, not..."
+                              className={
+                                gl
+                                  ? 'glass-input mt-2 w-full'
+                                  : 'mt-2 w-full rounded-lg border border-black/22 bg-white px-3 py-2.5 text-sm dark:border-white/15 dark:bg-black/80'
+                              }
+                            />
                           </label>
-                          <label className="block">
-                            <span className="text-[11px] text-slate-600 dark:text-slate-300">Tür</span>
+                          <label>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80">
+                              Tür
+                            </span>
                             <select
                               value={docTypeFilter}
                               onChange={(event) => {
                                 setDocTypeFilter(event.target.value as 'all' | (typeof DOCUMENT_TYPE_ORDER)[number])
                                 setDocPage(1)
                               }}
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-950"
+                              className={
+                                gl
+                                  ? 'glass-input mt-2 w-full'
+                                  : 'mt-2 w-full rounded-lg border border-black/22 bg-white px-2 py-1.5 text-xs dark:border-white/15 dark:bg-black/80'
+                              }
                             >
                               <option value="all">Tümü</option>
                               {DOCUMENT_TYPE_ORDER.map((type) => (
@@ -836,15 +1586,21 @@ export function ProjectManagementDetailPage() {
                               ))}
                             </select>
                           </label>
-                          <label className="block">
-                            <span className="text-[11px] text-slate-600 dark:text-slate-300">Uzantı</span>
+                          <label>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80">
+                              Uzantı
+                            </span>
                             <select
                               value={docExtFilter}
                               onChange={(event) => {
                                 setDocExtFilter(event.target.value as 'all' | 'PDF' | 'IFC' | 'XLSX')
                                 setDocPage(1)
                               }}
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-950"
+                              className={
+                                gl
+                                  ? 'glass-input mt-2 w-full'
+                                  : 'mt-2 w-full rounded-lg border border-black/22 bg-white px-2 py-1.5 text-xs dark:border-white/15 dark:bg-black/80'
+                              }
                             >
                               <option value="all">Tümü</option>
                               <option value="PDF">PDF</option>
@@ -852,15 +1608,21 @@ export function ProjectManagementDetailPage() {
                               <option value="XLSX">XLSX</option>
                             </select>
                           </label>
-                          <label className="block">
-                            <span className="text-[11px] text-slate-600 dark:text-slate-300">Sıralama</span>
+                          <label>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80">
+                              Sıralama
+                            </span>
                             <select
                               value={docSort}
                               onChange={(event) => {
                                 setDocSort(event.target.value as 'date-desc' | 'date-asc' | 'name-asc')
                                 setDocPage(1)
                               }}
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-950"
+                              className={
+                                gl
+                                  ? 'glass-input mt-2 w-full'
+                                  : 'mt-2 w-full rounded-lg border border-black/22 bg-white px-2 py-1.5 text-xs dark:border-white/15 dark:bg-black/80'
+                              }
                             >
                               <option value="date-desc">Tarih (yeni-eski)</option>
                               <option value="date-asc">Tarih (eski-yeni)</option>
@@ -868,77 +1630,255 @@ export function ProjectManagementDetailPage() {
                             </select>
                           </label>
                         </div>
-                      </aside>
-                      <ul
-                        ref={docListRef}
-                        className="h-full space-y-1.5 overflow-y-auto pr-1 transition-[padding] duration-300"
-                        style={{ paddingLeft: isDocFilterOpen ? '15.5rem' : '0' }}
-                      >
-                        {visibleDocuments.map((doc) => (
-                          <li key={doc.id} className="rounded-lg border border-slate-200/50 bg-white/60 dark:border-slate-700/50 dark:bg-slate-900/35">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedDocId(doc.id)}
-                              className={[
-                                'flex w-full items-start gap-2.5 px-2.5 py-2 text-left text-xs transition',
-                                selectedDoc?.id === doc.id
-                                  ? 'bg-sky-500/10 dark:bg-sky-400/10'
-                                  : 'hover:bg-white/80 dark:hover:bg-slate-900/50',
-                              ].join(' ')}
-                            >
-                              <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-300/70 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600/60">
-                                {documentIcon(doc.type, doc.ext)}
-                              </span>
-                              <span className="min-w-0 flex-1">
-                                <span className="inline-flex rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                                  {doc.type}
-                                </span>
-                                <p className="mt-1 truncate font-semibold text-slate-900 dark:text-slate-50">{doc.name}</p>
-                                <p className="text-[11px] text-slate-600 dark:text-slate-300">
-                                  {doc.ext} · {doc.size}
-                                </p>
-                                <p className="text-[11px] text-slate-500 dark:text-slate-400">{doc.uploadedAt}</p>
-                              </span>
-                            </button>
-                          </li>
-                        ))}
-                        {safeDocPage < docPageCount ? (
-                          <li ref={docSentinelRef} className="h-1 w-full shrink-0 list-none" aria-hidden />
-                        ) : null}
-                        {visibleDocuments.length === 0 ? (
-                          <li className="rounded-lg border border-slate-200/50 bg-white/60 px-3 py-2 text-xs text-slate-600 dark:border-slate-700/50 dark:bg-slate-900/35 dark:text-slate-300">
-                            Filtreye uygun döküman bulunamadı.
-                          </li>
-                        ) : null}
-                      </ul>
-                    </div>
-                    <div className="mt-1 border-t border-slate-200/60 pt-2 text-xs dark:border-slate-700/60">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-slate-600 dark:text-slate-300">
-                          {docPageStart}-{docPageEnd} / {filteredDocuments.length} sonuç
-                        </p>
-                        <label className="flex items-center gap-1">
-                          <span className="text-slate-600 dark:text-slate-300">Sayfa boyutu</span>
-                          <select
-                            value={docPageSize}
-                            onChange={(event) => {
-                              setDocPageSize(Number(event.target.value))
+                        <div className="mt-3 flex items-center justify-between border-t border-black/15 pt-2 dark:border-white/12">
+                          <span className="text-[11px] text-black/75 dark:text-white/80">
+                            Sonuç:{' '}
+                            <span className="tabular-nums font-semibold">{filteredDocuments.length}</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDocQuery('')
+                              setDocTypeFilter('all')
+                              setDocExtFilter('all')
                               setDocPage(1)
+                              setIsDocFilterOpen(false)
                               requestAnimationFrame(() => {
                                 docListRef.current?.scrollTo({ top: 0, behavior: 'auto' })
                               })
                             }}
-                            className="rounded-md border border-slate-300 bg-white px-1.5 py-1 text-xs dark:border-slate-600 dark:bg-slate-900"
+                            className={
+                              gl
+                                ? ['glass-btn', 'secondary', 'small'].join(' ')
+                                : 'rounded-md border border-black/22 px-2 py-1 text-[11px] font-semibold text-black hover:bg-black/5 dark:border-white/15 dark:text-white dark:hover:bg-white/10'
+                            }
                           >
-                            {[4, 6, 8, 12].map((size) => (
-                              <option key={size} value={size}>
-                                {size}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      </div>
+                            Temizle
+                          </button>
+                        </div>
+                      </aside>
+                      <ul
+                        ref={docListRef}
+                        className="flex h-full min-h-0 flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-100 ease-out"
+                        style={{ paddingLeft: isDocFilterOpen ? '18.5rem' : '0' }}
+                        role="list"
+                        aria-label="Döküman listesi"
+                      >
+                        {visibleDocuments.length > 0 ? (
+                          visibleDocuments.map((doc) => (
+                            <li
+                              key={doc.id}
+                              className={[
+                                gl
+                                  ? [
+                                      'glass-card',
+                                      'glass-card--static',
+                                      'project-mgmt-list-row-card',
+                                      'list-none',
+                                      'flex',
+                                      'min-h-0',
+                                      'shrink-0',
+                                      'items-stretch',
+                                      'gap-1.5',
+                                    ].join(' ')
+                                  : 'list-none flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
+                                selectedDoc?.id === doc.id ? 'okan-project-list-row--active' : '',
+                              ]
+                                .filter(Boolean)
+                                .join(' ')}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => setSelectedDocId(doc.id)}
+                                aria-current={selectedDoc?.id === doc.id ? 'true' : undefined}
+                                className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/8"
+                              >
+                                <span className="flex items-start gap-2">
+                                  <span
+                                    className={
+                                      gl
+                                        ? 'mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-black/8 text-black ring-1 ring-inset ring-black/12 dark:bg-white/10 dark:text-white dark:ring-white/15'
+                                        : 'mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-black/10 text-black ring-1 ring-inset ring-black/20 dark:bg-white/10 dark:text-white dark:ring-white/15'
+                                    }
+                                  >
+                                    {documentIcon(doc.type, doc.ext)}
+                                  </span>
+                                  <span className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-semibold leading-snug text-black dark:text-white">
+                                      {doc.name}
+                                    </p>
+                                    <p className="mt-0.5 truncate text-xs text-black/70 dark:text-white/70">
+                                      {doc.uploadedBy} · {doc.uploadedAt}
+                                    </p>
+                                    <p className="mt-1 inline-flex items-center gap-1 rounded-md bg-black/8 px-1.5 py-0.5 text-[10px] font-semibold text-black dark:bg-black/50 dark:text-white/90">
+                                      {doc.type}
+                                    </p>
+                                  </span>
+                                </span>
+                              </button>
+                              <div className="flex w-[7.5rem] shrink-0 flex-col justify-center gap-1 text-right">
+                                <span className="text-[11px] font-semibold tabular-nums text-black/75 dark:text-white/75">
+                                  {doc.ext}
+                                </span>
+                                <span className="text-[11px] leading-tight text-black/60 dark:text-white/65">{doc.size}</span>
+                                <span className="text-[10px] leading-tight text-black/55 dark:text-white/60">
+                                  Rev {doc.revision}
+                                </span>
+                              </div>
+                            </li>
+                          ))
+                        ) : (
+                          <li
+                            className={
+                              gl
+                                ? 'glass-card glass-card--static list-none text-sm text-black dark:text-white'
+                                : 'list-none rounded-lg border border-black/14 bg-white/50 px-3 py-2 text-sm text-black/80 dark:border-white/12 dark:bg-black/45 dark:text-white/85'
+                            }
+                          >
+                            Filtreye uygun döküman bulunamadı.
+                          </li>
+                        )}
+                      </ul>
                     </div>
+                    {gl ? (
+                      <div className="glass-card glass-card--static project-mgmt-footer-panel sticky bottom-0 z-10 mt-2 shrink-0 text-xs">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                          <p className="text-black dark:text-white/80">
+                            {filteredDocuments.length > 0 ? (
+                              <>
+                                <span className="tabular-nums font-semibold text-black dark:text-white">{docPageStart}</span>-
+                                <span className="tabular-nums font-semibold text-black dark:text-white">{docPageEnd}</span> /{' '}
+                                <span className="tabular-nums font-semibold text-black dark:text-white">
+                                  {filteredDocuments.length}
+                                </span>{' '}
+                                sonuç
+                              </>
+                            ) : (
+                              'Sonuç yok'
+                            )}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {filteredDocuments.length > 0 ? (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  disabled={safeDocPage <= 1}
+                                  onClick={() => setDocPage((p) => Math.max(1, p - 1))}
+                                  className={[
+                                    'glass-btn',
+                                    'secondary',
+                                    'small',
+                                    'disabled:pointer-events-none disabled:opacity-35',
+                                  ].join(' ')}
+                                >
+                                  Önceki
+                                </button>
+                                <span className="tabular-nums text-black/80 dark:text-white/75">
+                                  Sayfa {safeDocPage}/{docPageCount}
+                                </span>
+                                <button
+                                  type="button"
+                                  disabled={safeDocPage >= docPageCount}
+                                  onClick={() => setDocPage((p) => Math.min(docPageCount, p + 1))}
+                                  className={[
+                                    'glass-btn',
+                                    'secondary',
+                                    'small',
+                                    'disabled:pointer-events-none disabled:opacity-35',
+                                  ].join(' ')}
+                                >
+                                  Sonraki
+                                </button>
+                              </div>
+                            ) : null}
+                            <label className="flex items-center gap-1 text-black dark:text-white/80">
+                              <span>Sayfa boyutu</span>
+                              <select
+                                value={docPageSize}
+                                onChange={(event) => {
+                                  setDocPageSize(Number(event.target.value))
+                                  setDocPage(1)
+                                  requestAnimationFrame(() => {
+                                    docListRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+                                  })
+                                }}
+                                className="glass-input px-2 py-1 text-xs"
+                              >
+                                {[4, 6, 8, 12].map((size) => (
+                                  <option key={size} value={size}>
+                                    {size}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="sticky bottom-0 z-10 mt-1 shrink-0 border-t border-black/15 bg-white/90 pt-2 text-xs backdrop-blur dark:border-white/12 dark:bg-black/75">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                          <p className="text-black/75 dark:text-white/80">
+                            {filteredDocuments.length > 0 ? (
+                              <>
+                                <span className="tabular-nums font-semibold text-black dark:text-white">{docPageStart}</span>-
+                                <span className="tabular-nums font-semibold text-black dark:text-white">{docPageEnd}</span> /{' '}
+                                <span className="tabular-nums font-semibold text-black dark:text-white">
+                                  {filteredDocuments.length}
+                                </span>{' '}
+                                sonuç
+                              </>
+                            ) : (
+                              'Sonuç yok'
+                            )}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {filteredDocuments.length > 0 ? (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  disabled={safeDocPage <= 1}
+                                  onClick={() => setDocPage((p) => Math.max(1, p - 1))}
+                                  className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
+                                >
+                                  Önceki
+                                </button>
+                                <span className="tabular-nums text-black/70 dark:text-white/75">
+                                  Sayfa {safeDocPage}/{docPageCount}
+                                </span>
+                                <button
+                                  type="button"
+                                  disabled={safeDocPage >= docPageCount}
+                                  onClick={() => setDocPage((p) => Math.min(docPageCount, p + 1))}
+                                  className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
+                                >
+                                  Sonraki
+                                </button>
+                              </div>
+                            ) : null}
+                            <label className="flex items-center gap-1 text-black/75 dark:text-white/80">
+                              <span>Sayfa boyutu</span>
+                              <select
+                                value={docPageSize}
+                                onChange={(event) => {
+                                  setDocPageSize(Number(event.target.value))
+                                  setDocPage(1)
+                                  requestAnimationFrame(() => {
+                                    docListRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+                                  })
+                                }}
+                                className="rounded-md border border-black/22 bg-white px-1.5 py-1 text-xs text-black dark:border-white/15 dark:bg-black/80 dark:text-white"
+                              >
+                                {[4, 6, 8, 12].map((size) => (
+                                  <option key={size} value={size}>
+                                    {size}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </section>
                   <div className="relative z-10 mx-1 hidden w-2 shrink-0 cursor-col-resize lg:flex">
                     <button
@@ -956,11 +1896,21 @@ export function ProjectManagementDetailPage() {
                       className={[
                         'group absolute inset-y-3 left-1/2 -translate-x-1/2 rounded-full border transition',
                         isDocResizing || isDocResizerHover
-                          ? 'w-6 border-sky-300/70 bg-sky-100/70 dark:border-sky-500/60 dark:bg-sky-900/40'
-                          : 'w-3 border-slate-200/80 bg-white/70 dark:border-slate-700/80 dark:bg-slate-900/60',
+                          ? gl
+                            ? 'w-6 border-black/35 bg-black/12 dark:border-white/18 dark:bg-black/60'
+                            : 'w-6 border-black/25 bg-black/8 dark:border-white/20 dark:bg-black/50'
+                          : gl
+                            ? 'w-3 border-black/18 bg-white/70 dark:border-white/12 dark:bg-black/55'
+                            : 'w-3 border-slate-200/80 bg-white/70 dark:border-slate-700/80 dark:bg-slate-900/60',
                       ].join(' ')}
                     >
-                      <span className="pointer-events-none flex h-full items-center justify-center text-slate-500 dark:text-slate-300">
+                      <span
+                        className={
+                          gl
+                            ? 'pointer-events-none flex h-full items-center justify-center text-black/55 dark:text-white/70'
+                            : 'pointer-events-none flex h-full items-center justify-center text-slate-500 dark:text-slate-300'
+                        }
+                      >
                         {isDocResizing || isDocResizerHover ? (
                           <ChevronsLeftRight className="size-3.5" />
                         ) : (
@@ -969,63 +1919,150 @@ export function ProjectManagementDetailPage() {
                       </span>
                     </button>
                   </div>
-                  <section className="okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:pl-2">
+                  <section
+                    className={
+                      gl
+                        ? 'okan-project-split-aside glass-card glass-card--static project-mgmt-split-panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
+                        : 'okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:pl-2'
+                    }
+                  >
                     {selectedDoc ? (
-                      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                        <header className="shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      <div key={selectedDocId} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
+                        <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 lg:max-w-3xl">
+                        <header
+                          className={
+                            gl
+                              ? 'shrink-0 border-b border-black/12 pb-3 text-center dark:border-white/10'
+                              : 'shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10'
+                          }
+                        >
+                          <p
+                            className={
+                              gl
+                                ? 'text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65'
+                                : 'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'
+                            }
+                          >
                             Seçili döküman
                           </p>
-                          <h3 className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-slate-50">{selectedDoc.name}</h3>
-                          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                          <h3
+                            className={
+                              gl
+                                ? 'mt-1.5 text-xl font-semibold leading-tight text-black dark:text-white'
+                                : 'mt-1.5 text-sm font-semibold text-slate-900 dark:text-slate-50'
+                            }
+                          >
+                            {selectedDoc.name}
+                          </h3>
+                          <p
+                            className={
+                              gl
+                                ? 'mt-1 text-sm leading-snug text-black/75 dark:text-white/80'
+                                : 'mt-0.5 text-xs text-slate-500 dark:text-slate-400'
+                            }
+                          >
                             Rev {selectedDoc.revision} · {selectedDoc.uploadedBy}
                           </p>
                         </header>
-                        <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-3">
-                          <div className="flex max-w-full gap-1 overflow-x-auto">
-                          {([
-                            ['gecmis', 'Döküman geçmişi'],
-                            ['onizleme', 'Önizleme'],
-                          ] as const).map(([id, label]) => (
-                            <button
-                              key={id}
-                              type="button"
-                              onClick={() => setDocDetailTab(id)}
-                              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                                docDetailTab === id
-                                  ? 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
-                                  : 'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
-                              }`}
-                            >
-                              {label}
-                            </button>
-                          ))}
+                        <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-0.5">
+                          <div
+                            className={
+                              gl
+                                ? 'glass-nav max-w-full flex-wrap justify-center overflow-x-auto p-0'
+                                : 'okan-liquid-pill-track flex max-w-full gap-1 overflow-x-auto rounded-full p-1'
+                            }
+                            role="tablist"
+                            aria-label="Seçili döküman panel sekmeleri"
+                          >
+                            {(
+                              [
+                                ['gecmis', 'Döküman geçmişi'],
+                                ['onizleme', 'Önizleme'],
+                              ] as const
+                            ).map(([id, label]) => (
+                              <button
+                                key={id}
+                                type="button"
+                                role="tab"
+                                aria-selected={docDetailTab === id}
+                                onClick={() => setDocDetailTab(id)}
+                                className={
+                                  gl
+                                    ? ['nav-item', 'shrink-0', docDetailTab === id ? 'active' : ''].filter(Boolean).join(' ')
+                                    : `${tabBase} px-3 py-1.5 ${docDetailTab === id ? tabActive : tabIdle}`
+                                }
+                              >
+                                {label}
+                              </button>
+                            ))}
                           </div>
                         </div>
-                        <div className="okan-project-tab-panel mt-3 min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 text-left sm:px-1">
+                        <div className="okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 pt-3 text-left sm:px-1">
                           {docDetailTab === 'gecmis' ? (
-                            <div className="space-y-3 text-sm">
-                              <div className="rounded-lg border border-slate-200/45 bg-white/65 p-3 dark:border-slate-700/50 dark:bg-slate-900/35">
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Yükleyen</p>
-                                <p className="font-medium text-slate-900 dark:text-slate-50">{selectedDoc.uploadedBy}</p>
-                                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            <div
+                              className={
+                                gl
+                                  ? 'flex flex-col divide-y divide-black/12 text-sm dark:divide-white/10'
+                                  : 'flex flex-col divide-y divide-slate-200/70 text-sm dark:divide-slate-700/60'
+                              }
+                            >
+                              <section className="py-4 first:pt-0">
+                                <p className={infoSectionTitle}>Yükleyen ve meta</p>
+                                <p
+                                  className={
+                                    gl
+                                      ? 'mt-2 font-medium text-black dark:text-white'
+                                      : 'mt-2 font-medium text-slate-900 dark:text-slate-50'
+                                  }
+                                >
+                                  {selectedDoc.uploadedBy}
+                                </p>
+                                <p
+                                  className={
+                                    gl
+                                      ? 'mt-1 text-xs text-black/65 dark:text-white/70'
+                                      : 'mt-1 text-xs text-slate-500 dark:text-slate-400'
+                                  }
+                                >
                                   Yüklenme: {selectedDoc.uploadedAt} · Boyut: {selectedDoc.size}
                                 </p>
-                              </div>
-                              <div className="rounded-lg border border-slate-200/45 bg-white/65 p-3 dark:border-slate-700/50 dark:bg-slate-900/35">
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Notlar</p>
-                                <p className="font-medium text-slate-900 dark:text-slate-50">{selectedDoc.note}</p>
-                              </div>
-                              <div className="rounded-lg border border-slate-200/45 bg-white/65 p-3 dark:border-slate-700/50 dark:bg-slate-900/35">
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Revizyon geçmişi</p>
-                                <ul className="mt-2 space-y-1 text-xs text-slate-700 dark:text-slate-200">
-                                  <li>Rev {selectedDoc.revision} · {selectedDoc.uploadedAt} · {selectedDoc.uploadedBy}</li>
+                              </section>
+                              <section className="py-4">
+                                <p className={infoSectionTitle}>Notlar</p>
+                                <p
+                                  className={
+                                    gl
+                                      ? 'mt-2 font-medium text-black dark:text-white'
+                                      : 'mt-2 font-medium text-slate-900 dark:text-slate-50'
+                                  }
+                                >
+                                  {selectedDoc.note}
+                                </p>
+                              </section>
+                              <section className="py-4">
+                                <p className={infoSectionTitle}>Revizyon geçmişi</p>
+                                <ul
+                                  className={
+                                    gl
+                                      ? 'mt-2 space-y-1.5 text-xs text-black/80 dark:text-white/80'
+                                      : 'mt-2 space-y-1 text-xs text-slate-700 dark:text-slate-200'
+                                  }
+                                >
+                                  <li>
+                                    Rev {selectedDoc.revision} · {selectedDoc.uploadedAt} · {selectedDoc.uploadedBy}
+                                  </li>
                                   <li>Önceki revizyon · 08.04.2026 17:10 · Sistem içe aktarma</li>
                                 </ul>
-                              </div>
+                              </section>
                             </div>
                           ) : (
-                            <div className="overflow-hidden rounded-xl border border-slate-200/60 bg-slate-100/80 dark:border-slate-600/50 dark:bg-slate-900/50">
+                            <div
+                              className={
+                                gl
+                                  ? 'overflow-hidden rounded-xl border border-black/12 dark:border-white/10'
+                                  : 'overflow-hidden rounded-xl border border-slate-200/60 bg-slate-100/80 dark:border-slate-600/50 dark:bg-slate-900/50'
+                              }
+                            >
                               <iframe
                                 title={`${selectedDoc.name} önizleme`}
                                 src={selectedDoc.previewUrl}
@@ -1034,16 +2071,25 @@ export function ProjectManagementDetailPage() {
                             </div>
                           )}
                         </div>
+                        </div>
                       </div>
                     ) : (
-                      <p className="text-sm text-slate-600 dark:text-slate-300">Döküman seçin.</p>
+                      <p
+                        className={
+                          gl
+                            ? 'text-sm text-black/70 dark:text-white/75'
+                            : 'text-sm text-slate-600 dark:text-slate-300'
+                        }
+                      >
+                        Döküman seçin.
+                      </p>
                     )}
                   </section>
                 </div>
               ) : null}
             </div>
-              </div>
-            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

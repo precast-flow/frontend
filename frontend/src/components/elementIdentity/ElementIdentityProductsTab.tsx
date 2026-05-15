@@ -4,6 +4,7 @@ import { ALL_ELEMENT_TYPES } from '../../elementIdentity/catalog/allElementTypes
 import { TYPOLOGIES_BY_ID } from '../../elementIdentity/catalog/typologies'
 import type { ProductLifecycleStatus, ProjectProduct, ProjectProductSource } from '../../elementIdentity/types'
 import { useI18n } from '../../i18n/I18nProvider'
+import { useThemeMode } from '../../theme/ThemeProvider'
 import {
   eiSplitHeaderButtonPassive,
   ElementIdentityFilterSheetHeader,
@@ -17,6 +18,8 @@ import { ProductRebarTab } from './ProductRebarTab'
 import { AddFromStandardCatalogDialog } from './AddFromStandardCatalogDialog'
 import { useElementIdentity } from './elementIdentityContextValue'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
+import { ElementIdentitySplitListPaginationFooter } from './ElementIdentitySplitListPaginationFooter'
+import { useElementIdentitySplitListPagination } from './useElementIdentitySplitListPagination'
 
 type ProductDetailTab = 'general' | 'note' | 'dimensions' | 'materials' | 'rebar' | 'drawings' | 'activity'
 
@@ -49,14 +52,18 @@ export type ElementIdentityProductsTabProps = {
   projectId: string
   onOpenNewProduct: () => void
   onOpenBulkImport: () => void
+  neutralChrome?: boolean
 }
 
 export function ElementIdentityProductsTab({
   projectId,
   onOpenNewProduct,
   onOpenBulkImport,
+  neutralChrome = false,
 }: ElementIdentityProductsTabProps) {
   const { t, locale } = useI18n()
+  const { mode } = useThemeMode()
+  const gl = mode === 'light'
   const { projectProducts, removeProjectProduct, updateProjectProduct } = useElementIdentity()
 
   const prd = useMemo(
@@ -71,6 +78,7 @@ export function ElementIdentityProductsTab({
   const [detailTab, setDetailTab] = useState<ProductDetailTab>('general')
   const [catalogOpen, setCatalogOpen] = useState(false)
   const rightRef = useRef<HTMLDivElement | null>(null)
+  const listRef = useRef<HTMLUListElement | null>(null)
 
   const scrollPanelTop = () => {
     requestAnimationFrame(() => rightRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
@@ -87,6 +95,16 @@ export function ElementIdentityProductsTab({
       )
     })
   }, [prd, filterQuery, filterSource, locale])
+
+  const listPagination = useElementIdentitySplitListPagination(
+    filtered,
+    `${filterQuery}:${filterSource}`,
+  )
+  const { visible: visibleProducts } = listPagination
+
+  const scrollListTop = () => {
+    requestAnimationFrame(() => listRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
+  }
 
   const selected = useMemo(() => prd.find((p) => p.id === selectedId) ?? null, [prd, selectedId])
 
@@ -146,10 +164,37 @@ export function ElementIdentityProductsTab({
     [locale],
   )
 
+  const headerBtnCls = gl
+    ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5', 'shrink-0'].join(' ')
+    : eiSplitHeaderButtonPassive
+  const tabBase =
+    'shrink-0 rounded-full border px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 dark:focus-visible:ring-cyan-400/60'
+  const tabActive = gl
+    ? 'border-black/18 bg-white/55 text-black shadow-[inset_0_1px_0_rgb(255_255_255/0.65)] dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50 dark:shadow-none'
+    : 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
+  const tabIdle = gl
+    ? 'border-black/10 bg-white/35 text-black/70 hover:border-black/16 hover:bg-white/50 hover:text-black dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
+    : 'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
+  const filterLabelCls = gl
+    ? 'text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80'
+    : 'text-[11px] font-medium text-slate-600 dark:text-slate-300'
+  const filterInputCls = gl
+    ? 'glass-input mt-2 w-full text-xs'
+    : 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs text-slate-800 outline-none ring-sky-300 transition focus:ring-2 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100'
+  const sectionHeading = gl
+    ? 'text-xs font-semibold uppercase tracking-wide text-black/55 dark:text-white/60'
+    : 'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'
+
   return (
     <>
     <ElementIdentityPieceCodesLikeSplit
       persistKey={`${projectId}:products`}
+      listRef={listRef}
+      visualVariant="project-mgmt"
+      neutralChrome={neutralChrome}
+      embedded
+      fillParentHeight
+      listIndentWhenFilterOpen="18.5rem"
       listTitle={t('elementIdentity.detail.splitProductsTitle')}
       filterToolbarSearch={
         <FilterToolbarSearch
@@ -158,19 +203,21 @@ export function ElementIdentityProductsTab({
           onValueChange={setFilterQuery}
           placeholder={t('elementIdentity.detail.productSearchPh')}
           ariaLabel={t('elementIdentity.detail.productSearchAria')}
+          className={['min-w-0 sm:max-w-[14rem]', gl ? 'project-mgmt-toolbar-search' : ''].filter(Boolean).join(' ')}
+          inputClassName={gl ? 'glass-input' : ''}
         />
       }
       headerActions={
         <>
-          <button type="button" onClick={onOpenNewProduct} className={eiSplitHeaderButtonPassive}>
+          <button type="button" onClick={onOpenNewProduct} className={headerBtnCls}>
             <Plus className="size-3.5 shrink-0" aria-hidden />
             {t('elementIdentity.products.new')}
           </button>
-          <button type="button" onClick={onOpenBulkImport} className={eiSplitHeaderButtonPassive}>
+          <button type="button" onClick={onOpenBulkImport} className={headerBtnCls}>
             <Upload className="size-3.5 shrink-0" aria-hidden />
             {t('elementIdentity.products.bulk')}
           </button>
-          <button type="button" onClick={() => setCatalogOpen(true)} className={eiSplitHeaderButtonPassive}>
+          <button type="button" onClick={() => setCatalogOpen(true)} className={headerBtnCls}>
             <BookMarked className="size-3.5 shrink-0" aria-hidden />
             {t('elementIdentity.products.addFromCatalog')}
           </button>
@@ -181,31 +228,28 @@ export function ElementIdentityProductsTab({
       filterAside={
         <div>
           <ElementIdentityFilterSheetHeader
+            glass={gl}
             title={t('elementIdentity.detail.productFiltersTitle')}
             subtitle={t('elementIdentity.detail.productFiltersSubtitle')}
             onClose={() => setFilterOpen(false)}
           />
           <div className="grid gap-2.5">
             <label>
-              <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                {t('elementIdentity.ifc.sourceName')}
-              </span>
+              <span className={filterLabelCls}>{t('elementIdentity.ifc.sourceName')}</span>
               <input
                 type="text"
                 value={filterQuery}
                 onChange={(e) => setFilterQuery(e.target.value)}
                 placeholder={t('elementIdentity.detail.productSearchPh')}
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs text-slate-800 outline-none ring-sky-300 transition focus:ring-2 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
+                className={filterInputCls}
               />
             </label>
             <label>
-              <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                {t('elementIdentity.products.source')}
-              </span>
+              <span className={filterLabelCls}>{t('elementIdentity.products.source')}</span>
               <select
                 value={filterSource}
                 onChange={(e) => setFilterSource(e.target.value as typeof filterSource)}
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs text-slate-800 outline-none ring-sky-300 transition focus:ring-2 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
+                className={filterInputCls}
               >
                 <option value="all">{t('elementIdentity.detail.filterAll')}</option>
                 <option value="MANUAL">MANUAL</option>
@@ -215,10 +259,14 @@ export function ElementIdentityProductsTab({
               </select>
             </label>
           </div>
-          <div className="mt-3 flex items-center justify-between border-t border-slate-200/60 pt-2 dark:border-slate-700/60">
-            <span className="text-[11px] text-slate-600 dark:text-slate-300">
+          <div
+            className={`mt-3 flex items-center justify-between border-t pt-2 ${gl ? 'border-black/10 dark:border-white/10' : 'border-slate-200/60 dark:border-slate-700/60'}`}
+          >
+            <span className={`text-[11px] ${gl ? 'text-black/60 dark:text-white/70' : 'text-slate-600 dark:text-slate-300'}`}>
               {t('elementIdentity.detail.resultCount')}:{' '}
-              <span className="tabular-nums font-semibold">{filtered.length}</span>
+              <span className={`tabular-nums font-semibold ${gl ? 'text-black dark:text-white' : 'text-slate-800 dark:text-slate-100'}`}>
+                {filtered.length}
+              </span>
             </span>
             <button
               type="button"
@@ -226,25 +274,40 @@ export function ElementIdentityProductsTab({
                 setFilterQuery('')
                 setFilterSource('all')
               }}
-              className="rounded-md border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+              className={
+                gl
+                  ? ['glass-btn', 'secondary', 'small'].join(' ')
+                  : 'rounded-md border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800'
+              }
             >
               {t('elementIdentity.reset')}
             </button>
           </div>
         </div>
       }
-      listBody={
-        filtered.length === 0 ? (
-          <li className="rounded-lg border border-dashed border-slate-300/60 bg-white/30 px-3 py-8 text-center text-xs text-slate-500 dark:border-slate-600 dark:bg-slate-900/20">
+                listBody={
+                  listPagination.totalCount === 0 ? (
+          <li
+            className={
+              gl
+                ? 'list-none rounded-xl border border-dashed border-black/20 bg-white/25 px-3 py-8 text-center text-xs text-black/60 dark:border-white/15 dark:bg-white/5 dark:text-white/65'
+                : 'list-none rounded-lg border border-dashed border-slate-300/60 bg-white/30 px-3 py-8 text-center text-xs text-slate-500 dark:border-slate-600 dark:bg-slate-900/20'
+            }
+          >
             {t('elementIdentity.products.empty')}
           </li>
-        ) : (
-          filtered.map((p) => {
+                  ) : (
+                    visibleProducts.map((p) => {
             const bar = productSourceBar(p.source)
             return (
               <li
                 key={p.id}
-                className="rounded-lg border border-slate-200/50 bg-white/50 dark:border-slate-700/50 dark:bg-slate-900/25"
+                className={[
+                  gl
+                    ? 'glass-card glass-card--static project-mgmt-list-row-card flex min-h-0 shrink-0 items-stretch gap-1.5'
+                    : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
+                  selectedId === p.id ? 'okan-project-list-row--active' : '',
+                ].join(' ')}
               >
                 <button
                   type="button"
@@ -255,23 +318,47 @@ export function ElementIdentityProductsTab({
                   }}
                   aria-current={selectedId === p.id ? 'true' : undefined}
                   className={[
-                    'flex w-full items-stretch gap-2.5 px-3 py-2 text-left text-sm transition',
-                    selectedId === p.id
+                    'flex min-w-0 flex-1 items-stretch gap-2.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-cyan-400/50',
+                    gl ? 'rounded-md px-0.5 py-0.5 hover:bg-white/50 dark:hover:bg-white/8' : 'px-3 py-2',
+                    !gl && selectedId === p.id
                       ? 'okan-project-list-row--active bg-sky-500/10 dark:bg-sky-400/10'
-                      : 'hover:bg-white/50 dark:hover:bg-slate-900/35',
-                  ].join(' ')}
+                      : '',
+                    !gl && selectedId !== p.id ? 'hover:bg-white/50 dark:hover:bg-slate-900/35' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                 >
                   <div className="flex min-w-0 flex-1 gap-2">
-                    <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-300/70 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600/60">
+                    <span
+                      className={
+                        gl
+                          ? 'mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-black/8 text-black ring-1 ring-inset ring-black/12 dark:bg-white/10 dark:text-white dark:ring-white/15'
+                          : 'mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-300/70 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600/60'
+                      }
+                    >
                       <Package className="size-4" aria-hidden />
                     </span>
                     <div className="min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="inline-flex w-fit rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                      <span
+                        className={
+                          gl
+                            ? 'inline-flex w-fit rounded-md bg-black/8 px-1.5 py-0.5 text-[10px] font-semibold text-black dark:bg-white/12 dark:text-white'
+                            : 'inline-flex w-fit rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                        }
+                      >
                         {p.source}
                       </span>
-                      <p className="mt-1 font-mono font-semibold text-slate-900 dark:text-slate-50">{p.code}</p>
-                      <p className="truncate text-xs text-slate-600 dark:text-slate-400">{p.name}</p>
-                      <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                      <p
+                        className={`mt-1 font-mono font-semibold ${gl ? 'text-black dark:text-white' : 'text-slate-900 dark:text-slate-50'}`}
+                      >
+                        {p.code}
+                      </p>
+                      <p className={`truncate text-xs ${gl ? 'text-black/65 dark:text-white/70' : 'text-slate-600 dark:text-slate-400'}`}>
+                        {p.name}
+                      </p>
+                      <p
+                        className={`text-[11px] font-semibold ${gl ? 'text-black/55 dark:text-white/60' : 'text-slate-500 dark:text-slate-400'}`}
+                      >
                         {t('elementIdentity.products.rev')}: {p.revision}
                       </p>
                     </div>
@@ -300,52 +387,81 @@ export function ElementIdentityProductsTab({
         )
       }
       footer={
-        <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[11px] text-slate-600 dark:text-slate-300">
-          <p>
-            {filtered.length > 0 ? (
-              <>
-                <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">1</span>-
-                <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">
-                  {filtered.length}
-                </span>{' '}
-                /{' '}
-                <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">
-                  {filtered.length}
-                </span>{' '}
-                {locale === 'en' ? 'results' : 'sonuç'}
-              </>
-            ) : (
-              <span>{locale === 'en' ? 'No results' : 'Sonuç yok'}</span>
-            )}
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              if (selectedId) removeProjectProduct(selectedId)
-            }}
-            disabled={!selected}
-            className="rounded-md border border-rose-300/70 px-2 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-40 dark:border-rose-600/60 dark:text-rose-300 dark:hover:bg-rose-950/40"
-          >
-            {t('elementIdentity.products.remove')}
-          </button>
-        </div>
+        <ElementIdentitySplitListPaginationFooter
+          gl={gl}
+          locale={locale}
+          pageStart={listPagination.pageStart}
+          pageEnd={listPagination.pageEnd}
+          totalCount={listPagination.totalCount}
+          safePage={listPagination.safePage}
+          pageCount={listPagination.pageCount}
+          onPrev={() => {
+            listPagination.setPage((p) => Math.max(1, p - 1))
+            scrollListTop()
+          }}
+          onNext={() => {
+            listPagination.setPage((p) => Math.min(listPagination.pageCount, p + 1))
+            scrollListTop()
+          }}
+          trailing={
+            <button
+              type="button"
+              onClick={() => {
+                if (selectedId) removeProjectProduct(selectedId)
+              }}
+              disabled={!selected}
+              className={
+                gl
+                  ? ['glass-btn', 'secondary', 'small', 'text-rose-700', 'dark:text-rose-300', 'disabled:opacity-40'].join(' ')
+                  : 'rounded-md border border-rose-300/70 px-2 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-40 dark:border-rose-600/60 dark:text-rose-300 dark:hover:bg-rose-950/40'
+              }
+            >
+              {t('elementIdentity.products.remove')}
+            </button>
+          }
+        />
       }
       rightPanelRef={rightRef}
       rightAside={
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
           {selected ? (
-            <div className="flex h-full min-h-0 flex-col">
-              <header className="shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3 overflow-hidden sm:gap-4">
+              <header
+                className={
+                  gl
+                    ? 'shrink-0 border-b border-black/12 pb-3 text-left dark:border-white/10'
+                    : 'shrink-0 border-b border-slate-200/25 pb-3 text-left dark:border-white/10'
+                }
+              >
+                <p
+                  className={
+                    gl
+                      ? 'text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65'
+                      : 'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'
+                  }
+                >
                   {t('elementIdentity.detail.selectedProduct')}
                 </p>
-                <h3 className="mt-1.5 font-mono text-xl font-semibold text-slate-900 dark:text-slate-50">
+                <h3
+                  className={
+                    gl
+                      ? 'mt-1.5 font-mono text-xl font-semibold leading-tight text-black dark:text-white'
+                      : 'mt-1.5 font-mono text-xl font-semibold text-slate-900 dark:text-slate-50'
+                  }
+                >
                   {selected.code}
                 </h3>
-                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{selected.name}</p>
+                <p
+                  className={
+                    gl
+                      ? 'mt-1 text-sm leading-snug text-black/75 dark:text-white/80'
+                      : 'mt-1 text-sm text-slate-600 dark:text-slate-300'
+                  }
+                >
+                  {selected.name}
+                </p>
               </header>
-              <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-3">
-                <div className="flex max-w-full gap-1 overflow-x-auto" role="tablist">
+              <div className="flex shrink-0 gap-1 overflow-x-auto" role="tablist" aria-label={t('elementIdentity.detail.tabProducts')}>
                   {(
                     [
                       ['general', 'elementIdentity.detail.productSubGeneral'],
@@ -366,27 +482,20 @@ export function ElementIdentityProductsTab({
                         setDetailTab(id)
                         scrollPanelTop()
                       }}
-                      className={`shrink-0 rounded-full border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
-                        detailTab === id
-                          ? 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
-                          : 'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
-                      }`}
+                      className={`${tabBase} ${detailTab === id ? tabActive : tabIdle}`}
                     >
                       {t(key)}
                     </button>
                   ))}
-                </div>
               </div>
               <div
                 role="tabpanel"
-                className="okan-project-tab-panel mt-3 min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 text-left sm:px-1"
+                className="okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden text-left"
               >
                 {detailTab === 'general' && (
                   <div className="flex flex-col gap-4">
                     <div>
-                      <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        {t('elementIdentity.products.sectionIdentity')}
-                      </h4>
+                      <h4 className={sectionHeading}>{t('elementIdentity.products.sectionIdentity')}</h4>
                       <label className="mt-3 block sm:col-span-2">
                         <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
                           {t('elementIdentity.products.definition')}
@@ -583,7 +692,7 @@ export function ElementIdentityProductsTab({
               </div>
             </div>
           ) : (
-            <p className="px-1 text-center text-xs text-slate-500 dark:text-slate-400">
+            <p className={`px-1 text-left text-xs ${gl ? 'text-black/60 dark:text-white/65' : 'text-slate-500 dark:text-slate-400'}`}>
               {t('elementIdentity.detail.selectProductHint')}
             </p>
           )}

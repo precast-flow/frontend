@@ -407,7 +407,7 @@ export function SettingsTabPanels(props: Props) {
   if (stickyFooter) {
     return (
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 pb-3 sm:px-1">
+        <div className="okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain px-0.5 pb-3 sm:px-1">
           <div className="space-y-5">{mainBlocks}</div>
         </div>
         {footerEl}

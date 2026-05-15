@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ChevronsLeftRight, ChevronRight, Filter, GripVertical, X } from 'lucide-react'
 import {
   lineTotal,
@@ -8,9 +8,12 @@ import {
   type Quote,
   type QuoteStatus,
 } from '../../data/quotesMock'
+import { activeModuleIdFromPathname } from '../../data/navigation'
 import { useI18n } from '../../i18n/I18nProvider'
+import { useThemeMode } from '../../theme/ThemeProvider'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
+import '../proje/projectManagementGlassLight.css'
 
 type Props = {
   onNavigate?: (moduleId: string) => void
@@ -22,7 +25,7 @@ type Props = {
   storageKeyPrefix?: string
 }
 
-const QUOTE_LIST_PAGE_SIZE = 8
+const PAGE_SIZE_OPTIONS = [4, 6, 8, 10, 15] as const
 const QUOTE_DEFAULT_SPLIT_RATIO = 40
 
 const detailTabDefs = [
@@ -89,7 +92,11 @@ export function QuoteModuleView({
 }: Props) {
   void _onNavigate
   const { t } = useI18n()
+  const { mode } = useThemeMode()
+  const gl = mode === 'light'
   const navigate = useNavigate()
+  const location = useLocation()
+  const neutralShell = activeModuleIdFromPathname(location.pathname) === 'project'
   const detailPanelRef = useRef<HTMLElement | null>(null)
   const persistKey = storageKeyPrefix ? `${storageKeyPrefix}:state` : null
 
@@ -106,13 +113,12 @@ export function QuoteModuleView({
   const [searchQuery, setSearchQuery] = useState('')
   const [detailTab, setDetailTab] = useState<DetailTabId>('ozet')
   const [listPage, setListPage] = useState(1)
-  const [pageSize, setPageSize] = useState(QUOTE_LIST_PAGE_SIZE)
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(6)
   const [splitRatio, setSplitRatio] = useState(QUOTE_DEFAULT_SPLIT_RATIO)
   const [isResizing, setIsResizing] = useState(false)
   const [isResizerHover, setIsResizerHover] = useState(false)
   const [persistHydrated, setPersistHydrated] = useState(!persistKey)
   const listRef = useRef<HTMLUListElement | null>(null)
-  const loadMoreSentinelRef = useRef<HTMLLIElement | null>(null)
   const splitRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -125,7 +131,8 @@ export function QuoteModuleView({
       if (raw) {
         const p = JSON.parse(raw) as QuotePersist
         if (typeof p.splitRatio === 'number') setSplitRatio(Math.min(55, Math.max(30, p.splitRatio)))
-        if (typeof p.pageSize === 'number' && p.pageSize > 0) setPageSize(p.pageSize)
+        if (typeof p.pageSize === 'number' && (PAGE_SIZE_OPTIONS as readonly number[]).includes(p.pageSize))
+          setPageSize(p.pageSize as (typeof PAGE_SIZE_OPTIONS)[number])
         if (p.detailTab && detailTabDefs.some((d) => d.id === p.detailTab)) setDetailTab(p.detailTab)
         if (Array.isArray(p.statusFilter)) setStatusFilter(p.statusFilter)
         if (typeof p.searchQuery === 'string') setSearchQuery(p.searchQuery)
@@ -150,12 +157,16 @@ export function QuoteModuleView({
     )
   }, [rows, statusFilter, searchQuery])
 
-  const listTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
-  const safeListPage = Math.min(listPage, listTotalPages)
-  const listPageSlice = useMemo(() => {
-    return filtered.slice(0, safeListPage * pageSize)
-  }, [filtered, safeListPage, pageSize])
-  const listPageStart = filtered.length === 0 ? 0 : 1
+  const listPageCount = useMemo(
+    () => Math.max(1, Math.ceil(filtered.length / pageSize)),
+    [filtered.length, pageSize],
+  )
+  const safeListPage = Math.min(listPage, listPageCount)
+  const visibleQuotes = useMemo(
+    () => filtered.slice((safeListPage - 1) * pageSize, safeListPage * pageSize),
+    [filtered, pageSize, safeListPage],
+  )
+  const listPageStart = filtered.length === 0 ? 0 : (safeListPage - 1) * pageSize + 1
   const listPageEnd = Math.min(filtered.length, safeListPage * pageSize)
 
   useEffect(() => {
@@ -194,8 +205,8 @@ export function QuoteModuleView({
   }, [statusFilter, searchQuery, pageSize])
 
   useEffect(() => {
-    setListPage((p) => Math.min(p, listTotalPages))
-  }, [listTotalPages])
+    setListPage((p) => Math.min(p, listPageCount))
+  }, [listPageCount])
 
   useEffect(() => {
     if (filtered.length === 0) return
@@ -247,29 +258,17 @@ export function QuoteModuleView({
     }
   }, [isResizing])
 
-  const onListScroll = () => {
-    const el = listRef.current
-    if (!el) return
-    const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 64
-    if (!nearBottom) return
-    if (safeListPage >= listTotalPages) return
-    setListPage((prev) => Math.min(listTotalPages, prev + 1))
+  const scrollPanelTop = () => {
+    requestAnimationFrame(() => {
+      detailPanelRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+    })
   }
 
-  useEffect(() => {
-    const root = listRef.current
-    const target = loadMoreSentinelRef.current
-    if (!root || !target || safeListPage >= listTotalPages) return
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0]?.isIntersecting) return
-        setListPage((prev) => Math.min(listTotalPages, prev + 1))
-      },
-      { root, rootMargin: '0px 0px 80px 0px', threshold: 0 },
-    )
-    io.observe(target)
-    return () => io.disconnect()
-  }, [safeListPage, listTotalPages, listPageSlice.length, filtersOpen])
+  const clearListFilters = () => {
+    setSearchQuery('')
+    setStatusFilter([])
+    setListPage(1)
+  }
 
   const toggleStatus = (s: QuoteStatus) => {
     setListPage(1)
@@ -324,20 +323,33 @@ export function QuoteModuleView({
         {breadcrumbNav}
 
         <div
-          ref={splitRef}
           className={
             embedded
-              ? 'flex h-full min-h-0 flex-1 flex-col overflow-hidden'
-              : 'min-h-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5'
+              ? 'flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
+              : 'min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5'
           }
         >
-          <div className="relative flex h-full min-h-0 min-w-0 overflow-hidden gap-0">
+          <div
+            ref={splitRef}
+            data-split-dragging={isResizing ? 'true' : undefined}
+            className={['relative flex h-full min-h-0 min-w-0 flex-1 overflow-hidden', gl ? 'gap-3 rounded-3xl lg:gap-4' : 'gap-0'].join(
+              ' ',
+            )}
+          >
             <section
-              className="okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden p-3"
+              className={[
+                'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden',
+                gl ? 'glass-card glass-card--static project-mgmt-split-panel min-h-0' : 'p-3',
+              ].join(' ')}
               style={{ width: `calc(${splitRatio}% - 5px)` }}
             >
-              <div className="mb-3 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
-                <h2 className="min-w-0 shrink-0 text-sm font-semibold text-slate-900 dark:text-slate-50 sm:text-base">
+              <div className="mb-2 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
+                <h2
+                  className={[
+                    'min-w-0 shrink-0 text-sm font-semibold sm:text-base',
+                    gl ? 'text-black dark:text-white' : 'text-slate-900 dark:text-slate-50',
+                  ].join(' ')}
+                >
                   {embedded ? 'Teklif listesi' : 'Teklif & Keşif'}
                 </h2>
                 <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
@@ -350,23 +362,41 @@ export function QuoteModuleView({
                     }}
                     placeholder="Teklif no, müşteri, proje..."
                     ariaLabel="Tekliflerde ara"
+                    className={['min-w-0 sm:max-w-[14rem]', gl ? 'project-mgmt-toolbar-search' : ''].filter(Boolean).join(' ')}
+                    inputClassName={gl ? 'glass-input' : undefined}
                   />
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setFiltersOpen((v) => !v)}
                       aria-expanded={filtersOpen}
-                      className={[
-                        'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
-                        filtersOpen
-                          ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
-                          : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
-                      ].join(' ')}
+                      className={
+                        gl
+                          ? ['glass-btn', 'small', 'inline-flex', 'items-center', 'gap-1.5', filtersOpen ? 'outline' : 'secondary'].join(
+                              ' ',
+                            )
+                          : [
+                              'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25',
+                              filtersOpen
+                                ? neutralShell
+                                  ? 'border-black/35 bg-black/10 text-black dark:border-white/20 dark:bg-black/50 dark:text-white'
+                                  : 'border-black/25 bg-black/8 text-black dark:border-white/20 dark:bg-black/45 dark:text-white'
+                                : 'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
+                            ].join(' ')
+                      }
                     >
                       <Filter className="size-3.5 shrink-0" aria-hidden />
-                      <span>Filtrele</span>
+                      Filtrele
                       {activeFilterCount > 0 ? (
-                        <span className="rounded-full bg-sky-500/25 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-sky-900 dark:bg-sky-400/20 dark:text-sky-100">
+                        <span
+                          className={
+                            gl
+                              ? 'rounded-full bg-black/8 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black dark:bg-white/10 dark:text-white'
+                              : neutralShell
+                                ? 'rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black dark:bg-white/10 dark:text-white'
+                                : 'rounded-full bg-black/12 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black dark:bg-white/12 dark:text-white'
+                          }
+                        >
                           {activeFilterCount}
                         </span>
                       ) : null}
@@ -378,28 +408,42 @@ export function QuoteModuleView({
               <div className="relative min-h-0 flex-1 overflow-hidden">
                 <aside
                   className={[
-                    'absolute inset-y-0 left-0 z-20 w-64 overflow-y-auto rounded-xl border border-slate-200/70 bg-white/95 p-3 shadow-xl backdrop-blur-sm transition-transform dark:border-slate-700/70 dark:bg-slate-900/95',
+                    'absolute inset-y-0 left-0 z-20 w-72 overflow-y-auto shadow-xl backdrop-blur-sm transition-transform duration-150 ease-out',
+                    gl
+                      ? 'glass-card glass-card--static project-mgmt-split-panel project-mgmt-filter-drawer'
+                      : 'rounded-xl border border-black/15 bg-white/95 p-3 dark:border-white/12 dark:bg-black/70',
                     filtersOpen ? 'translate-x-0' : '-translate-x-[105%]',
                   ].join(' ')}
                   aria-hidden={!filtersOpen}
                 >
                   <div className="mb-3 flex items-start justify-between gap-2">
-                    <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Teklif filtreleri</h4>
+                    <div>
+                      <h4 className="text-sm font-semibold text-black dark:text-white">Teklif filtreleri</h4>
+                      <p className="mt-1 text-[11px] text-black/60 dark:text-white/65">Arama ve durum</p>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setFiltersOpen(false)}
-                      className="inline-flex size-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                      className={
+                        gl
+                          ? 'card-button inline-flex size-7 items-center justify-center p-0'
+                          : 'inline-flex size-7 items-center justify-center rounded-lg border border-black/20 text-black/80 hover:bg-black/5 dark:border-white/15 dark:text-white/80 dark:hover:bg-white/10'
+                      }
                       aria-label="Filtreyi kapat"
                     >
                       <X className="size-3.5" aria-hidden />
                     </button>
                   </div>
-                  <div className="space-y-3">
-                    <label className="block">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                  <div className="space-y-4">
+                    <div>
+                      <label
+                        htmlFor="quote-filter-drawer-search"
+                        className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80"
+                      >
                         Arama
-                      </span>
+                      </label>
                       <input
+                        id="quote-filter-drawer-search"
                         type="search"
                         value={searchQuery}
                         onChange={(e) => {
@@ -408,109 +452,276 @@ export function QuoteModuleView({
                         }}
                         placeholder="Teklif no, müşteri, proje..."
                         autoComplete="off"
-                        className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-950"
+                        className={
+                          gl
+                            ? 'glass-input mt-2 w-full'
+                            : 'mt-2 w-full rounded-lg border border-black/22 bg-white px-3 py-2.5 text-sm dark:border-white/15 dark:bg-black/80'
+                        }
                       />
-                    </label>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
-                      Durum
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {ALL_STATUSES.map((s) => (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => toggleStatus(s)}
-                          className={[
-                            'rounded-full px-3 py-2 text-left text-sm font-semibold leading-snug transition',
-                            statusFilter.includes(s) ? 'okan-liquid-pill-active text-slate-900' : 'okan-liquid-btn-secondary',
-                          ].join(' ')}
-                        >
-                          {statusLabel(s)}
-                        </button>
-                      ))}
                     </div>
-                    {statusFilter.length > 0 || searchQuery.trim() ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setStatusFilter([])
-                          setSearchQuery('')
-                          setListPage(1)
-                        }}
-                        className="okan-liquid-btn-secondary w-full px-3 py-2 text-sm font-semibold sm:w-auto"
-                      >
-                        Tüm durumlar
-                      </button>
-                    ) : null}
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80">Durum</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {ALL_STATUSES.map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => toggleStatus(s)}
+                            className={
+                              gl
+                                ? ['glass-btn', 'small', statusFilter.includes(s) ? 'primary' : 'secondary'].join(' ')
+                                : [
+                                    'rounded-full px-3 py-2 text-left text-sm font-semibold leading-snug transition',
+                                    statusFilter.includes(s)
+                                      ? 'okan-liquid-pill-active text-black dark:text-white'
+                                      : 'okan-liquid-btn-secondary',
+                                  ].join(' ')
+                            }
+                          >
+                            {statusLabel(s)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between border-t border-black/15 pt-2 dark:border-white/12">
+                    <span className="text-[11px] text-black/75 dark:text-white/80">
+                      Sonuç: <span className="tabular-nums font-semibold">{filtered.length}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearListFilters()
+                        setFiltersOpen(false)
+                        requestAnimationFrame(() => {
+                          listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+                        })
+                      }}
+                      className={
+                        gl
+                          ? ['glass-btn', 'secondary', 'small'].join(' ')
+                          : 'rounded-md border border-black/22 px-2 py-1 text-[11px] font-semibold text-black hover:bg-black/5 dark:border-white/15 dark:text-white dark:hover:bg-white/10'
+                      }
+                    >
+                      Temizle
+                    </button>
                   </div>
                 </aside>
 
-                {filtered.length === 0 ? (
-                  <p className="text-sm text-slate-600 dark:text-slate-300">Filtreye uygun teklif yok.</p>
-                ) : (
-                  <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                    <ul
-                      ref={listRef}
-                      className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-300"
-                      style={{ paddingLeft: filtersOpen ? '15.75rem' : '0' }}
-                      onScroll={onListScroll}
-                    >
-                      {listPageSlice.map((row) => (
-                        <li
-                          key={row.id}
-                          className={[
-                            'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-slate-200/50 bg-white/70 px-2 py-1.5 dark:border-slate-700/50 dark:bg-slate-900/35',
-                            selected?.id === row.id ? 'okan-project-list-row--active' : '',
-                          ].join(' ')}
+                <ul
+                  ref={listRef}
+                  className="flex h-full min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-100 ease-out"
+                  style={{ paddingLeft: filtersOpen ? '18.5rem' : '0' }}
+                  role="list"
+                  aria-label="Teklifler"
+                >
+                  {visibleQuotes.length > 0 ? (
+                    visibleQuotes.map((row) => (
+                      <li
+                        key={row.id}
+                        className={[
+                          gl
+                            ? [
+                                'glass-card',
+                                'glass-card--static',
+                                'project-mgmt-list-row-card',
+                                'list-none',
+                                'flex',
+                                'min-h-0',
+                                'shrink-0',
+                                'items-stretch',
+                                'gap-1.5',
+                              ].join(' ')
+                            : 'list-none flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
+                          selected?.id === row.id ? 'okan-project-list-row--active' : '',
+                        ].join(' ')}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedId(row.id)
+                            setDetailTab('ozet')
+                            scrollPanelTop()
+                          }}
+                          aria-current={selected?.id === row.id ? 'true' : undefined}
+                          className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/8"
                         >
-                          <button
-                            type="button"
-                            onClick={() => setSelectedId(row.id)}
-                            aria-current={selected?.id === row.id ? 'true' : undefined}
-                            className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:hover:bg-slate-900/40"
+                          <p
+                            className={
+                              gl
+                                ? 'font-mono text-sm font-semibold leading-snug text-black dark:text-white'
+                                : 'font-mono text-sm font-semibold leading-snug text-slate-900 dark:text-slate-50'
+                            }
                           >
-                            <p className="font-mono text-sm font-semibold leading-snug text-slate-900 dark:text-slate-50">
-                              {row.number}
-                            </p>
-                            <p className="mt-0.5 truncate text-xs text-slate-600 dark:text-slate-400">{row.customer}</p>
-                            <p className="mt-1.5">
-                              <span className={statusPill(row.status)}>{statusLabel(row.status)}</span>
-                            </p>
-                          </button>
+                            {row.number}
+                          </p>
+                          <p
+                            className={
+                              gl
+                                ? 'mt-0.5 truncate text-xs text-black/70 dark:text-white/70'
+                                : 'mt-0.5 truncate text-xs text-slate-600 dark:text-slate-400'
+                            }
+                          >
+                            {row.customer}
+                          </p>
+                          <p className="mt-1.5">
+                            <span className={statusPill(row.status)}>{statusLabel(row.status)}</span>
+                          </p>
+                        </button>
+                        <div className="flex shrink-0 flex-col justify-center">
                           <button
                             type="button"
                             title="Tam teklif detayı"
                             onClick={() => navigate(`/teklif-detay/${row.id}`, { state: { fromList: true } })}
-                            className="inline-flex shrink-0 items-center gap-0.5 self-center rounded-md px-1.5 py-1 text-[11px] font-medium leading-none text-slate-500 transition hover:bg-slate-500/10 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100"
+                            className={
+                              gl
+                                ? 'card-button inline-flex items-center gap-0.5 py-1 pl-2 pr-2 text-[11px] font-medium leading-none'
+                                : 'inline-flex items-center gap-0.5 rounded-md px-1.5 py-1 text-[11px] font-medium leading-none text-black/55 transition hover:bg-black/8 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/65 dark:hover:bg-white/8 dark:hover:text-white'
+                            }
                           >
                             Detay
                             <ChevronRight className="size-3 opacity-70" strokeWidth={2} aria-hidden />
                           </button>
-                        </li>
-                      ))}
-                      {safeListPage < listTotalPages ? <li ref={loadMoreSentinelRef} className="h-5" aria-hidden /> : null}
-                    </ul>
-                    <div className="mt-1.5 flex shrink-0 items-center justify-between gap-2 border-t border-slate-200/35 pt-2.5 text-[11px] dark:border-slate-600/35">
-                      <span className="text-slate-600 dark:text-slate-300">
-                        {listPageStart}-{listPageEnd} / {filtered.length} sonuç
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <label className="text-slate-500 dark:text-slate-400">Sayfa boyutu:</label>
+                        </div>
+                      </li>
+                    ))
+                  ) : (
+                    <li
+                      className={
+                        gl
+                          ? 'glass-card glass-card--static list-none px-3 py-2 text-sm text-black dark:text-white'
+                          : 'list-none rounded-lg border border-black/14 bg-white/50 px-3 py-2 text-sm text-black/80 dark:border-white/12 dark:bg-black/45 dark:text-white/85'
+                      }
+                    >
+                      Filtreye uygun teklif bulunamadı.
+                    </li>
+                  )}
+                </ul>
+              </div>
+
+              {gl ? (
+                <div className="glass-card glass-card--static project-mgmt-footer-panel sticky bottom-0 z-10 mt-2 shrink-0 text-xs">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                    <p className="text-black dark:text-white/80">
+                      {filtered.length > 0 ? (
+                        <>
+                          <span className="tabular-nums font-semibold text-black dark:text-white">{listPageStart}</span>-
+                          <span className="tabular-nums font-semibold text-black dark:text-white">{listPageEnd}</span> /{' '}
+                          <span className="tabular-nums font-semibold text-black dark:text-white">{filtered.length}</span> sonuç
+                        </>
+                      ) : (
+                        'Sonuç yok'
+                      )}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {filtered.length > 0 ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            disabled={safeListPage <= 1}
+                            onClick={() => setListPage((p) => Math.max(1, p - 1))}
+                            className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(' ')}
+                          >
+                            Önceki
+                          </button>
+                          <span className="tabular-nums text-black/80 dark:text-white/75">
+                            Sayfa {safeListPage}/{listPageCount}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={safeListPage >= listPageCount}
+                            onClick={() => setListPage((p) => Math.min(listPageCount, p + 1))}
+                            className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(' ')}
+                          >
+                            Sonraki
+                          </button>
+                        </div>
+                      ) : null}
+                      <label className="flex items-center gap-1 text-black dark:text-white/80">
+                        <span>Sayfa boyutu</span>
                         <select
                           value={pageSize}
-                          onChange={(event) => setPageSize(Number(event.target.value))}
-                          className="rounded-md border border-slate-300 bg-white px-1.5 py-0.5 text-[11px] text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+                          onChange={(e) => {
+                            setPageSize(Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])
+                            setListPage(1)
+                            requestAnimationFrame(() => {
+                              listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+                            })
+                          }}
+                          className="glass-input px-2 py-1 text-xs"
                         >
-                          <option value={6}>6</option>
-                          <option value={8}>8</option>
-                          <option value={12}>12</option>
-                          <option value={16}>16</option>
+                          {PAGE_SIZE_OPTIONS.map((size) => (
+                            <option key={size} value={size}>
+                              {size}
+                            </option>
+                          ))}
                         </select>
-                      </div>
+                      </label>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="sticky bottom-0 z-10 mt-1 shrink-0 border-t border-black/15 bg-white/90 pt-2 text-xs backdrop-blur dark:border-white/12 dark:bg-black/75">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                    <p className="text-black/75 dark:text-white/80">
+                      {filtered.length > 0 ? (
+                        <>
+                          <span className="tabular-nums font-semibold text-black dark:text-white">{listPageStart}</span>-
+                          <span className="tabular-nums font-semibold text-black dark:text-white">{listPageEnd}</span> /{' '}
+                          <span className="tabular-nums font-semibold text-black dark:text-white">{filtered.length}</span> sonuç
+                        </>
+                      ) : (
+                        'Sonuç yok'
+                      )}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {filtered.length > 0 ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            disabled={safeListPage <= 1}
+                            onClick={() => setListPage((p) => Math.max(1, p - 1))}
+                            className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
+                          >
+                            Önceki
+                          </button>
+                          <span className="tabular-nums text-black/70 dark:text-white/75">
+                            Sayfa {safeListPage}/{listPageCount}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={safeListPage >= listPageCount}
+                            onClick={() => setListPage((p) => Math.min(listPageCount, p + 1))}
+                            className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
+                          >
+                            Sonraki
+                          </button>
+                        </div>
+                      ) : null}
+                      <label className="flex items-center gap-1 text-black/75 dark:text-white/80">
+                        <span>Sayfa boyutu</span>
+                        <select
+                          value={pageSize}
+                          onChange={(e) => {
+                            setPageSize(Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])
+                            setListPage(1)
+                            requestAnimationFrame(() => {
+                              listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+                            })
+                          }}
+                          className="rounded-md border border-black/22 bg-white px-1.5 py-1 text-xs text-black dark:border-white/15 dark:bg-black/80 dark:text-white"
+                        >
+                          {PAGE_SIZE_OPTIONS.map((size) => (
+                            <option key={size} value={size}>
+                              {size}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
             </section>
 
             <div className="relative z-10 mx-1 hidden w-2 shrink-0 cursor-col-resize lg:flex">
@@ -529,11 +740,15 @@ export function QuoteModuleView({
                 className={[
                   'group absolute inset-y-3 left-1/2 -translate-x-1/2 rounded-full border transition',
                   isResizing || isResizerHover
-                    ? 'w-6 border-sky-300/70 bg-sky-100/70 dark:border-sky-500/60 dark:bg-sky-900/40'
-                    : 'w-3 border-slate-200/80 bg-white/70 dark:border-slate-700/80 dark:bg-slate-900/60',
+                    ? gl
+                      ? 'w-6 border-black/35 bg-black/12 dark:border-white/18 dark:bg-black/60'
+                      : neutralShell
+                        ? 'w-6 border-black/35 bg-black/12 dark:border-white/18 dark:bg-black/60'
+                        : 'w-6 border-black/25 bg-black/8 dark:border-white/20 dark:bg-black/50'
+                    : 'w-3 border-black/18 bg-white/70 dark:border-white/12 dark:bg-black/55',
                 ].join(' ')}
               >
-                <span className="pointer-events-none flex h-full items-center justify-center text-slate-500 dark:text-slate-300">
+                <span className="pointer-events-none flex h-full items-center justify-center text-black/55 dark:text-white/70">
                   {isResizing || isResizerHover ? <ChevronsLeftRight className="size-3.5" /> : <GripVertical className="size-3.5" />}
                 </span>
               </button>
@@ -541,24 +756,58 @@ export function QuoteModuleView({
 
             <aside
               ref={detailPanelRef}
-              className="okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:pl-2"
+              className={
+                gl
+                  ? 'okan-project-split-aside glass-card glass-card--static project-mgmt-split-panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
+                  : 'okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:pl-2'
+              }
             >
               {selected ? (
                 <div key={selected.id} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
                   <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 lg:max-w-3xl">
-                    <header className="shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <header
+                      className={
+                        gl
+                          ? 'shrink-0 border-b border-black/12 pb-3 text-center dark:border-white/10'
+                          : 'shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10'
+                      }
+                    >
+                      <p
+                        className={
+                          gl
+                            ? 'text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65'
+                            : 'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'
+                        }
+                      >
                         Seçili teklif
                       </p>
-                      <h3 className="mt-1.5 font-mono text-lg font-semibold leading-tight text-slate-900 sm:text-xl dark:text-slate-50">
+                      <h3
+                        className={
+                          gl
+                            ? 'mt-1.5 font-mono text-lg font-semibold leading-tight text-black sm:text-xl dark:text-white'
+                            : 'mt-1.5 font-mono text-lg font-semibold leading-tight text-slate-900 sm:text-xl dark:text-slate-50'
+                        }
+                      >
                         {selected.number}
                       </h3>
-                      <p className="mt-1 text-sm leading-snug text-slate-600 dark:text-slate-300">
+                      <p
+                        className={
+                          gl
+                            ? 'mt-1 text-sm leading-snug text-black/75 dark:text-white/80'
+                            : 'mt-1 text-sm leading-snug text-slate-600 dark:text-slate-300'
+                        }
+                      >
                         {selected.customer} · {selected.project}
                       </p>
                       <p className="mt-1.5">
                         <span className={statusPill(selected.status)}>{statusLabel(selected.status)}</span>
-                        <span className="ms-2 text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-100">
+                        <span
+                          className={
+                            gl
+                              ? 'ms-2 text-sm font-semibold tabular-nums text-black dark:text-white'
+                              : 'ms-2 text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-100'
+                          }
+                        >
                           {formatMoney(selected.total, selected.currency)}
                         </span>
                       </p>
@@ -566,7 +815,11 @@ export function QuoteModuleView({
 
                     <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-0.5">
                       <div
-                        className="okan-liquid-pill-track flex max-w-full gap-1 overflow-x-auto rounded-full p-1"
+                        className={
+                          gl
+                            ? 'glass-nav max-w-full flex-wrap justify-center overflow-x-auto p-0'
+                            : 'okan-liquid-pill-track flex max-w-full gap-1 overflow-x-auto rounded-full p-1'
+                        }
                         role="tablist"
                         aria-label="Seçili teklif sekmeleri"
                         aria-orientation="horizontal"
@@ -580,12 +833,19 @@ export function QuoteModuleView({
                             aria-selected={detailTab === tab.id}
                             aria-controls="quote-detail-panel"
                             tabIndex={detailTab === tab.id ? 0 : -1}
-                            onClick={() => setDetailTab(tab.id)}
-                            className={`shrink-0 rounded-full px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
-                              detailTab === tab.id
-                                ? 'okan-liquid-pill-active okan-project-tab-active text-slate-900 dark:text-slate-50'
-                                : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
-                            }`}
+                            onClick={() => {
+                              setDetailTab(tab.id)
+                              scrollPanelTop()
+                            }}
+                            className={
+                              gl
+                                ? ['nav-item', 'shrink-0', detailTab === tab.id ? 'active' : ''].filter(Boolean).join(' ')
+                                : `shrink-0 rounded-full px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
+                                    detailTab === tab.id
+                                      ? 'okan-liquid-pill-active okan-project-tab-active text-slate-900 dark:text-slate-50'
+                                      : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
+                                  }`
+                            }
                           >
                             {tab.label}
                           </button>
@@ -598,51 +858,94 @@ export function QuoteModuleView({
                       id="quote-detail-panel"
                       role="tabpanel"
                       aria-labelledby={`quote-detail-tab-${detailTab}`}
-                      className="okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 text-center sm:px-1"
+                      className={
+                        gl
+                          ? 'okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 text-left text-sm text-black dark:text-white sm:px-1'
+                          : 'okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 text-center sm:px-1'
+                      }
                     >
                       {detailTab === 'ozet' ? (
-                        <div className="flex flex-col divide-y divide-slate-200/25 dark:divide-white/10">
-                          <div className="space-y-4 pb-4 pt-0">
-                            {selected.thresholdWarning ? (
-                              <p className="mx-auto max-w-lg text-sm text-amber-800 dark:text-amber-200">
-                                {selected.thresholdWarning}
+                        gl ? (
+                          <div className="flex flex-col divide-y divide-black/12 text-sm dark:divide-white/10">
+                            <div className="space-y-4 pb-4 pt-0">
+                              {selected.thresholdWarning ? (
+                                <p className="max-w-lg text-sm text-amber-900 dark:text-amber-200">{selected.thresholdWarning}</p>
+                              ) : null}
+                              <dl className="mx-auto grid max-w-sm grid-cols-2 justify-items-start gap-x-6 gap-y-4 text-base sm:max-w-md sm:gap-x-10">
+                                <div className="min-w-0">
+                                  <dt className="text-xs font-medium text-black/60 dark:text-white/65">Sürüm</dt>
+                                  <dd className="mt-0.5 font-medium text-black dark:text-white">{selected.version}</dd>
+                                </div>
+                                <div className="min-w-0">
+                                  <dt className="text-xs font-medium text-black/60 dark:text-white/65">Aktif adım</dt>
+                                  <dd className="mt-0.5 font-medium text-black dark:text-white">{selected.activeStepLabel}</dd>
+                                </div>
+                                <div className="min-w-0">
+                                  <dt className="text-xs font-medium text-black/60 dark:text-white/65">Geçerlilik</dt>
+                                  <dd className="mt-0.5 font-medium text-black dark:text-white">{selected.validityDate}</dd>
+                                </div>
+                                <div className="min-w-0">
+                                  <dt className="text-xs font-medium text-black/60 dark:text-white/65">Şablon</dt>
+                                  <dd className="mt-0.5 text-sm font-medium text-black dark:text-white">
+                                    {selected.approvalTemplateName}
+                                  </dd>
+                                </div>
+                              </dl>
+                              <p className="max-w-lg text-base leading-relaxed text-black/90 dark:text-white/90">
+                                {selected.versionNote || 'Açıklama yok.'}
                               </p>
-                            ) : null}
-                            <dl className="mx-auto grid max-w-sm grid-cols-2 justify-items-center gap-x-6 gap-y-4 text-base sm:max-w-md sm:gap-x-10">
-                              <div className="min-w-0">
-                                <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Sürüm</dt>
-                                <dd className="mt-0.5 font-medium text-slate-900 dark:text-slate-50">{selected.version}</dd>
-                              </div>
-                              <div className="min-w-0">
-                                <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Aktif adım</dt>
-                                <dd className="mt-0.5 font-medium text-slate-900 dark:text-slate-50">
-                                  {selected.activeStepLabel}
-                                </dd>
-                              </div>
-                              <div className="min-w-0">
-                                <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Geçerlilik</dt>
-                                <dd className="mt-0.5 font-medium text-slate-900 dark:text-slate-50">
-                                  {selected.validityDate}
-                                </dd>
-                              </div>
-                              <div className="min-w-0">
-                                <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Şablon</dt>
-                                <dd className="mt-0.5 text-sm font-medium text-slate-800 dark:text-slate-200">
-                                  {selected.approvalTemplateName}
-                                </dd>
-                              </div>
-                            </dl>
-                            <p className="mx-auto max-w-lg text-base leading-relaxed text-slate-700 dark:text-slate-200">
-                              {selected.versionNote || 'Açıklama yok.'}
-                            </p>
-                            <p className="text-sm text-slate-600 dark:text-slate-300">
-                              Kalem toplamı:{' '}
-                              <span className="font-semibold tabular-nums text-slate-900 dark:text-slate-50">
-                                {formatMoney(totalFromLines(selected), selected.currency)}
-                              </span>
-                            </p>
+                              <p className="text-sm text-black/75 dark:text-white/80">
+                                Kalem toplamı:{' '}
+                                <span className="font-semibold tabular-nums text-black dark:text-white">
+                                  {formatMoney(totalFromLines(selected), selected.currency)}
+                                </span>
+                              </p>
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="flex flex-col divide-y divide-slate-200/25 dark:divide-white/10">
+                            <div className="space-y-4 pb-4 pt-0">
+                              {selected.thresholdWarning ? (
+                                <p className="mx-auto max-w-lg text-sm text-amber-800 dark:text-amber-200">
+                                  {selected.thresholdWarning}
+                                </p>
+                              ) : null}
+                              <dl className="mx-auto grid max-w-sm grid-cols-2 justify-items-center gap-x-6 gap-y-4 text-base sm:max-w-md sm:gap-x-10">
+                                <div className="min-w-0">
+                                  <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Sürüm</dt>
+                                  <dd className="mt-0.5 font-medium text-slate-900 dark:text-slate-50">{selected.version}</dd>
+                                </div>
+                                <div className="min-w-0">
+                                  <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Aktif adım</dt>
+                                  <dd className="mt-0.5 font-medium text-slate-900 dark:text-slate-50">
+                                    {selected.activeStepLabel}
+                                  </dd>
+                                </div>
+                                <div className="min-w-0">
+                                  <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Geçerlilik</dt>
+                                  <dd className="mt-0.5 font-medium text-slate-900 dark:text-slate-50">
+                                    {selected.validityDate}
+                                  </dd>
+                                </div>
+                                <div className="min-w-0">
+                                  <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Şablon</dt>
+                                  <dd className="mt-0.5 text-sm font-medium text-slate-800 dark:text-slate-200">
+                                    {selected.approvalTemplateName}
+                                  </dd>
+                                </div>
+                              </dl>
+                              <p className="mx-auto max-w-lg text-base leading-relaxed text-slate-700 dark:text-slate-200">
+                                {selected.versionNote || 'Açıklama yok.'}
+                              </p>
+                              <p className="text-sm text-slate-600 dark:text-slate-300">
+                                Kalem toplamı:{' '}
+                                <span className="font-semibold tabular-nums text-slate-900 dark:text-slate-50">
+                                  {formatMoney(totalFromLines(selected), selected.currency)}
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+                        )
                       ) : null}
 
                       {detailTab === 'kalemler' ? (
@@ -730,25 +1033,52 @@ export function QuoteModuleView({
                       ) : null}
 
                       {detailTab === 'dokumanlar' ? (
-                        <ul className="mx-auto max-w-lg divide-y divide-slate-200/25 text-left dark:divide-white/10" role="list">
+                        <ul
+                          className={
+                            gl
+                              ? 'mx-auto max-w-lg divide-y divide-black/12 text-left dark:divide-white/10'
+                              : 'mx-auto max-w-lg divide-y divide-slate-200/25 text-left dark:divide-white/10'
+                          }
+                          role="list"
+                        >
                           <li className="flex flex-col items-center gap-2 py-3 first:pt-0 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                            <span className="min-w-0 text-center text-sm font-medium text-slate-800 sm:text-left dark:text-slate-100">
+                            <span
+                              className={
+                                gl
+                                  ? 'min-w-0 text-center text-sm font-medium text-black sm:text-left dark:text-white'
+                                  : 'min-w-0 text-center text-sm font-medium text-slate-800 sm:text-left dark:text-slate-100'
+                              }
+                            >
                               {selected.number}-teklif.pdf
                             </span>
                             <button
                               type="button"
-                              className="okan-liquid-btn-secondary shrink-0 px-2.5 py-1.5 text-xs font-semibold"
+                              className={
+                                gl
+                                  ? ['glass-btn', 'secondary', 'small', 'shrink-0'].join(' ')
+                                  : 'okan-liquid-btn-secondary shrink-0 px-2.5 py-1.5 text-xs font-semibold'
+                              }
                             >
                               Aç
                             </button>
                           </li>
                           <li className="flex flex-col items-center gap-2 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                            <span className="min-w-0 text-center text-sm font-medium text-slate-800 sm:text-left dark:text-slate-100">
+                            <span
+                              className={
+                                gl
+                                  ? 'min-w-0 text-center text-sm font-medium text-black sm:text-left dark:text-white'
+                                  : 'min-w-0 text-center text-sm font-medium text-slate-800 sm:text-left dark:text-slate-100'
+                              }
+                            >
                               {selected.number}-hesap.xlsx
                             </span>
                             <button
                               type="button"
-                              className="okan-liquid-btn-secondary shrink-0 px-2.5 py-1.5 text-xs font-semibold"
+                              className={
+                                gl
+                                  ? ['glass-btn', 'secondary', 'small', 'shrink-0'].join(' ')
+                                  : 'okan-liquid-btn-secondary shrink-0 px-2.5 py-1.5 text-xs font-semibold'
+                              }
                             >
                               Aç
                             </button>
