@@ -21,6 +21,10 @@ import {
   TYPOLOGIES,
 } from '../catalog'
 import { MOCK_FIRMS, MOCK_OVERRIDES, MOCK_TEMPLATES } from './mockFirms'
+import { ensureDefaultProjectProducts } from './projectProductsMock'
+
+const KEY_PRODUCTS_SEED_VERSION = 'precast.elementIdentity.projectProductsSeedV'
+const CURRENT_PRODUCTS_SEED_VERSION = 1
 
 const KEY_FIRMS = 'precast.elementIdentity.firms'
 const KEY_TEMPLATES = 'precast.elementIdentity.templates'
@@ -106,7 +110,21 @@ export function saveCounters(c: ProjectSequenceCounter[]): void {
 
 // Project products (mock ürün envanteri) ------------------------------------
 export function loadProjectProducts(): ProjectProduct[] {
-  return readJson<ProjectProduct[]>(KEY_PRODUCTS, [])
+  const rows = readJson<ProjectProduct[] | null>(KEY_PRODUCTS, null)
+  let merged = ensureDefaultProjectProducts(rows ?? [])
+  const seedV = readJson<number>(KEY_PRODUCTS_SEED_VERSION, 0)
+  if (seedV < CURRENT_PRODUCTS_SEED_VERSION) {
+    merged = ensureDefaultProjectProducts(merged)
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(KEY_PRODUCTS_SEED_VERSION, String(CURRENT_PRODUCTS_SEED_VERSION))
+      }
+      writeJson(KEY_PRODUCTS, merged)
+    } catch {
+      /* ignore */
+    }
+  }
+  return merged
 }
 export function saveProjectProducts(rows: ProjectProduct[]): void {
   writeJson(KEY_PRODUCTS, rows)

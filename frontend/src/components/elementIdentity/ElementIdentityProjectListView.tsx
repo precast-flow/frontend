@@ -13,6 +13,7 @@ import '../proje/projectManagementGlassLight.css'
 import { useI18n } from '../../i18n/I18nProvider'
 import { useThemeMode } from '../../theme/ThemeProvider'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
+import { eiSplitListRowShell, eiTabPill } from './elementIdentitySplitUi'
 import { useElementIdentity } from './elementIdentityContextValue'
 
 const VIEW_STATE_KEY = 'element-identity:list:view'
@@ -267,7 +268,7 @@ export function ElementIdentityProjectListView() {
 
   return (
     <div
-      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-1 overflow-hidden rounded-3xl"
+      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-0 overflow-hidden rounded-3xl"
       data-neutral-shell={neutralShell ? 'true' : undefined}
     >
       <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-1">
@@ -482,40 +483,22 @@ export function ElementIdentityProjectListView() {
                             text: 'text-slate-700 dark:text-slate-200',
                           }
                       const statusText = card ? statusLabel(row.status) : 'Özet'
+                      const rowActive = selectedId === lite.id
                       return (
-                        <li
-                          key={lite.id}
-                          className={[
-                            gl
-                              ? [
-                                  'glass-card',
-                                  'glass-card--static',
-                                  'project-mgmt-list-row-card',
-                                  'flex',
-                                  'min-h-0',
-                                  'shrink-0',
-                                  'items-stretch',
-                                  'gap-1.5',
-                                ].join(' ')
-                              : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
-                            selectedId === lite.id ? 'okan-project-list-row--active' : '',
-                          ].join(' ')}
-                        >
+                        <li key={lite.id}>
+                          <div className={eiSplitListRowShell(rowActive)}>
+                          <div className="flex min-h-0 items-stretch gap-2">
                           <button
                             type="button"
                             onClick={() => setActiveProjectId(lite.id)}
-                            aria-current={selectedId === lite.id ? 'true' : undefined}
-                            className={
-                              gl
-                                ? 'min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/8'
-                                : 'min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:hover:bg-slate-900/40'
-                            }
+                            aria-current={rowActive ? 'true' : undefined}
+                            className="min-w-0 flex-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
                           >
-                            <p className="truncate text-sm font-semibold leading-snug text-black dark:text-white">
+                            <p className="truncate text-sm font-semibold leading-snug text-slate-900 dark:text-slate-50">
                               {row.name}
                             </p>
-                            <p className="mt-0.5 truncate text-xs text-black/70 dark:text-white/70">{row.customer}</p>
-                            <p className="mt-1 inline-flex items-center gap-1 rounded-md bg-black/8 px-1.5 py-0.5 text-[10px] font-semibold text-black dark:bg-black/50 dark:text-white/90">
+                            <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{row.customer}</p>
+                            <p className="mt-1 inline-flex items-center gap-1 rounded-md bg-slate-100/90 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-800/80 dark:text-slate-200">
                               <TypeIcon className="size-3" aria-hidden />
                               {typeMeta.label}
                             </p>
@@ -527,8 +510,8 @@ export function ElementIdentityProjectListView() {
                               title={t('elementIdentity.list.detailCta')}
                               className={
                                 gl
-                                  ? 'card-button ml-auto inline-flex items-center gap-0.5 py-1 pl-2 pr-2 text-[11px] font-medium leading-none'
-                                  : 'inline-flex items-center justify-end gap-0.5 rounded-md px-1.5 py-1 text-[11px] font-medium leading-none text-black/55 transition hover:bg-black/8 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/65 dark:hover:bg-white/8 dark:hover:text-white'
+                                  ? ['glass-btn', 'secondary', 'small', 'ml-auto', 'inline-flex', 'items-center', 'gap-0.5', 'no-underline'].join(' ')
+                                  : 'inline-flex items-center justify-end gap-0.5 rounded-lg border border-slate-300 bg-white px-1.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm hover:bg-slate-50 no-underline dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
                               }
                             >
                               {t('elementIdentity.list.detailCta')}
@@ -571,17 +554,13 @@ export function ElementIdentityProjectListView() {
                               </>
                             )}
                           </div>
+                          </div>
+                          </div>
                         </li>
                       )
                     })
                   ) : (
-                    <li
-                      className={
-                        gl
-                          ? 'glass-card glass-card--static text-sm text-black'
-                          : 'rounded-lg border border-black/14 bg-white/50 px-3 py-2 text-sm text-black/80 dark:border-white/12 dark:bg-black/45 dark:text-white/85'
-                      }
-                    >
+                    <li className="rounded-lg border border-dashed border-slate-300/60 bg-white/30 px-3 py-8 text-center text-xs text-slate-500 dark:border-slate-600 dark:bg-slate-900/20">
                       Filtreye uygun proje bulunamadı.
                     </li>
                   )}
@@ -794,13 +773,9 @@ export function ElementIdentityProjectListView() {
                       </Link>
                     </header>
 
-                    <div className="sticky top-0 z-10 flex w-full min-w-0 shrink-0 justify-center bg-transparent pt-0.5">
+                    <div className="sticky top-0 z-10 flex w-full min-w-0 shrink-0 justify-center bg-transparent pt-3">
                       <div
-                        className={
-                          gl
-                            ? 'glass-nav max-w-full flex-nowrap justify-center gap-2 overflow-x-auto p-0.5 [scrollbar-width:thin]'
-                            : 'okan-liquid-pill-track flex max-w-full gap-1 overflow-x-auto rounded-full p-1'
-                        }
+                        className="flex max-w-full gap-1 overflow-x-auto"
                         role="tablist"
                         aria-label="Önizleme sekmeleri"
                         aria-orientation="horizontal"
@@ -818,17 +793,7 @@ export function ElementIdentityProjectListView() {
                             role="tab"
                             aria-selected={detailTab === id}
                             onClick={() => setDetailTab(id)}
-                            className={
-                              gl
-                                ? ['nav-item', 'shrink-0', 'whitespace-nowrap', detailTab === id ? 'active' : '']
-                                    .filter(Boolean)
-                                    .join(' ')
-                                : `shrink-0 rounded-full px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 ${
-                                    detailTab === id
-                                      ? 'okan-liquid-pill-active okan-project-tab-active text-black dark:text-white'
-                                      : 'text-black/70 hover:text-black dark:text-white/75 dark:hover:text-white'
-                                  }`
-                            }
+                            className={eiTabPill(detailTab === id)}
                           >
                             {label}
                           </button>

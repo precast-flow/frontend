@@ -71,6 +71,8 @@ export const PLANNING_MOLDS: PlanningMold[] = [
   { moldId: 'M-06', name: 'Kiriş K2', lineHint: 'eşzamanlı 1', hatNo: 3, maxConcurrent: 1 },
   { moldId: 'M-07', name: 'Panel PL1', lineHint: 'eşzamanlı 1', hatNo: 4, maxConcurrent: 1 },
   { moldId: 'M-08', name: 'Panel PL2', lineHint: 'eşzamanlı 1', hatNo: 4, maxConcurrent: 1 },
+  { moldId: 'M-09', name: 'Merdiven MR1', lineHint: 'eşzamanlı 1', hatNo: 5, maxConcurrent: 1 },
+  { moldId: 'M-10', name: 'Kolon KL1', lineHint: 'eşzamanlı 1', hatNo: 5, maxConcurrent: 1 },
 ]
 
 const TR_WD = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']
@@ -211,15 +213,30 @@ export function isoFromSlotVisible(
   visibleDays: PlanningDay[],
   slotIndex: number,
 ): { startAt: string; endAt: string; durationHours: number } {
-  const shifts = PLANNING_SHIFTS.length
-  const dayIdx = Math.floor(slotIndex / shifts)
-  const shift = slotIndex % shifts
+  return isoFromSlotVisibleForMode(visibleDays, slotIndex, true)
+}
+
+/** Izgara her zaman günde 3 sütun; `useShifts: false` → mantıksal gün (vardiya etiketi yok). */
+export function isoFromSlotVisibleForMode(
+  visibleDays: PlanningDay[],
+  slotIndex: number,
+  useShifts: boolean,
+): { startAt: string; endAt: string; durationHours: number } {
+  const gridSlotsPerDay = PLANNING_SHIFTS.length
+  const dayIdx = Math.floor(slotIndex / gridSlotsPerDay)
+  const shift = useShifts ? slotIndex % gridSlotsPerDay : 0
   const day = visibleDays[dayIdx]
   if (!day) {
     const now = new Date()
-    return { startAt: now.toISOString(), endAt: now.toISOString(), durationHours: 8 }
+    const hours = useShifts ? 8 : 24
+    return { startAt: now.toISOString(), endAt: now.toISOString(), durationHours: hours }
   }
   const [y, m, dNum] = day.date.split('-').map(Number)
+  if (!useShifts) {
+    const start = new Date(Date.UTC(y, m - 1, dNum, 0, 0, 0))
+    const end = new Date(start.getTime() + 24 * 3600000)
+    return { startAt: start.toISOString(), endAt: end.toISOString(), durationHours: 24 }
+  }
   const h = shift === 0 ? 6 : shift === 1 ? 14 : 22
   const start = new Date(Date.UTC(y, m - 1, dNum, h, 0, 0))
   const end = new Date(start.getTime() + 8 * 3600000)
@@ -227,7 +244,19 @@ export function isoFromSlotVisible(
 }
 
 export function spanSlotsFromDuration(durationHours: number): number {
-  return Math.max(1, Math.ceil(durationHours / 8))
+  return spanSlotsFromDurationForMode(durationHours, true)
+}
+
+export function spanSlotsFromDurationForMode(durationHours: number, useShifts: boolean): number {
+  if (useShifts) return Math.max(1, Math.ceil(durationHours / 8))
+  return Math.max(PLANNING_SHIFTS.length, Math.ceil(durationHours / 24) * PLANNING_SHIFTS.length)
+}
+
+/** Gün modunda tıklama/sürükleme → günün ilk sütununa hizala. */
+export function snapTimelineSlot(slot: number, useShifts: boolean): number {
+  if (useShifts) return slot
+  const n = PLANNING_SHIFTS.length
+  return Math.floor(slot / n) * n
 }
 
 export function itemsOverlapSlotRange(
@@ -470,6 +499,196 @@ export const INITIAL_PLAN_ITEMS: PlanItem[] = [
     tags: [],
     warnings: [],
   },
+  {
+    id: 'P-509',
+    title: 'K-55 kiriş seti',
+    productId: 'PROD-K-055',
+    imageUrl: null,
+    moldId: 'M-05',
+    startAt: '2026-03-26T06:00:00.000Z',
+    endAt: '2026-03-26T22:00:00.000Z',
+    durationHours: 16,
+    status: 'PLANNED',
+    priority: 2,
+    concreteRecipeId: 'RC-C35-02',
+    estimatedVolumeM3: 14.2,
+    estimatedSteelKg: 1250,
+    projectId: 'PRJ-2026-018',
+    orderId: 'SO-88431',
+    tags: ['steel-intensive'],
+    warnings: [],
+  },
+  {
+    id: 'P-510',
+    title: 'PL-088 döşeme',
+    productId: 'PROD-PL-088',
+    imageUrl: null,
+    moldId: 'M-07',
+    startAt: '2026-03-26T14:00:00.000Z',
+    endAt: '2026-03-27T14:00:00.000Z',
+    durationHours: 24,
+    status: 'PLANNED',
+    priority: 2,
+    concreteRecipeId: 'RC-C35-02',
+    estimatedVolumeM3: 16.5,
+    estimatedSteelKg: 890,
+    projectId: 'PRJ-2026-040',
+    orderId: 'SO-88437',
+    tags: ['floor'],
+    warnings: [],
+  },
+  {
+    id: 'P-511',
+    title: 'DW-130 duvar',
+    productId: 'PROD-DW-130',
+    imageUrl: null,
+    moldId: 'M-02',
+    startAt: '2026-03-27T06:00:00.000Z',
+    endAt: '2026-03-27T14:00:00.000Z',
+    durationHours: 8,
+    status: 'IN_PROGRESS',
+    priority: 2,
+    concreteRecipeId: 'RC-C30-01',
+    estimatedVolumeM3: 11.0,
+    estimatedSteelKg: 720,
+    projectId: 'PRJ-2026-062',
+    orderId: 'SO-88451',
+    tags: [],
+    warnings: [],
+  },
+  {
+    id: 'P-512',
+    title: 'PR-15 perde',
+    productId: 'PROD-PR-015',
+    imageUrl: null,
+    moldId: 'M-04',
+    startAt: '2026-03-27T14:00:00.000Z',
+    endAt: '2026-03-29T14:00:00.000Z',
+    durationHours: 48,
+    status: 'ORDERED_DESIGN',
+    priority: 1,
+    concreteRecipeId: 'RC-C35-02',
+    estimatedVolumeM3: 22.1,
+    estimatedSteelKg: 1480,
+    projectId: 'PRJ-2026-068',
+    orderId: 'SO-88455',
+    tags: ['priority-low'],
+    warnings: [],
+  },
+  {
+    id: 'P-513',
+    title: 'MR-12 merdiven',
+    productId: 'PROD-MR-012',
+    imageUrl: null,
+    moldId: 'M-09',
+    startAt: '2026-03-28T06:00:00.000Z',
+    endAt: '2026-03-28T14:00:00.000Z',
+    durationHours: 8,
+    status: 'PLANNED',
+    priority: 3,
+    concreteRecipeId: 'RC-C30-01',
+    estimatedVolumeM3: 5.4,
+    estimatedSteelKg: 320,
+    projectId: 'PRJ-2026-070',
+    orderId: 'SO-88460',
+    tags: [],
+    warnings: [],
+  },
+  {
+    id: 'P-514',
+    title: 'KL-03 kolon',
+    productId: 'PROD-KL-003',
+    imageUrl: null,
+    moldId: 'M-10',
+    startAt: '2026-03-28T14:00:00.000Z',
+    endAt: '2026-03-29T06:00:00.000Z',
+    durationHours: 16,
+    status: 'PLANNED',
+    priority: 2,
+    concreteRecipeId: 'RC-C35-02',
+    estimatedVolumeM3: 8.8,
+    estimatedSteelKg: 950,
+    projectId: 'PRJ-2026-070',
+    orderId: 'SO-88461',
+    tags: [],
+    warnings: [],
+  },
+  {
+    id: 'P-515',
+    title: 'DW-210 duvar — 2. parti',
+    productId: 'PROD-DW-120',
+    imageUrl: null,
+    moldId: 'M-01',
+    startAt: '2026-03-29T06:00:00.000Z',
+    endAt: '2026-03-29T14:00:00.000Z',
+    durationHours: 8,
+    status: 'PLANNED',
+    priority: 2,
+    concreteRecipeId: 'RC-C30-01',
+    estimatedVolumeM3: 12.0,
+    estimatedSteelKg: 800,
+    projectId: 'PRJ-2026-014',
+    orderId: 'SO-88462',
+    tags: ['vibration'],
+    warnings: [],
+  },
+  {
+    id: 'P-516',
+    title: 'PR-08 perde — tamamlama',
+    productId: 'PROD-PR-008',
+    imageUrl: null,
+    moldId: 'M-03',
+    startAt: '2026-03-29T14:00:00.000Z',
+    endAt: '2026-03-30T14:00:00.000Z',
+    durationHours: 24,
+    status: 'IN_PROGRESS',
+    priority: 1,
+    concreteRecipeId: 'RC-C35-02',
+    estimatedVolumeM3: 20.0,
+    estimatedSteelKg: 1400,
+    projectId: 'PRJ-2026-021',
+    orderId: 'SO-88422',
+    tags: [],
+    warnings: ['Uzun döküm (mock)'],
+  },
+  {
+    id: 'P-517',
+    title: 'K-40 kiriş — hat 3',
+    productId: 'PROD-K-040',
+    imageUrl: null,
+    moldId: 'M-06',
+    startAt: '2026-03-30T06:00:00.000Z',
+    endAt: '2026-03-30T14:00:00.000Z',
+    durationHours: 8,
+    status: 'PRODUCED_OK',
+    priority: 3,
+    concreteRecipeId: 'RC-C30-01',
+    estimatedVolumeM3: 9.0,
+    estimatedSteelKg: 1050,
+    projectId: 'PRJ-2026-014',
+    orderId: 'SO-88423',
+    tags: [],
+    warnings: [],
+  },
+  {
+    id: 'P-518',
+    title: 'PL-200 döşeme — B blok',
+    productId: 'PROD-PL-200',
+    imageUrl: null,
+    moldId: 'M-08',
+    startAt: '2026-03-30T14:00:00.000Z',
+    endAt: '2026-04-01T14:00:00.000Z',
+    durationHours: 48,
+    status: 'HOLD_UNCERTAIN',
+    priority: 2,
+    concreteRecipeId: 'RC-C35-02',
+    estimatedVolumeM3: 19.0,
+    estimatedSteelKg: 1020,
+    projectId: 'PRJ-2026-033',
+    orderId: 'SO-88425',
+    tags: ['floor'],
+    warnings: [],
+  },
 ]
 
 export const QUEUE_MOCK: QueueItem[] = [
@@ -481,6 +700,12 @@ export const QUEUE_MOCK: QueueItem[] = [
   { queueId: 'Q-006', title: 'DW-211 duvar — revizyon', priority: 2, risk: 'orta' },
   { queueId: 'Q-007', title: 'D-40 döşeme tipi B', priority: 3, risk: 'düşük' },
   { queueId: 'Q-008', title: 'PR-16 perde — çelik yoğun', priority: 1, risk: 'yüksek' },
+  { queueId: 'Q-009', title: 'DW-130 duvar — yeni sipariş', priority: 2, risk: 'düşük' },
+  { queueId: 'Q-010', title: 'MR-12 merdiven', priority: 3, risk: 'düşük' },
+  { queueId: 'Q-011', title: 'KL-03 kolon — şantiye 5', priority: 2, risk: 'orta' },
+  { queueId: 'Q-012', title: 'PR-15 perde — uzun slot', priority: 1, risk: 'yüksek' },
+  { queueId: 'Q-013', title: 'PL-088 döşeme — müşteri Y', priority: 2, risk: 'orta' },
+  { queueId: 'Q-014', title: 'K-55 kiriş — acil', priority: 1, risk: 'yüksek' },
 ]
 
 export const CONCRETE_RECIPES_MOCK = [

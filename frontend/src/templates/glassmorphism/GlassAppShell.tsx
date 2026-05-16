@@ -53,9 +53,16 @@ function GlassAppShellInner() {
     location.pathname.startsWith('/roller-izinler') ||
     location.pathname.startsWith('/onay-akisi') ||
     location.pathname.startsWith('/birim-is-kuyrugu') ||
+    location.pathname.startsWith('/uretim-planlama') ||
+    location.pathname.startsWith('/sevkiyat-planlama') ||
+    location.pathname.startsWith('/montaj-planlama') ||
     location.pathname === '/profile' ||
     location.pathname === '/settings' ||
-    effectiveActiveId === 'planning-design'
+    effectiveActiveId === 'planning-design' ||
+    effectiveActiveId === 'general-planning' ||
+    effectiveActiveId === 'production-planning' ||
+    effectiveActiveId === 'dispatch-planning' ||
+    effectiveActiveId === 'assembly-planning'
 
   /** Proje liste (`/`, `/proje`) ve birim iş kuyruğu: üst `padding` / dış `gap` proje ile aynı (navbar altı hizası). */
   const isProjectListRoute =
