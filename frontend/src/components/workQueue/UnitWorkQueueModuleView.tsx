@@ -7,6 +7,12 @@ import { useI18n } from '../../i18n/I18nProvider'
 import { useThemeMode } from '../../theme/ThemeProvider'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import {
+  splitDetailHeaderClass,
+  splitListCardClass,
+  splitListEmptyClass,
+  splitTabPill,
+} from '../shared/splitModuleStyles'
+import {
   ElementIdentityFilterSheetHeader,
   ElementIdentityPieceCodesLikeSplit,
   eiSplitHeaderButtonPassive,
@@ -29,23 +35,6 @@ const selectCls =
 
 const glassSelectCls =
   'glass-input min-w-0 max-w-full px-2.5 py-1.5 text-xs font-semibold text-black sm:text-sm dark:text-white'
-
-function tabPill(active: boolean, gl: boolean) {
-  if (gl) {
-    return [
-      'rounded-full border px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 sm:text-sm',
-      active
-        ? 'border-black/28 bg-black/8 text-black dark:border-white/20 dark:bg-white/10 dark:text-white'
-        : 'border-black/18 bg-white/55 text-black/75 hover:text-black dark:border-white/12 dark:bg-slate-900/35 dark:text-white/80 dark:hover:text-white',
-    ].join(' ')
-  }
-  return [
-    'rounded-full border px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 sm:text-sm',
-    active
-      ? 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
-      : 'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100',
-  ].join(' ')
-}
 
 function statusClass(status: WorkQueueItem['status']) {
   const base =
@@ -184,23 +173,13 @@ export function UnitWorkQueueModuleView(_props: Props) {
   const gl = mode === 'light'
   const neutralShell = activeModuleIdFromPathname(location.pathname) === 'unit-work-queue'
 
-  const detailActionClass = gl
-    ? 'card-button inline-flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold'
-    : eiSplitHeaderButtonPassive
-
   return (
     <div
       className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl"
       data-neutral-shell={neutralShell ? 'true' : undefined}
     >
-      <div className="shrink-0 px-[0.6875rem] pt-0.5">
-        <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-50 md:text-2xl">
-          {t('nav.unitWorkQueue')}
-        </h1>
-      </div>
       <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-2">
-        <div className="shrink-0 px-[0.6875rem] py-1">
-          <div className="pb-5 sm:pb-6">
+        <div className="flex flex-col gap-2 px-[0.6875rem] pb-1">
             <nav aria-label={t('project.breadcrumbAria')} className="mb-0">
               <ol className="flex flex-wrap items-center gap-1 text-xs text-black/60 dark:text-white/65">
                 <li>
@@ -219,7 +198,6 @@ export function UnitWorkQueueModuleView(_props: Props) {
                 </li>
               </ol>
             </nav>
-          </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] sm:text-xs">
             <span
               className={
@@ -248,13 +226,21 @@ export function UnitWorkQueueModuleView(_props: Props) {
           </div>
         </div>
 
-        <div className="flex h-full min-h-0 flex-col overflow-hidden">
+        <div
+          className={[
+            'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
+            gl
+              ? 'gap-2 rounded-3xl bg-transparent p-1 md:p-1.5'
+              : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
+          ].join(' ')}
+        >
           <ElementIdentityPieceCodesLikeSplit
             persistKey="unit-work-queue"
             listRef={listRef}
             defaultSplitRatio={38}
             listTitle={t('unitWorkQueue.listTitle')}
             visualVariant="project-mgmt"
+            embedded
             neutralChrome={neutralShell}
             listIndentWhenFilterOpen="18.5rem"
             isFilterOpen={filterOpen}
@@ -317,14 +303,14 @@ export function UnitWorkQueueModuleView(_props: Props) {
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
-                      className={tabPill(perspective === 'to_me', gl)}
+                      className={splitTabPill(perspective === 'to_me')}
                       onClick={() => setPerspective('to_me')}
                     >
                       {t('unitWorkQueue.tabToMe')}
                     </button>
                     <button
                       type="button"
-                      className={tabPill(perspective === 'by_me', gl)}
+                      className={splitTabPill(perspective === 'by_me')}
                       onClick={() => setPerspective('by_me')}
                     >
                       {t('unitWorkQueue.tabByMe')}
@@ -374,114 +360,39 @@ export function UnitWorkQueueModuleView(_props: Props) {
             }
             listBody={
               filtered.length === 0 ? (
-                <li
-                  className={
-                    gl
-                      ? 'rounded-xl border border-dashed border-black/20 p-8 text-center text-sm text-black/55 dark:border-white/18 dark:text-white/60'
-                      : 'rounded-xl border border-dashed border-slate-300/80 p-8 text-center text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400'
-                  }
-                >
-                  {t('unitWorkQueue.empty')}
-                </li>
+                <li className={splitListEmptyClass}>{t('unitWorkQueue.empty')}</li>
               ) : (
-                pagedItems.map((row) => {
-                  const active = row.id === selectedId
-                  return (
-                    <li
-                      key={row.id}
-                      role="presentation"
-                      className={[
-                        'list-none',
-                        gl
-                          ? [
-                              'px-1',
-                              'glass-card',
-                              'glass-card--static',
-                              'project-mgmt-list-row-card',
-                              'flex min-h-0 shrink-0 flex-col',
-                              active ? 'okan-project-list-row--active' : '',
-                            ].join(' ')
-                          : 'px-1',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
+                pagedItems.map((row) => (
+                  <li
+                    key={row.id}
+                    className={splitListCardClass(
+                      row.id === selectedId,
+                      'flex min-h-0 shrink-0 items-stretch gap-1.5 px-2 py-1.5',
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setSelectedId(row.id)}
+                      aria-current={row.id === selectedId ? 'true' : undefined}
+                      className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40"
                     >
-                      <button
-                        type="button"
-                        onClick={() => setSelectedId(row.id)}
-                        className={
-                          gl
-                            ? 'min-h-0 w-full flex-1 rounded-md px-2 py-2 text-left transition hover:bg-white/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/8'
-                            : [
-                                'w-full rounded-xl border px-3 py-2.5 text-left shadow-sm outline-none ring-sky-400/35 transition hover:border-sky-300/55 hover:bg-white/95 dark:hover:bg-slate-900/85',
-                                active
-                                  ? 'border-sky-400/50 bg-white/98 ring-2 dark:border-sky-500/40 dark:bg-slate-900/80'
-                                  : 'border-slate-200/75 bg-white/70 dark:border-slate-700/70 dark:bg-slate-900/45',
-                              ].join(' ')
-                        }
-                      >
-                        <div
-                          className={
-                            gl
-                              ? 'flex flex-wrap items-start gap-2 border-b border-black/10 pb-1.5 dark:border-white/10'
-                              : 'flex flex-wrap items-start gap-2 border-b border-slate-100/90 pb-1.5 dark:border-slate-700/55'
-                          }
-                        >
-                          <span
-                            className={
-                              gl
-                                ? 'font-mono text-[11px] font-semibold text-black/55 dark:text-white/60'
-                                : 'font-mono text-[11px] font-semibold text-slate-500 dark:text-slate-400'
-                            }
-                          >
-                            {row.orderNo}
+                      <p className="truncate text-sm font-semibold leading-snug text-black dark:text-white">
+                        {row.title}
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-black/70 dark:text-white/70">
+                        {row.orderNo} · {unitLabel(row.targetUnit, t)}
+                      </p>
+                      <p className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                        <span className={statusClass(row.status)}>{t(`unitWorkQueue.status.${row.status}`)}</span>
+                        {row.dueToday ? (
+                          <span className="inline-flex rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-900 dark:text-amber-100">
+                            {t('unitWorkQueue.dueBadge')}
                           </span>
-                          <span className={`ms-auto shrink-0 ${statusClass(row.status)}`}>
-                            {t(`unitWorkQueue.status.${row.status}`)}
-                          </span>
-                        </div>
-                        <p
-                          className={
-                            gl
-                              ? 'mt-1 text-sm font-semibold leading-snug text-black dark:text-white'
-                              : 'mt-1 text-sm font-semibold leading-snug text-slate-900 dark:text-slate-50'
-                          }
-                        >
-                          {row.title}
-                        </p>
-                        <p
-                          className={
-                            gl
-                              ? 'mt-0.5 line-clamp-2 text-[11px] leading-relaxed text-black/70 dark:text-white/70 sm:text-xs'
-                              : 'mt-0.5 line-clamp-2 text-[11px] leading-relaxed text-slate-600 dark:text-slate-400 sm:text-xs'
-                          }
-                        >
-                          {row.summary}
-                        </p>
-                        <div
-                          className={
-                            gl
-                              ? 'mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-black/55 dark:text-white/65'
-                              : 'mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-slate-500 dark:text-slate-400'
-                          }
-                        >
-                          <span className="inline-flex items-center gap-1">
-                            {priorityDot(row.priority)}
-                            {t(`unitWorkQueue.priority.${row.priority}`)}
-                          </span>
-                          <span>{t(`unitWorkQueue.kind.${row.kind}`)}</span>
-                          <span
-                            className={
-                              gl ? 'font-medium text-black/75 dark:text-white/80' : 'font-medium text-slate-600 dark:text-slate-300'
-                            }
-                          >
-                            {unitLabel(row.targetUnit, t)}
-                          </span>
-                        </div>
-                      </button>
-                    </li>
-                  )
-                })
+                        ) : null}
+                      </p>
+                    </button>
+                  </li>
+                ))
               )
             }
             footer={
@@ -602,41 +513,19 @@ export function UnitWorkQueueModuleView(_props: Props) {
             rightPanelRef={rightRef}
             rightAside={
               selected ? (
-                <div className="okan-project-detail-column flex h-full min-h-0 min-w-0 flex-1 flex-col">
-                  <div className="mx-auto flex h-full min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 overflow-y-auto px-1 pb-12 pt-1 lg:max-w-3xl">
-                    <header
-                      className={
-                        gl
-                          ? 'shrink-0 border-b border-black/12 pb-3 text-center dark:border-white/10'
-                          : 'shrink-0 rounded-2xl border border-white/35 bg-white/45 p-4 text-center shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-slate-900/40'
-                      }
-                    >
-                      <p
-                        className={
-                          gl
-                            ? 'text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65'
-                            : 'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'
-                        }
-                      >
+                <div key={selected.id} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
+                  <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 lg:max-w-3xl">
+                    <header className={splitDetailHeaderClass}>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
                         {t('unitWorkQueue.selectedWorkEyebrow')}
                       </p>
-                      <h3
-                        className={
-                          gl
-                            ? 'mt-1.5 text-xl font-semibold leading-tight text-black dark:text-white'
-                            : 'mt-1.5 text-xl font-semibold leading-tight text-slate-900 dark:text-slate-50'
-                        }
-                      >
+                      <h3 className="mt-1.5 text-xl font-semibold leading-tight text-black dark:text-white">
                         {selected.title}
                       </h3>
-                      <div
-                        className={
-                          gl
-                            ? 'mt-1 flex flex-wrap items-center justify-center gap-2 text-sm leading-snug text-black/75 dark:text-white/80'
-                            : 'mt-1 flex flex-wrap items-center justify-center gap-2 text-sm leading-snug text-slate-600 dark:text-slate-300'
-                        }
-                      >
+                      <p className="mt-1 flex flex-wrap items-center justify-center gap-2 text-sm leading-snug text-black/75 dark:text-white/80">
                         <span className="font-mono tabular-nums">{selected.orderNo}</span>
+                        <span aria-hidden>·</span>
+                        <span>{unitLabel(selected.targetUnit, t)}</span>
                         {selected.dueToday ? (
                           <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-950 ring-1 ring-amber-500/35 dark:bg-amber-500/15 dark:text-amber-50">
                             {t('unitWorkQueue.dueBadge')}
@@ -645,205 +534,39 @@ export function UnitWorkQueueModuleView(_props: Props) {
                         <span className={`shrink-0 ${statusClass(selected.status)}`}>
                           {t(`unitWorkQueue.status.${selected.status}`)}
                         </span>
-                      </div>
-
-                      <dl className="mt-4 grid gap-2 text-left text-sm sm:grid-cols-2">
-                        <div>
-                          <dt
-                            className={
-                              gl
-                                ? 'text-[11px] font-semibold uppercase tracking-wide text-black/55 dark:text-white/60'
-                                : 'text-[11px] font-semibold uppercase tracking-wide text-slate-400'
-                            }
-                          >
-                            {t('unitWorkQueue.detailKind')}
-                          </dt>
-                          <dd className={gl ? 'text-black dark:text-white' : ''}>{t(`unitWorkQueue.kind.${selected.kind}`)}</dd>
-                        </div>
-                        <div>
-                          <dt
-                            className={
-                              gl
-                                ? 'text-[11px] font-semibold uppercase tracking-wide text-black/55 dark:text-white/60'
-                                : 'text-[11px] font-semibold uppercase tracking-wide text-slate-400'
-                            }
-                          >
-                            {t('unitWorkQueue.colPriority')}
-                          </dt>
-                          <dd className={`inline-flex items-center gap-2 ${gl ? 'text-black dark:text-white' : ''}`}>
-                            {priorityDot(selected.priority)} {t(`unitWorkQueue.priority.${selected.priority}`)}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt
-                            className={
-                              gl
-                                ? 'text-[11px] font-semibold uppercase tracking-wide text-black/55 dark:text-white/60'
-                                : 'text-[11px] font-semibold uppercase tracking-wide text-slate-400'
-                            }
-                          >
-                            {t('unitWorkQueue.assigneePerson')}
-                          </dt>
-                          <dd className={gl ? 'text-black dark:text-white' : ''}>
-                            {selected.assigneeUserId ? resolveWorkQueueName(selected.assigneeUserId) : '—'}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt
-                            className={
-                              gl
-                                ? 'text-[11px] font-semibold uppercase tracking-wide text-black/55 dark:text-white/60'
-                                : 'text-[11px] font-semibold uppercase tracking-wide text-slate-400'
-                            }
-                          >
-                            {t('unitWorkQueue.assignerPerson')}
-                          </dt>
-                          <dd className={gl ? 'text-black dark:text-white' : ''}>
-                            {resolveWorkQueueName(selected.assignerUserId)}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt
-                            className={
-                              gl
-                                ? 'text-[11px] font-semibold uppercase tracking-wide text-black/55 dark:text-white/60'
-                                : 'text-[11px] font-semibold uppercase tracking-wide text-slate-400'
-                            }
-                          >
-                            {t('unitWorkQueue.detailFrom')}
-                          </dt>
-                          <dd className={gl ? 'text-black dark:text-white' : ''}>{unitLabel(selected.fromUnit, t)}</dd>
-                        </div>
-                        <div>
-                          <dt
-                            className={
-                              gl
-                                ? 'text-[11px] font-semibold uppercase tracking-wide text-black/55 dark:text-white/60'
-                                : 'text-[11px] font-semibold uppercase tracking-wide text-slate-400'
-                            }
-                          >
-                            {t('unitWorkQueue.detailTo')}
-                          </dt>
-                          <dd className={gl ? 'text-black dark:text-white' : ''}>{unitLabel(selected.toUnit, t)}</dd>
-                        </div>
-                        <div className="sm:col-span-2">
-                          <dt
-                            className={
-                              gl
-                                ? 'text-[11px] font-semibold uppercase tracking-wide text-black/55 dark:text-white/60'
-                                : 'text-[11px] font-semibold uppercase tracking-wide text-slate-400'
-                            }
-                          >
-                            {t('unitWorkQueue.detailFactory')}
-                          </dt>
-                          <dd className={`flex items-center gap-2 font-mono text-xs ${gl ? 'text-black dark:text-white' : ''}`}>
-                            <Factory
-                              className={
-                                gl
-                                  ? 'size-3.5 text-black/50 dark:text-white/55'
-                                  : 'size-3.5 text-sky-600 dark:text-sky-400'
-                              }
-                              aria-hidden
-                            />{' '}
-                            {selected.factoryCode}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt
-                            className={
-                              gl
-                                ? 'text-[11px] font-semibold uppercase tracking-wide text-black/55 dark:text-white/60'
-                                : 'text-[11px] font-semibold uppercase tracking-wide text-slate-400'
-                            }
-                          >
-                            {t('unitWorkQueue.colDays')}
-                          </dt>
-                          <dd className={gl ? 'text-black dark:text-white' : ''}>{selected.daysOnDesk}</dd>
-                        </div>
-                        <div>
-                          <dt
-                            className={
-                              gl
-                                ? 'text-[11px] font-semibold uppercase tracking-wide text-black/55 dark:text-white/60'
-                                : 'text-[11px] font-semibold uppercase tracking-wide text-slate-400'
-                            }
-                          >
-                            {t('unitWorkQueue.colUpdated')}
-                          </dt>
-                          <dd className={gl ? 'text-black dark:text-white' : ''}>{selected.lastUpdatedLabel}</dd>
-                        </div>
-                      </dl>
-
-                      <div
-                        className={
-                          gl
-                            ? 'mt-4 flex flex-wrap justify-center gap-2 border-t border-black/10 pt-3 dark:border-white/10'
-                            : 'mt-4 flex flex-wrap gap-2 border-t border-slate-200/80 pt-3 dark:border-slate-600/65'
-                        }
-                      >
+                      </p>
+                      <div className="mt-2 flex flex-wrap justify-center gap-2">
                         {selected.projectRouteId ? (
                           <Link
-                            className={gl ? detailActionClass : `${eiSplitHeaderButtonPassive} text-sky-800 dark:text-sky-200`}
+                            className={`${eiSplitHeaderButtonPassive} no-underline`}
                             to={`/proje-detay/${selected.projectRouteId}`}
                           >
                             {t('unitWorkQueue.actionOpenProject')}
                           </Link>
                         ) : (
-                          <span
-                            className={
-                              gl
-                                ? `${detailActionClass} cursor-not-allowed opacity-55`
-                                : `${eiSplitHeaderButtonPassive} cursor-not-allowed opacity-55`
-                            }
-                          >
+                          <span className={`${eiSplitHeaderButtonPassive} cursor-not-allowed opacity-55`}>
                             {t('unitWorkQueue.actionOpenProject')}
                           </span>
                         )}
-                        <button type="button" className={gl ? detailActionClass : `${eiSplitHeaderButtonPassive} opacity-90`}>
+                        <button type="button" className={eiSplitHeaderButtonPassive}>
                           {t('unitWorkQueue.actionStart')}
                         </button>
-                        <button type="button" className={gl ? detailActionClass : `${eiSplitHeaderButtonPassive} opacity-90`}>
+                        <button type="button" className={eiSplitHeaderButtonPassive}>
                           {t('unitWorkQueue.actionComplete')}
                         </button>
-                        <button type="button" className={gl ? detailActionClass : `${eiSplitHeaderButtonPassive} opacity-90`}>
+                        <button type="button" className={eiSplitHeaderButtonPassive}>
                           {t('unitWorkQueue.actionBlock')}
                         </button>
                       </div>
                     </header>
 
-                    {gl ? (
-                      <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center border-b border-black/10 pb-2 pt-0.5 dark:border-white/10">
-                        <div
-                          className="okan-liquid-pill-track flex max-w-full gap-1 overflow-x-auto rounded-full p-1"
-                          role="tablist"
-                          aria-label={t('unitWorkQueue.listTitle')}
-                        >
-                          {(
-                            [
-                              ['summary', 'unitWorkQueue.panelTab.summary'],
-                              ['project', 'unitWorkQueue.panelTab.project'],
-                              ['history', 'unitWorkQueue.panelTab.history'],
-                            ] as const
-                          ).map(([id, key]) => (
-                            <button
-                              key={id}
-                              type="button"
-                              role="tab"
-                              aria-selected={detailTab === id}
-                              onClick={() => setDetailTab(id)}
-                              className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 sm:text-sm ${
-                                detailTab === id
-                                  ? 'okan-liquid-pill-active okan-project-tab-active text-black dark:text-white'
-                                  : 'text-black/70 hover:text-black dark:text-white/75 dark:hover:text-white'
-                              }`}
-                            >
-                              {t(key)}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex gap-2 border-b border-slate-200/80 pb-0.5 dark:border-slate-600/65">
+                    <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-3">
+                      <div
+                        className="flex max-w-full gap-1 overflow-x-auto"
+                        role="tablist"
+                        aria-label={t('unitWorkQueue.listTitle')}
+                        aria-orientation="horizontal"
+                      >
                         {(
                           [
                             ['summary', 'unitWorkQueue.panelTab.summary'],
@@ -854,60 +577,124 @@ export function UnitWorkQueueModuleView(_props: Props) {
                           <button
                             key={id}
                             type="button"
+                            role="tab"
+                            id={`unit-work-queue-tab-${id}`}
+                            aria-selected={detailTab === id}
+                            aria-controls="unit-work-queue-detail-panel"
+                            tabIndex={detailTab === id ? 0 : -1}
                             onClick={() => setDetailTab(id)}
-                            className={[
-                              'rounded-t-lg px-3 py-1.5 text-xs font-semibold transition',
-                              detailTab === id
-                                ? 'border border-b-0 border-slate-200/90 bg-white/90 text-slate-900 shadow-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white'
-                                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100',
-                            ].join(' ')}
+                            className={splitTabPill(detailTab === id)}
                           >
                             {t(key)}
                           </button>
                         ))}
                       </div>
-                    )}
+                    </div>
 
-                    <div className="okan-project-tab-panel min-h-0 min-w-0 flex-1">
+                    <div
+                      key={detailTab}
+                      id="unit-work-queue-detail-panel"
+                      role="tabpanel"
+                      aria-labelledby={`unit-work-queue-tab-${detailTab}`}
+                      className="okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 text-center sm:px-1"
+                    >
                       {detailTab === 'summary' ? (
-                        <p
-                          className={
-                            gl
-                              ? 'text-sm leading-relaxed text-black/80 dark:text-white/85'
-                              : 'text-sm leading-relaxed text-slate-700 dark:text-slate-300'
-                          }
-                        >
-                          {selected.detailBody}
-                        </p>
+                        <div className="flex flex-col divide-y divide-slate-200/25 dark:divide-white/10">
+                          <div className="pb-4 pt-0">
+                            <p className="mx-auto max-w-lg text-sm leading-relaxed text-black/80 dark:text-white/85">
+                              {selected.detailBody}
+                            </p>
+                          </div>
+                          <div className="pb-4 pt-4">
+                            <dl className="mx-auto grid max-w-sm grid-cols-2 justify-items-center gap-x-6 gap-y-4 text-base sm:max-w-md sm:gap-x-10">
+                              <div className="min-w-0">
+                                <dt className="text-xs font-medium text-black/60 dark:text-white/65">
+                                  {t('unitWorkQueue.detailKind')}
+                                </dt>
+                                <dd className="mt-0.5 font-medium leading-snug text-black dark:text-white">
+                                  {t(`unitWorkQueue.kind.${selected.kind}`)}
+                                </dd>
+                              </div>
+                              <div className="min-w-0">
+                                <dt className="text-xs font-medium text-black/60 dark:text-white/65">
+                                  {t('unitWorkQueue.colPriority')}
+                                </dt>
+                                <dd className="mt-0.5 inline-flex items-center justify-center gap-2 font-medium leading-snug text-black dark:text-white">
+                                  {priorityDot(selected.priority)}
+                                  {t(`unitWorkQueue.priority.${selected.priority}`)}
+                                </dd>
+                              </div>
+                              <div className="min-w-0">
+                                <dt className="text-xs font-medium text-black/60 dark:text-white/65">
+                                  {t('unitWorkQueue.assigneePerson')}
+                                </dt>
+                                <dd className="mt-0.5 font-medium leading-snug text-black dark:text-white">
+                                  {selected.assigneeUserId ? resolveWorkQueueName(selected.assigneeUserId) : '—'}
+                                </dd>
+                              </div>
+                              <div className="min-w-0">
+                                <dt className="text-xs font-medium text-black/60 dark:text-white/65">
+                                  {t('unitWorkQueue.assignerPerson')}
+                                </dt>
+                                <dd className="mt-0.5 font-medium leading-snug text-black dark:text-white">
+                                  {resolveWorkQueueName(selected.assignerUserId)}
+                                </dd>
+                              </div>
+                              <div className="min-w-0">
+                                <dt className="text-xs font-medium text-black/60 dark:text-white/65">
+                                  {t('unitWorkQueue.detailFrom')}
+                                </dt>
+                                <dd className="mt-0.5 font-medium leading-snug text-black dark:text-white">
+                                  {unitLabel(selected.fromUnit, t)}
+                                </dd>
+                              </div>
+                              <div className="min-w-0">
+                                <dt className="text-xs font-medium text-black/60 dark:text-white/65">
+                                  {t('unitWorkQueue.detailTo')}
+                                </dt>
+                                <dd className="mt-0.5 font-medium leading-snug text-black dark:text-white">
+                                  {unitLabel(selected.toUnit, t)}
+                                </dd>
+                              </div>
+                              <div className="min-w-0">
+                                <dt className="text-xs font-medium text-black/60 dark:text-white/65">
+                                  {t('unitWorkQueue.detailFactory')}
+                                </dt>
+                                <dd className="mt-0.5 inline-flex items-center justify-center gap-1.5 font-mono text-sm font-medium leading-snug text-black dark:text-white">
+                                  <Factory className="size-3.5 text-black/50 dark:text-white/55" aria-hidden />
+                                  {selected.factoryCode}
+                                </dd>
+                              </div>
+                              <div className="min-w-0">
+                                <dt className="text-xs font-medium text-black/60 dark:text-white/65">
+                                  {t('unitWorkQueue.colDays')}
+                                </dt>
+                                <dd className="mt-0.5 font-medium tabular-nums leading-snug text-black dark:text-white">
+                                  {selected.daysOnDesk}
+                                </dd>
+                              </div>
+                              <div className="min-w-0 sm:col-span-2">
+                                <dt className="text-xs font-medium text-black/60 dark:text-white/65">
+                                  {t('unitWorkQueue.colUpdated')}
+                                </dt>
+                                <dd className="mt-0.5 font-medium leading-snug text-black dark:text-white">
+                                  {selected.lastUpdatedLabel}
+                                </dd>
+                              </div>
+                            </dl>
+                          </div>
+                        </div>
                       ) : null}
                       {detailTab === 'project' ? (
-                        <div
-                          className={
-                            gl
-                              ? 'rounded-xl border border-dashed border-black/18 p-4 text-sm text-black/75 dark:border-white/15 dark:text-white/80'
-                              : 'rounded-xl border border-dashed border-slate-300/80 p-4 text-sm text-slate-600 dark:border-slate-600 dark:text-slate-400'
-                          }
-                        >
-                          <p
-                            className={
-                              gl
-                                ? 'font-semibold text-black dark:text-white'
-                                : 'font-semibold text-slate-800 dark:text-slate-100'
-                            }
-                          >
+                        <div className="mx-auto max-w-lg rounded-xl border border-dashed border-black/18 p-4 text-left text-sm text-black/75 dark:border-white/15 dark:text-white/80 sm:text-center">
+                          <p className="font-semibold text-black dark:text-white">
                             {selected.projectCode} — {selected.projectName}
                           </p>
                           <p className="mt-2">{t('unitWorkQueue.panelProjectPlaceholder')}</p>
                         </div>
                       ) : null}
                       {detailTab === 'history' ? (
-                        <ul
-                          className={
-                            gl
-                              ? 'space-y-3 text-sm text-black/75 dark:text-white/80'
-                              : 'space-y-3 text-sm text-slate-600 dark:text-slate-400'
-                          }
-                        >
+                        <ul className="mx-auto max-w-lg space-y-3 text-left text-sm text-black/75 dark:text-white/80 sm:text-center">
                           <li>{t('unitWorkQueue.historyMock1')}</li>
                           <li>{t('unitWorkQueue.historyMock2')}</li>
                         </ul>

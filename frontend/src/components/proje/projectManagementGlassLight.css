@@ -160,6 +160,32 @@ html:not(.dark) .project-mgmt-glass-light .card-button:hover {
   transform: translateY(-1px);
 }
 
+/* Filtre çekmecesi kapat (X): kompakt düğme — genel padding ikonu kesmesin */
+html:not(.dark) .project-mgmt-glass-light .card-button.p-0,
+html:not(.dark) .project-mgmt-glass-light .card-button.inline-flex.size-7 {
+  padding: 0 !important;
+  width: 1.75rem;
+  height: 1.75rem;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  flex-shrink: 0;
+  font-size: 0;
+  line-height: 0;
+  color: #000;
+}
+
+html:not(.dark) .project-mgmt-glass-light .card-button.p-0:hover,
+html:not(.dark) .project-mgmt-glass-light .card-button.inline-flex.size-7:hover {
+  transform: none;
+}
+
+html:not(.dark) .project-mgmt-glass-light .card-button.p-0 svg,
+html:not(.dark) .project-mgmt-glass-light .card-button.inline-flex.size-7 svg {
+  color: #000;
+  stroke: currentColor;
+  opacity: 1;
+}
+
 html:not(.dark) .project-mgmt-glass-light .glass-input,
 html:not(.dark) .project-mgmt-glass-light select.glass-input,
 html:not(.dark) .project-mgmt-glass-light textarea.glass-input {

@@ -25,6 +25,13 @@ import '../muhendislikOkan/engineeringOkanLiquid.css'
 import { useI18n } from '../../i18n/I18nProvider'
 import { useThemeMode } from '../../theme/ThemeProvider'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
+import { eiSplitHeaderButtonPassive } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import {
+  splitDetailHeaderClass,
+  splitListCardClass,
+  splitListEmptyClass,
+  splitTabPill,
+} from '../shared/splitModuleStyles'
 import './projectManagementGlassLight.css'
 
 function statusLabel(status: ProjectStatus) {
@@ -53,33 +60,6 @@ function getProjectTypeMeta(row: Pick<ProjectCardItem, 'name' | 'customer'>): Pr
   if (haystack.includes('konut') || haystack.includes('site')) return { label: 'Konut', icon: Home }
   if (haystack.includes('sanayi') || haystack.includes('endustri')) return { label: 'Sanayi Yapısı', icon: Factory }
   return { label: 'Yapı Projesi', icon: Building2 }
-}
-
-function getProjectStatusProgress(status: ProjectStatus): number {
-  const map: Record<ProjectStatus, number> = {
-    planlama: 20,
-    devam: 55,
-    riskli: 45,
-    beklemede: 35,
-    tamamlandi: 100,
-  }
-  return map[status]
-}
-
-function getProjectStatusBarClasses(status: ProjectStatus): { track: string; fill: string; text: string } {
-  const neutral = {
-    track: 'bg-black/12 dark:bg-black/55',
-    fill: 'bg-black dark:bg-neutral-200',
-    text: 'text-black/80 dark:text-white/80',
-  }
-  const map: Record<ProjectStatus, { track: string; fill: string; text: string }> = {
-    planlama: neutral,
-    devam: neutral,
-    riskli: neutral,
-    beklemede: neutral,
-    tamamlandi: neutral,
-  }
-  return map[status]
 }
 
 type Props = {
@@ -558,10 +538,10 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
 
   return (
     <div
-      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-1 overflow-hidden rounded-3xl"
+      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl"
       data-neutral-shell={neutralShell ? 'true' : undefined}
     >
-      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-1">
+      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-2">
         <div className="px-[0.6875rem] pt-0 pb-0.5">
           <nav
             aria-label={t('project.breadcrumbAria')}
@@ -588,9 +568,9 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
 
         <div
           className={[
-            'min-h-0 overflow-hidden',
+            'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
             gl
-              ? 'flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl bg-transparent p-1 md:p-1.5'
+              ? 'gap-2 rounded-3xl bg-transparent p-1 md:p-1.5'
               : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
           ].join(' ')}
         >
@@ -880,9 +860,10 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                         </button>
                       </div>
                     </aside>
+                    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
                     <ul
                       ref={listRef}
-                      className="flex h-full min-h-0 flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-100 ease-out"
+                      className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-100 ease-out"
                       style={{ paddingLeft: filtersOpen ? '18.5rem' : '0' }}
                       role="list"
                       aria-label="Proje listesi"
@@ -892,124 +873,60 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                           (() => {
                             const typeMeta = getProjectTypeMeta(row)
                             const TypeIcon = typeMeta.icon
-                            const statusPct = getProjectStatusProgress(row.status)
-                            const statusUi = getProjectStatusBarClasses(row.status)
                             return (
                           <li
                             key={row.id}
-                            className={[
-                              gl
-                                ? [
-                                    'glass-card',
-                                    'glass-card--static',
-                                    'project-mgmt-list-row-card',
-                                    'flex',
-                                    'min-h-0',
-                                    'shrink-0',
-                                    'items-stretch',
-                                    'gap-1.5',
-                                  ].join(' ')
-                                : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
-                              selected?.id === row.id ? 'okan-project-list-row--active' : '',
-                            ].join(' ')}
+                            className={splitListCardClass(
+                              selected?.id === row.id,
+                              'flex min-h-0 shrink-0 items-stretch gap-1.5 px-2 py-1.5',
+                            )}
                           >
                             <button
                               type="button"
                               onClick={() => setSelectedId(row.id)}
                               aria-current={selected?.id === row.id ? 'true' : undefined}
-                              className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/8"
+                              className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40"
                             >
                               <p className="truncate text-sm font-semibold leading-snug text-black dark:text-white">
                                 {row.name}
                               </p>
                               <p className="mt-0.5 truncate text-xs text-black/70 dark:text-white/70">
-                                {row.customer}
+                                {row.code} · {row.customer}
                               </p>
-                              <p className="mt-1 inline-flex items-center gap-1 rounded-md bg-black/8 px-1.5 py-0.5 text-[10px] font-semibold text-black dark:bg-black/50 dark:text-white/90">
-                                <TypeIcon className="size-3" aria-hidden />
-                                {typeMeta.label}
+                              <p className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-medium text-slate-800 dark:bg-slate-700 dark:text-slate-100">
+                                  <TypeIcon className="size-3" aria-hidden />
+                                  {typeMeta.label}
+                                </span>
+                                <span className="text-[10px] font-medium text-black/55 dark:text-white/65">
+                                  {statusLabel(row.status)}
+                                </span>
                               </p>
                             </button>
-                            <div className="flex w-[7.5rem] shrink-0 flex-col justify-center gap-1">
-                              <button
-                                type="button"
-                                title="Proje detayini gor"
-                                onClick={() =>
-                                  navigate(`/proje-detay/${row.id}`, {
-                                    state: {
-                                      fromProjectList: true,
-                                      projectName: row.name,
-                                    },
-                                  })
-                                }
-                                className={
-                                  gl
-                                    ? 'card-button ml-auto inline-flex items-center gap-0.5 py-1 pl-2 pr-2 text-[11px] font-medium leading-none'
-                                    : 'inline-flex items-center justify-end gap-0.5 rounded-md px-1.5 py-1 text-[11px] font-medium leading-none text-black/55 transition hover:bg-black/8 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/65 dark:hover:bg-white/8 dark:hover:text-white'
-                                }
-                              >
-                                Detay
-                                <ChevronRight className="size-3 opacity-70" strokeWidth={2} aria-hidden />
-                              </button>
-                              {gl ? (
-                                <>
-                                  <div className="progress-header text-[11px] leading-tight">
-                                    <span className="min-w-0 truncate">{statusLabel(row.status)}</span>
-                                    <span className="shrink-0 tabular-nums">{statusPct}%</span>
-                                  </div>
-                                  <div
-                                    role="progressbar"
-                                    aria-valuemin={0}
-                                    aria-valuemax={100}
-                                    aria-valuenow={statusPct}
-                                    aria-valuetext={statusLabel(row.status)}
-                                    className="glass-progress"
-                                  >
-                                    <div className="progress-fill" style={{ width: `${statusPct}%` }} />
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <div
-                                    role="progressbar"
-                                    aria-valuemin={0}
-                                    aria-valuemax={100}
-                                    aria-valuenow={statusPct}
-                                    aria-valuetext={statusLabel(row.status)}
-                                    className={['h-1.5 w-full overflow-hidden rounded-full', statusUi.track].join(' ')}
-                                  >
-                                    <span
-                                      className={['block h-full rounded-full transition-all', statusUi.fill].join(' ')}
-                                      style={{ width: `${statusPct}%` }}
-                                    />
-                                  </div>
-                                  <span
-                                    className={['text-right text-[11px] font-semibold leading-none', statusUi.text].join(
-                                      ' ',
-                                    )}
-                                  >
-                                    {statusLabel(row.status)}
-                                  </span>
-                                </>
-                              )}
-                            </div>
+                            <button
+                              type="button"
+                              title="Proje detayini gor"
+                              onClick={() =>
+                                navigate(`/proje-detay/${row.id}`, {
+                                  state: {
+                                    fromProjectList: true,
+                                    projectName: row.name,
+                                  },
+                                })
+                              }
+                              className={`${eiSplitHeaderButtonPassive} ml-auto shrink-0 self-center py-1 pl-2 pr-2 text-[11px]`}
+                            >
+                              Detay
+                              <ChevronRight className="size-3 opacity-70" strokeWidth={2} aria-hidden />
+                            </button>
                           </li>
                             )
                           })()
                         ))
                       ) : (
-                        <li
-                          className={
-                            gl
-                              ? 'glass-card glass-card--static text-sm text-black'
-                              : 'rounded-lg border border-black/14 bg-white/50 px-3 py-2 text-sm text-black/80 dark:border-white/12 dark:bg-black/45 dark:text-white/85'
-                          }
-                        >
-                          Filtreye uygun proje bulunamadi.
-                        </li>
+                        <li className={splitListEmptyClass}>Filtreye uygun proje bulunamadi.</li>
                       )}
                     </ul>
-                  </div>
                   {gl ? (
                     <div className="glass-card glass-card--static project-mgmt-footer-panel sticky bottom-0 z-10 mt-2 shrink-0 text-xs">
                       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
@@ -1155,6 +1072,8 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                       </div>
                     </div>
                   )}
+                    </div>
+              </div>
             </section>
 
             <div className="relative z-10 mx-1 hidden w-2 shrink-0 cursor-col-resize lg:flex">
@@ -1202,7 +1121,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
             {selected ? (
               <div key={selectedId} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
               <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 lg:max-w-3xl">
-                <header className="shrink-0 border-b border-black/12 pb-3 text-center dark:border-white/10">
+                <header className={splitDetailHeaderClass}>
                   <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
                     Secili proje
                   </p>
@@ -1212,26 +1131,20 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                   <p className="mt-1 text-sm leading-snug text-black/75 dark:text-white/80">
                     {selected.customer} · Sorumlu {selected.owner}
                   </p>
-                  <button
-                    type="button"
-                    onClick={openEditDialog}
-                    className={
-                      gl
-                        ? 'card-button mt-2'
-                        : 'mt-2 rounded-md border border-black/22 px-2 py-1 text-xs font-semibold text-black hover:bg-black/5 dark:border-white/15 dark:text-white dark:hover:bg-white/10'
-                    }
-                  >
-                    Projeyi düzenle
-                  </button>
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      onClick={openEditDialog}
+                      className={eiSplitHeaderButtonPassive}
+                    >
+                      Projeyi düzenle
+                    </button>
+                  </div>
                 </header>
 
-                <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-0.5">
+                <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-3">
                   <div
-                    className={
-                      gl
-                        ? 'glass-nav max-w-full flex-wrap justify-center overflow-x-auto p-0'
-                        : 'okan-liquid-pill-track flex max-w-full gap-1 overflow-x-auto rounded-full p-1'
-                    }
+                    className="flex max-w-full flex-wrap justify-center gap-1 overflow-x-auto"
                     role="tablist"
                     aria-label="Secili proje panel tablari"
                     aria-orientation="horizontal"
@@ -1255,15 +1168,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                       aria-controls="project-detail-panel"
                       tabIndex={detailTab === id ? 0 : -1}
                       onClick={() => setDetailTab(id)}
-                      className={
-                        gl
-                          ? ['nav-item', 'shrink-0', detailTab === id ? 'active' : ''].filter(Boolean).join(' ')
-                          : `shrink-0 rounded-full px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 ${
-                              detailTab === id
-                                ? 'okan-liquid-pill-active okan-project-tab-active text-black dark:text-white'
-                                : 'text-black/70 hover:text-black dark:text-white/75 dark:hover:text-white'
-                            }`
-                      }
+                      className={splitTabPill(detailTab === id)}
                     >
                       {label}
                     </button>

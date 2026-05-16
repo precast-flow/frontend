@@ -24,6 +24,12 @@ import { useThemeMode } from '../../theme/ThemeProvider'
 import { CrmNewCustomerModal } from './CrmNewCustomerModal'
 import { NeoSwitch } from '../NeoSwitch'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
+import { eiSplitHeaderButtonPassive } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import {
+  splitDetailHeaderClass,
+  splitListCardClass,
+  splitTabPill,
+} from '../shared/splitModuleStyles'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 import '../proje/projectManagementGlassLight.css'
 
@@ -470,9 +476,9 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
 
         <div
           className={[
-            'min-h-0 overflow-hidden',
+            'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
             gl
-              ? 'flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl bg-transparent p-1 md:p-1.5'
+              ? 'gap-2 rounded-3xl bg-transparent p-1 md:p-1.5'
               : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
           ].join(' ')}
         >
@@ -710,27 +716,13 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                       {listPageSlice.map((row) => (
                       <li
                         key={row.id}
-                        className={[
-                          gl
-                            ? [
-                                'glass-card',
-                                'glass-card--static',
-                                'project-mgmt-list-row-card',
-                                'flex',
-                                'min-h-0',
-                                'shrink-0',
-                                'items-stretch',
-                                'gap-1.5',
-                              ].join(' ')
-                            : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
-                          selected?.id === row.id ? 'okan-project-list-row--active' : '',
-                        ].join(' ')}
+                        className={splitListCardClass(selected?.id === row.id, 'flex min-h-0 shrink-0 items-stretch gap-1.5 px-2 py-1.5')}
                       >
                         <button
                           type="button"
                           onClick={() => setSelectedId(row.id)}
                           aria-current={selected?.id === row.id ? 'true' : undefined}
-                          className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/8"
+                          className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40"
                         >
                           <p className="truncate text-sm font-semibold leading-snug text-black dark:text-white">
                             {row.name}
@@ -751,11 +743,7 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                           type="button"
                           title="Tam müşteri detay sayfası"
                           onClick={() => navigate(`/musteri-detay/${row.id}`, { state: { fromCrmList: true } })}
-                          className={
-                            gl
-                              ? 'card-button ml-auto inline-flex shrink-0 items-center gap-0.5 self-center py-1 pl-2 pr-2 text-[11px] font-medium leading-none'
-                              : 'inline-flex shrink-0 items-center gap-0.5 self-center rounded-md px-1.5 py-1 text-[11px] font-medium leading-none text-black/55 transition hover:bg-black/8 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/65 dark:hover:bg-white/8 dark:hover:text-white'
-                          }
+                          className={`${eiSplitHeaderButtonPassive} ml-auto shrink-0 self-center py-1 pl-2 pr-2 text-[11px]`}
                         >
                           Detay
                           <ChevronRight className="size-3 opacity-70" strokeWidth={2} aria-hidden />
@@ -911,7 +899,7 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
               {selected ? (
                 <div key={selected.id} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
                   <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 lg:max-w-3xl">
-                    <header className="shrink-0 border-b border-black/12 pb-3 text-center dark:border-white/10">
+                    <header className={splitDetailHeaderClass}>
                       <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
                         Seçili müşteri
                       </p>
@@ -925,20 +913,16 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                         <button
                           type="button"
                           onClick={openEditCustomerDialog}
-                          className={
-                            gl
-                              ? 'card-button mt-2'
-                              : 'inline-flex items-center rounded-lg border border-black/18 px-2.5 py-1 text-xs font-semibold text-black hover:bg-black/5 dark:border-white/12 dark:text-white dark:hover:bg-white/10'
-                          }
+                          className={`${eiSplitHeaderButtonPassive} mt-2`}
                         >
                           Müşteriyi düzenle
                         </button>
                       </div>
                     </header>
 
-                    <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-0.5">
+                    <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-3">
                       <div
-                        className="okan-liquid-pill-track flex max-w-full gap-1 overflow-x-auto rounded-full p-1"
+                        className="flex max-w-full gap-1 overflow-x-auto"
                         role="tablist"
                         aria-label="Seçili müşteri detay sekmeleri"
                         aria-orientation="horizontal"
@@ -953,11 +937,7 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                             aria-controls="crm-detail-panel"
                             tabIndex={detailTab === tab.id ? 0 : -1}
                             onClick={() => setDetailTab(tab.id)}
-                            className={`shrink-0 rounded-full px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 ${
-                              detailTab === tab.id
-                                ? 'okan-liquid-pill-active okan-project-tab-active text-black dark:text-white'
-                                : 'text-black/70 hover:text-black dark:text-white/75 dark:hover:text-white'
-                            }`}
+                            className={splitTabPill(detailTab === tab.id)}
                           >
                             {tab.label}
                           </button>
