@@ -108,29 +108,29 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
             ].join(' ')
       }
     >
-      {!isUnitWorkQueue ? (
-        <div
-          className={[
-            fullBleedInMainModule
-              ? 'mb-2 shrink-0 pb-2'
+      <div
+        className={[
+          fullBleedInMainModule
+            ? 'mb-2 shrink-0 pb-2'
+            : isUnitWorkQueue
+              ? 'mb-2 shrink-0 pb-0'
               : isProject || isElementIdentity || isMaterialCatalog || isStandardSeriesCatalog
                 ? 'mb-2 shrink-0 pt-1 pb-2 md:pt-1.5'
                 : 'mb-2 pb-2',
-            okanSplitHeadingAlign ? 'ps-[0.6875rem] pe-[0.6875rem]' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')}
-        >
-          <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-50 md:text-2xl">
-            {title}
-          </h1>
-          {breadcrumbSegments ? (
-            <div className="mt-1.5">
-              <AppModuleBreadcrumb segments={breadcrumbSegments} />
-            </div>
-          ) : null}
-        </div>
-      ) : null}
+          okanSplitHeadingAlign ? 'ps-[0.6875rem] pe-[0.6875rem]' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
+        <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-50 md:text-2xl">
+          {title}
+        </h1>
+        {breadcrumbSegments ? (
+          <div className="mt-1.5">
+            <AppModuleBreadcrumb segments={breadcrumbSegments} />
+          </div>
+        ) : null}
+      </div>
 
       {isCrm ? (
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
