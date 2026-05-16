@@ -50,6 +50,7 @@ import type {
   Typology,
 } from '../../elementIdentity/types'
 import { buildProjectProductFromTemplate } from '../../standardSeriesCatalog/instantiateTemplate'
+import { ensureDefaultProjectProducts } from '../../elementIdentity/firm/projectProductsMock'
 import {
   ElementIdentityContext,
   type ElementIdentityContextValue,
@@ -90,6 +91,18 @@ export function ElementIdentityProvider({ children }: { children: ReactNode }) {
   useEffect(() => saveActiveFirmId(activeFirmId), [activeFirmId])
   useEffect(() => saveProjectElements(projectElements), [projectElements])
   useEffect(() => saveCounters(counters), [counters])
+  useEffect(() => {
+    setProjectProducts((prev) => {
+      const next = ensureDefaultProjectProducts(prev)
+      if (
+        next.length === prev.length &&
+        next.every((p, i) => p.id === prev[i]?.id)
+      ) {
+        return prev
+      }
+      return next
+    })
+  }, [])
   useEffect(() => saveProjectProducts(projectProducts), [projectProducts])
   useEffect(() => saveStandardSeriesTemplates(standardSeriesTemplates), [standardSeriesTemplates])
   useEffect(() => saveElementTypes(elementTypesData), [elementTypesData])

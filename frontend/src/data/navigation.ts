@@ -28,12 +28,19 @@ export const navGroups: NavGroup[] = [
       { id: 'crm', labelKey: 'nav.crm', slug: 'crm' },
       { id: 'project', labelKey: 'nav.project', slug: 'proje' },
       { id: 'planning-design', labelKey: 'nav.planningDesign', slug: 'planlama-tasarim' },
+      { id: 'general-planning', labelKey: 'nav.generalPlanning', slug: 'genel-planlama' },
     ],
   },
   {
     id: 'production',
     titleKey: 'nav.sidebar.section.production',
-    items: [],
+    items: [
+      {
+        id: 'production-planning',
+        labelKey: 'nav.productionPlanning',
+        slug: 'uretim-planlama',
+      },
+    ],
   },
   {
     id: 'quality',
@@ -43,7 +50,18 @@ export const navGroups: NavGroup[] = [
   {
     id: 'logistics',
     titleKey: 'nav.sidebar.section.logistics',
-    items: [],
+    items: [
+      {
+        id: 'dispatch-planning',
+        labelKey: 'nav.dispatchPlanning',
+        slug: 'sevkiyat-planlama',
+      },
+      {
+        id: 'assembly-planning',
+        labelKey: 'nav.assemblyPlanning',
+        slug: 'montaj-planlama',
+      },
+    ],
   },
   {
     id: 'system',

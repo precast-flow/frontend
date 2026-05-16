@@ -8,6 +8,10 @@ import { ElementIdentityModuleView } from './elementIdentity/ElementIdentityModu
 import { ProjectManagementModuleView } from './proje/ProjectManagementModuleView'
 import { PlanningHubView } from './planlama/PlanningHubView'
 import { PlanningDesignView } from './planlama/PlanningDesignView'
+import { GeneralPlanningView } from './planlama/GeneralPlanningView'
+import { ProductionPlanningView } from './planlama/ProductionPlanningView'
+import { DispatchPlanningView } from './planlama/DispatchPlanningView'
+import { AssemblyPlanningView } from './planlama/AssemblyPlanningView'
 import { StartWorkWizardView } from './satis/StartWorkWizardView'
 import { ApprovalFlowDesignerView } from './onay/ApprovalFlowDesignerView'
 import { RolesAndPermissionsView } from './rbac/RolesAndPermissionsView'
@@ -39,14 +43,25 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
   const isMaterialCatalog = activeId === 'material-catalog'
   const isStandardSeriesCatalog = activeId === 'standard-series-catalog'
   const isPlanningDesign = activeId === 'planning-design'
+  const isGeneralPlanning = activeId === 'general-planning'
+  const isProductionPlanning = activeId === 'production-planning'
+  const isDispatchPlanning = activeId === 'dispatch-planning'
+  const isAssemblyPlanning = activeId === 'assembly-planning'
   const isApprovalFlow = activeId === 'approval-flow'
   const isRolesPermissions = activeId === 'roles-permissions'
   const isUserManagement = activeId === 'user-management'
 
-  const fullBleedInMainModule = isPlanningDesign
+  const fullBleedInMainModule =
+    isPlanningDesign ||
+    isGeneralPlanning ||
+    isProductionPlanning ||
+    isDispatchPlanning ||
+    isAssemblyPlanning
   /** `GlassAppShell` zaten `--gm-footer-clear` veriyor; sabit `100dvh-12.5rem` ile çift kısaltmayı önle. */
   const fillsMainCanvasViewportHeight =
     isUserManagement ||
+    isApprovalFlow ||
+    isRolesPermissions ||
     isProject ||
     isCrm ||
     isUnitWorkQueue ||
@@ -58,6 +73,10 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
     isProject ||
     isCrm ||
     isPlanningDesign ||
+    isGeneralPlanning ||
+    isProductionPlanning ||
+    isDispatchPlanning ||
+    isAssemblyPlanning ||
     isMaterialCatalog ||
     isStandardSeriesCatalog ||
     isApprovalFlow ||
@@ -202,6 +221,14 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
         </div>
       ) : isPlanningDesign ? (
         <PlanningDesignView />
+      ) : isGeneralPlanning ? (
+        <GeneralPlanningView />
+      ) : isProductionPlanning ? (
+        <ProductionPlanningView />
+      ) : isDispatchPlanning ? (
+        <DispatchPlanningView />
+      ) : isAssemblyPlanning ? (
+        <AssemblyPlanningView />
       ) : isApprovalFlow ? (
         <ApprovalFlowDesignerView />
       ) : isRolesPermissions ? (

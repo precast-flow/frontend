@@ -13,6 +13,7 @@ import {
   ElementIdentityFilterSheetHeader,
   ElementIdentityPieceCodesLikeSplit,
 } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import { eiSplitListRowButton, eiTabPill } from '../elementIdentity/elementIdentitySplitUi'
 import { useMaterialCatalog } from './MaterialCatalogContext'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 
@@ -269,7 +270,7 @@ export function MaterialCatalogModuleView() {
 
   return (
     <div
-      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-1 overflow-hidden rounded-3xl"
+      className="project-mgmt-glass-light flex min-h-0 min-w-0 flex-1 basis-0 flex-col gap-0 overflow-hidden rounded-3xl"
       data-neutral-shell={neutralShell ? 'true' : undefined}
     >
       <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-1">
@@ -294,7 +295,14 @@ export function MaterialCatalogModuleView() {
           </nav>
         </div>
 
-        <div className="min-h-0 flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div
+          className={[
+            'min-h-0 flex min-h-0 flex-1 flex-col overflow-hidden',
+            gl
+              ? 'rounded-3xl bg-transparent p-0'
+              : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
+          ].join(' ')}
+        >
           <ElementIdentityPieceCodesLikeSplit
             persistKey="material-catalog"
             visualVariant="project-mgmt"
@@ -325,8 +333,8 @@ export function MaterialCatalogModuleView() {
                   onClick={() => setNewOpen((o) => !o)}
                   className={
                     gl
-                      ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
-                      : eiSplitHeaderButtonPassive
+                      ? ['glass-btn', 'primary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
+                      : 'inline-flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800 dark:border-slate-600 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'
                   }
                 >
                   <Plus className="size-3.5 shrink-0" aria-hidden />
@@ -506,41 +514,30 @@ export function MaterialCatalogModuleView() {
                 </button>
               ))}
             </div>
+            <div className="mt-3 flex justify-end border-t border-slate-200/60 pt-2 dark:border-slate-700/60">
+              <button
+                type="button"
+                onClick={() => {
+                  setListSearch('')
+                  setFilterCategory('all')
+                  setListPage(1)
+                  setFilterOpen(false)
+                }}
+                className="rounded-md border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200"
+              >
+                {t('elementIdentity.reset')}
+              </button>
+            </div>
           </div>
         }
         listBody={
           filtered.length === 0 ? (
-            <li
-              className={
-                gl
-                  ? 'glass-card glass-card--static text-sm text-black'
-                  : 'rounded-lg border border-dashed border-slate-300/60 px-3 py-8 text-center text-xs text-slate-500 dark:border-slate-600'
-              }
-            >
+            <li className="rounded-lg border border-dashed border-slate-300/60 bg-white/30 px-3 py-8 text-center text-xs text-slate-500 dark:border-slate-600 dark:bg-slate-900/20">
               —
             </li>
           ) : (
             visibleMaterials.map((m) => (
-              <li
-                key={m.id}
-                className={
-                  gl
-                    ? [
-                        'glass-card',
-                        'glass-card--static',
-                        'project-mgmt-list-row-card',
-                        'min-h-0',
-                        'shrink-0',
-                        selectedId === m.id ? 'okan-project-list-row--active' : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')
-                    : [
-                        'rounded-lg border border-slate-200/50 bg-white/50 dark:border-slate-700/50 dark:bg-slate-900/25',
-                        selectedId === m.id ? 'okan-project-list-row--active' : '',
-                      ].join(' ')
-                }
-              >
+              <li key={m.id}>
                 <button
                   type="button"
                   onClick={() => {
@@ -549,34 +546,19 @@ export function MaterialCatalogModuleView() {
                     scrollTop()
                   }}
                   aria-current={selectedId === m.id ? 'true' : undefined}
-                  className={
-                    gl
-                      ? 'flex w-full flex-col gap-1 px-3 py-2 text-left text-sm transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/8'
-                      : [
-                          'flex w-full flex-col gap-1 px-3 py-2 text-left text-sm transition',
-                          selectedId === m.id
-                            ? 'okan-project-list-row--active bg-sky-500/10 dark:bg-sky-400/10'
-                            : 'hover:bg-white/50 dark:hover:bg-slate-900/35',
-                        ].join(' ')
-                  }
+                  className={eiSplitListRowButton(selectedId === m.id)}
                 >
                   <div className="flex flex-wrap items-center gap-1">
-                    <span
-                      className={
-                        gl
-                          ? 'rounded-md bg-black/8 px-1.5 py-0.5 text-[10px] font-semibold text-black dark:bg-black/50 dark:text-white/90'
-                          : 'rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200'
-                      }
-                    >
+                    <span className="rounded-md bg-slate-100/90 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-800/80 dark:text-slate-200">
                       {t(categoryLabelKey(m.category))}
                     </span>
                     {m.readonly ? (
                       <span className="text-[10px] font-semibold text-sky-700 dark:text-sky-300">{t('materialCatalog.readonly')}</span>
                     ) : null}
                   </div>
-                  <p className={`font-mono text-xs font-semibold ${gl ? 'text-black dark:text-white' : 'text-slate-900 dark:text-slate-50'}`}>{m.code}</p>
-                  <p className={`truncate text-xs ${gl ? 'text-black/70 dark:text-white/70' : 'text-slate-600 dark:text-slate-300'}`}>{m.name}</p>
-                  <p className={`text-[10px] ${gl ? 'text-black/55 dark:text-white/65' : 'text-slate-500'}`}>
+                  <p className="font-mono text-xs font-semibold text-slate-900 dark:text-slate-50">{m.code}</p>
+                  <p className="truncate text-xs text-slate-600 dark:text-slate-300">{m.name}</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">
                     {m.fields.length} {t('materialCatalog.fieldsCount')}
                   </p>
                 </button>
@@ -585,13 +567,13 @@ export function MaterialCatalogModuleView() {
           )
         }
         footer={
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-            <p className={gl ? 'text-black dark:text-white/80' : 'text-black/75 dark:text-white/80'}>
+          <div className="flex flex-col gap-2 px-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <p className="text-[11px] text-slate-600 dark:text-slate-300">
               {filtered.length > 0 ? (
                 <>
-                  <span className="tabular-nums font-semibold text-black dark:text-white">{listPageStart}</span>-
-                  <span className="tabular-nums font-semibold text-black dark:text-white">{listPageEnd}</span>{' '}
-                  / <span className="tabular-nums font-semibold text-black dark:text-white">{filtered.length}</span>{' '}
+                  <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">{listPageStart}</span>-
+                  <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">{listPageEnd}</span>{' '}
+                  / <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">{filtered.length}</span>{' '}
                   {locale === 'en' ? 'results' : 'sonuç'}
                 </>
               ) : (
@@ -630,18 +612,6 @@ export function MaterialCatalogModuleView() {
                   </button>
                 </div>
               ) : null}
-              <button
-                type="button"
-                onClick={() => selected && !selected.readonly && removeMaterial(selected.id)}
-                disabled={!selected || Boolean(selected.readonly)}
-                className={
-                  gl
-                    ? ['glass-btn', 'outline', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(' ')
-                    : 'rounded-md border border-rose-300/70 px-2 py-1 text-[11px] font-semibold text-rose-700 disabled:opacity-40 dark:border-rose-600 dark:text-rose-300'
-                }
-              >
-                {t('materialCatalog.delete')}
-              </button>
             </div>
           </div>
         }
@@ -651,20 +621,28 @@ export function MaterialCatalogModuleView() {
             <div className="mx-auto flex h-full min-h-0 min-w-0 w-full max-w-2xl flex-1 flex-col gap-4 overflow-hidden lg:max-w-3xl">
             {draft ? (
               <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                <header className="flex shrink-0 flex-col items-center border-b border-black/12 pb-3 text-center dark:border-white/10">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
+                <header className="flex shrink-0 flex-col items-center border-b border-slate-200/25 pb-3 text-center dark:border-white/10">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     {t('materialCatalog.detail.selected')}
                   </p>
-                  <h3 className="mt-1.5 max-w-full px-1 font-mono text-lg font-semibold text-black dark:text-white">{draft.code}</h3>
-                  <p className="mt-1 max-w-full px-1 text-sm text-black/75 dark:text-white/80">{draft.name}</p>
+                  <h3 className="mt-1 max-w-full px-1 font-mono text-xl font-semibold text-slate-900 dark:text-slate-50">{draft.code}</h3>
+                  <p className="mt-2 max-w-full px-1 text-xs text-slate-600 dark:text-slate-400">{draft.name}</p>
+                  {!draft.readonly ? (
+                    <div className="mt-3 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => removeMaterial(draft.id)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-rose-300/70 bg-rose-50/90 px-2 py-1.5 text-xs font-semibold text-rose-800 hover:bg-rose-100 dark:border-rose-600/60 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-950/60"
+                      >
+                        <Trash2 className="size-3.5 shrink-0" strokeWidth={1.75} aria-hidden />
+                        {t('materialCatalog.delete')}
+                      </button>
+                    </div>
+                  ) : null}
                 </header>
-                <div className="sticky top-0 z-10 flex w-full min-w-0 shrink-0 justify-center bg-transparent pt-2">
+                <div className="sticky top-0 z-10 flex w-full min-w-0 shrink-0 justify-center bg-transparent pt-3">
                   <div
-                    className={
-                      gl
-                        ? 'glass-nav max-w-full flex-nowrap justify-center gap-2 overflow-x-auto p-0.5 [scrollbar-width:thin]'
-                        : 'flex max-w-full gap-1 overflow-x-auto rounded-full border border-slate-200/60 bg-white/55 p-1 dark:border-slate-700/60 dark:bg-slate-900/35'
-                    }
+                    className="flex max-w-full gap-1 overflow-x-auto"
                     role="tablist"
                     aria-label={t('materialCatalog.listTitle')}
                     aria-orientation="horizontal"
@@ -685,24 +663,17 @@ export function MaterialCatalogModuleView() {
                           setDetailTab(id)
                           scrollTop()
                         }}
-                        className={
-                          gl
-                            ? ['nav-item', 'shrink-0', 'whitespace-nowrap', detailTab === id ? 'active' : '']
-                                .filter(Boolean)
-                                .join(' ')
-                            : `shrink-0 rounded-full border px-3 py-2 text-xs font-semibold sm:text-sm ${
-                                detailTab === id
-                                  ? 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
-                                  : 'border-slate-200/70 bg-white/55 text-slate-600 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300'
-                              }`
-                        }
+                        className={eiTabPill(detailTab === id)}
                       >
                         {t(key)}
                       </button>
                     ))}
                   </div>
                 </div>
-                <div className="okan-project-tab-panel mt-2 min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-1 text-left sm:px-2">
+                <div
+                  role="tabpanel"
+                  className="okan-project-tab-panel mt-3 min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 text-left sm:px-1"
+                >
                   {detailTab === 'general' ? (
                     <div className="flex flex-col gap-3">
                       <label className="block text-xs">

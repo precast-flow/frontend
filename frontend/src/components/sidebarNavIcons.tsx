@@ -31,6 +31,7 @@ import {
   MapPinned,
   KeyRound,
   UsersRound,
+  Layers,
 } from 'lucide-react'
 
 const NAV_ICONS: Record<string, LucideIcon> = {
@@ -52,6 +53,10 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   'batch-plant': Gauge,
   'production-role-preview': ScanEye,
   'planning-design': CalendarRange,
+  'general-planning': Layers,
+  'production-planning': CalendarRange,
+  'dispatch-planning': Truck,
+  'assembly-planning': HardHat,
   'production-factory-ops': Building2,
   quality: ShieldCheck,
   yard: Warehouse,

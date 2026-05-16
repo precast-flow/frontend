@@ -1,4 +1,4 @@
-import { ChevronRight, Package, Plus } from 'lucide-react'
+import { ChevronRight, Package, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
@@ -28,6 +28,7 @@ import {
   ElementIdentityFilterSheetHeader,
   ElementIdentityPieceCodesLikeSplit,
 } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import { eiSplitListRowButton, eiTabPill } from '../elementIdentity/elementIdentitySplitUi'
 import { StandardSeriesAssemblyTab } from './StandardSeriesAssemblyTab'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 
@@ -266,7 +267,7 @@ export function StandardSeriesCatalogModuleView() {
   return (
     <>
     <div
-      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-1 overflow-hidden rounded-3xl"
+      className="project-mgmt-glass-light flex min-h-0 min-w-0 flex-1 basis-0 flex-col gap-0 overflow-hidden rounded-3xl"
       data-neutral-shell={neutralShell ? 'true' : undefined}
     >
       <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-1">
@@ -291,7 +292,14 @@ export function StandardSeriesCatalogModuleView() {
             </nav>
           </div>
 
-        <div className="min-h-0 flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div
+          className={[
+            'min-h-0 flex min-h-0 flex-1 flex-col overflow-hidden',
+            gl
+              ? 'rounded-3xl bg-transparent p-0'
+              : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
+          ].join(' ')}
+        >
           <ElementIdentityPieceCodesLikeSplit
               persistKey="standard-series-catalog"
               visualVariant="project-mgmt"
@@ -321,8 +329,8 @@ export function StandardSeriesCatalogModuleView() {
                     onClick={handleNewTemplate}
                     className={
                       gl
-                        ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
-                        : eiSplitHeaderButtonPassive
+                        ? ['glass-btn', 'primary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
+                        : 'inline-flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800 dark:border-slate-600 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'
                     }
                   >
                     <Plus className="size-3.5 shrink-0" aria-hidden />
@@ -430,13 +438,7 @@ export function StandardSeriesCatalogModuleView() {
               }
               listBody={
                 filtered.length === 0 ? (
-                  <li
-                    className={
-                      gl
-                        ? 'glass-card glass-card--static px-3 py-8 text-center text-sm text-black dark:text-white'
-                        : 'rounded-lg border border-dashed border-slate-300/60 bg-white/30 px-3 py-8 text-center text-xs text-slate-500 dark:border-slate-600 dark:bg-slate-900/20'
-                    }
-                  >
+                  <li className="rounded-lg border border-dashed border-slate-300/60 bg-white/30 px-3 py-8 text-center text-xs text-slate-500 dark:border-slate-600 dark:bg-slate-900/20">
                     {t('standardSeries.empty')}
                   </li>
                 ) : (
@@ -444,26 +446,7 @@ export function StandardSeriesCatalogModuleView() {
                     const et = tpl.elementTypeId ? ALL_ELEMENT_TYPES.find((e) => e.id === tpl.elementTypeId) : undefined
                     const cat = et?.category
                     return (
-                      <li
-                        key={tpl.id}
-                        className={
-                          gl
-                            ? [
-                                'glass-card',
-                                'glass-card--static',
-                                'project-mgmt-list-row-card',
-                                'min-h-0',
-                                'shrink-0',
-                                selectedId === tpl.id ? 'okan-project-list-row--active' : '',
-                              ]
-                                .filter(Boolean)
-                                .join(' ')
-                            : [
-                                'rounded-lg border border-slate-200/50 bg-white/50 dark:border-slate-700/50 dark:bg-slate-900/25',
-                                selectedId === tpl.id ? 'okan-project-list-row--active' : '',
-                              ].join(' ')
-                        }
-                      >
+                      <li key={tpl.id}>
                         <button
                           type="button"
                           onClick={() => {
@@ -472,24 +455,10 @@ export function StandardSeriesCatalogModuleView() {
                             scrollPanelTop()
                           }}
                           aria-current={selectedId === tpl.id ? 'true' : undefined}
-                          className={
-                            gl
-                              ? 'flex w-full flex-col gap-1 px-3 py-2 text-left text-sm transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/8'
-                              : `flex w-full flex-col gap-1 rounded-lg border px-2.5 py-2 text-left text-xs transition ${
-                                  selectedId === tpl.id
-                                    ? 'border-sky-400/60 bg-sky-500/10 dark:border-sky-500/40 dark:bg-sky-500/15'
-                                    : 'border-slate-200/50 bg-white/40 hover:bg-white/70 dark:border-slate-700/50 dark:bg-slate-900/30 dark:hover:bg-slate-900/50'
-                                }`
-                          }
+                          className={eiSplitListRowButton(selectedId === tpl.id)}
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <span
-                              className={
-                                gl
-                                  ? 'font-mono text-sm font-semibold text-black dark:text-white'
-                                  : 'font-mono text-sm font-semibold text-slate-900 dark:text-slate-50'
-                              }
-                            >
+                            <span className="font-mono text-sm font-semibold text-slate-900 dark:text-slate-50">
                               {tpl.code}
                             </span>
                             <span
@@ -502,23 +471,9 @@ export function StandardSeriesCatalogModuleView() {
                               {tpl.active ? t('standardSeries.active') : t('standardSeries.inactive')}
                             </span>
                           </div>
-                          <span
-                            className={
-                              gl
-                                ? 'line-clamp-2 text-black/75 dark:text-white/75'
-                                : 'line-clamp-2 text-slate-700 dark:text-slate-200'
-                            }
-                          >
-                            {tpl.name}
-                          </span>
+                          <span className="line-clamp-2 text-slate-700 dark:text-slate-200">{tpl.name}</span>
                           {cat ? (
-                            <span
-                              className={
-                                gl ? 'text-[10px] text-black/55 dark:text-white/65' : 'text-[10px] text-slate-500 dark:text-slate-400'
-                              }
-                            >
-                              {t(elemCatLabelKey(cat))}
-                            </span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400">{t(elemCatLabelKey(cat))}</span>
                           ) : null}
                         </button>
                       </li>
@@ -527,19 +482,17 @@ export function StandardSeriesCatalogModuleView() {
                 )
               }
               footer={
-                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-                  <p className={gl ? 'text-black dark:text-white/80' : 'text-black/75 dark:text-white/80'}>
+                <div className="flex flex-col gap-2 px-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300">
                     {filtered.length > 0 ? (
                       <>
-                        <span className="tabular-nums font-semibold text-black dark:text-white">{listPageStart}</span>-
-                        <span className="tabular-nums font-semibold text-black dark:text-white">{listPageEnd}</span>{' '}
-                        / <span className="tabular-nums font-semibold text-black dark:text-white">{filtered.length}</span>{' '}
+                        <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">{listPageStart}</span>-
+                        <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">{listPageEnd}</span>{' '}
+                        / <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">{filtered.length}</span>{' '}
                         {locale === 'en' ? 'templates' : 'şablon'}
                       </>
                     ) : (
-                      <span className={gl ? 'text-black/70 dark:text-white/75' : 'text-slate-600 dark:text-slate-300'}>
-                        {t('standardSeries.empty')}
-                      </span>
+                      <span>{t('standardSeries.empty')}</span>
                     )}
                   </p>
                   <div className="flex flex-wrap items-center gap-2">
@@ -584,18 +537,6 @@ export function StandardSeriesCatalogModuleView() {
                         </button>
                       </div>
                     ) : null}
-                    <button
-                      type="button"
-                      onClick={() => selectedId && removeStandardSeriesTemplate(selectedId)}
-                      disabled={!selected}
-                      className={
-                        gl
-                          ? ['glass-btn', 'outline', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(' ')
-                          : 'rounded-md border border-rose-300/70 px-2 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-40 dark:border-rose-600/60 dark:text-rose-300 dark:hover:bg-rose-950/40'
-                      }
-                    >
-                      {t('standardSeries.remove')}
-                    </button>
                   </div>
                 </div>
               }
@@ -605,22 +546,40 @@ export function StandardSeriesCatalogModuleView() {
                   <div className="mx-auto flex h-full min-h-0 min-w-0 w-full max-w-2xl flex-1 flex-col gap-4 overflow-hidden lg:max-w-3xl">
                   {selected && productLike ? (
                     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                      <header className="flex shrink-0 flex-col items-center border-b border-black/12 pb-3 text-center dark:border-white/10">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
+                      <header className="flex shrink-0 flex-col items-center border-b border-slate-200/25 pb-3 text-center dark:border-white/10">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           {t('standardSeries.selected')}
                         </p>
-                        <h3 className="mt-1.5 max-w-full px-1 font-mono text-lg font-semibold text-black dark:text-white">
+                        <h3 className="mt-1 max-w-full px-1 font-mono text-xl font-semibold text-slate-900 dark:text-slate-50">
                           {selected.code}
                         </h3>
-                        <p className="mt-1 max-w-full px-1 text-sm text-black/75 dark:text-white/80">{selected.name}</p>
+                        <p className="mt-2 max-w-full px-1 text-xs text-slate-600 dark:text-slate-400">{selected.name}</p>
+                        <div className="mt-3 flex flex-wrap justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={openAddToProject}
+                            className={
+                              gl
+                                ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
+                                : eiSplitHeaderButtonPassive
+                            }
+                          >
+                            <Package className="size-3.5 shrink-0" aria-hidden />
+                            {t('standardSeries.addToProject')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => selectedId && removeStandardSeriesTemplate(selectedId)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-300/70 bg-rose-50/90 px-2 py-1.5 text-xs font-semibold text-rose-800 hover:bg-rose-100 dark:border-rose-600/60 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-950/60"
+                          >
+                            <Trash2 className="size-3.5 shrink-0" strokeWidth={1.75} aria-hidden />
+                            {t('standardSeries.remove')}
+                          </button>
+                        </div>
                       </header>
-                      <div className="sticky top-0 z-10 flex w-full min-w-0 shrink-0 justify-center bg-transparent pt-2">
+                      <div className="sticky top-0 z-10 flex w-full min-w-0 shrink-0 justify-center bg-transparent pt-3">
                         <div
-                          className={
-                            gl
-                              ? 'glass-nav max-w-full flex-nowrap justify-center gap-2 overflow-x-auto p-0.5 [scrollbar-width:thin]'
-                              : 'flex max-w-full gap-1 overflow-x-auto'
-                          }
+                          className="flex max-w-full gap-1 overflow-x-auto"
                           role="tablist"
                           aria-label={t('standardSeries.listTitle')}
                           aria-orientation="horizontal"
@@ -645,17 +604,7 @@ export function StandardSeriesCatalogModuleView() {
                                 setDetailTab(id)
                                 scrollPanelTop()
                               }}
-                              className={
-                                gl
-                                  ? ['nav-item', 'shrink-0', 'whitespace-nowrap', detailTab === id ? 'active' : '']
-                                      .filter(Boolean)
-                                      .join(' ')
-                                  : `shrink-0 rounded-full border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
-                                      detailTab === id
-                                        ? 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
-                                        : 'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
-                                    }`
-                              }
+                              className={eiTabPill(detailTab === id)}
                             >
                               {t(key)}
                             </button>
@@ -664,7 +613,7 @@ export function StandardSeriesCatalogModuleView() {
                       </div>
                       <div
                         role="tabpanel"
-                        className="okan-project-tab-panel mt-2 min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-1 text-left sm:px-2"
+                        className="okan-project-tab-panel mt-3 min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 text-left sm:px-1"
                       >
                         {detailTab === 'general' && (
                           <div className="flex flex-col gap-3">

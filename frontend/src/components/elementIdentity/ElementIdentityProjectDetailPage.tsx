@@ -26,6 +26,7 @@ import {
 } from './ElementIdentityPieceCodesLikeSplit'
 import { ElementIdentitySplitListPaginationFooter } from './ElementIdentitySplitListPaginationFooter'
 import { useElementIdentitySplitListPagination } from './useElementIdentitySplitListPagination'
+import { eiSplitListRowShell, eiTabPill } from './elementIdentitySplitUi'
 import { ElementIdentityProductsTab } from './ElementIdentityProductsTab'
 import { NewProductDialog } from './NewProductDialog'
 import { TemplateBuilderPanel } from './TemplateBuilderPanel'
@@ -346,20 +347,11 @@ export function ElementIdentityProjectDetailPage() {
   const crumbCurrent = gl
     ? 'max-w-[40ch] truncate font-semibold text-black dark:text-white'
     : 'max-w-[40ch] truncate font-semibold text-slate-800 dark:text-slate-100'
-  const tabBase =
-    'shrink-0 rounded-full border px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 dark:focus-visible:ring-cyan-400/60'
-  const tabActive = gl
-    ? 'border-black/18 bg-white/55 text-black shadow-[inset_0_1px_0_rgb(255_255_255/0.65)] dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50 dark:shadow-none'
-    : 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
-  const tabIdle = gl
-    ? 'border-black/10 bg-white/35 text-black/70 hover:border-black/16 hover:bg-white/50 hover:text-black dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
-    : 'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
-
   const mainTabUsesSplit = mainTab === 'general' || mainTab === 'products' || mainTab === 'code' || mainTab === 'labels'
 
   return (
     <div
-      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-1 overflow-hidden rounded-3xl"
+      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-0 overflow-hidden rounded-3xl"
       data-neutral-shell={neutralShell ? 'true' : undefined}
     >
       <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-1">
@@ -422,7 +414,7 @@ export function ElementIdentityProjectDetailPage() {
                 role="tab"
                 aria-selected={mainTab === tab.id}
                 onClick={() => setMainTab(tab.id)}
-                className={`${tabBase} ${mainTab === tab.id ? tabActive : tabIdle}`}
+                className={eiTabPill(mainTab === tab.id)}
               >
                 {t(tab.labelKey)}
               </button>
@@ -510,15 +502,8 @@ export function ElementIdentityProjectDetailPage() {
                 listBody={
                   <>
                     {generalSectionDefs.map(([id, key]) => (
-                      <li
-                        key={id}
-                        className={[
-                          gl
-                            ? 'glass-card glass-card--static project-mgmt-list-row-card flex min-h-0 shrink-0 items-stretch gap-1.5'
-                            : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
-                          generalSection === id ? 'okan-project-list-row--active' : '',
-                        ].join(' ')}
-                      >
+                      <li key={id}>
+                        <div className={eiSplitListRowShell(generalSection === id)}>
                         <button
                           type="button"
                           onClick={() => {
@@ -526,16 +511,7 @@ export function ElementIdentityProjectDetailPage() {
                             scrollTop(rightGeneralRef)
                           }}
                           aria-current={generalSection === id ? 'true' : undefined}
-                          className={[
-                            'flex min-w-0 flex-1 items-stretch gap-2.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-cyan-400/50',
-                            gl ? 'rounded-md px-0.5 py-0.5 hover:bg-white/50 dark:hover:bg-white/8' : 'px-3 py-2',
-                            !gl && generalSection === id
-                              ? 'okan-project-list-row--active bg-sky-500/10 dark:bg-sky-400/10'
-                              : '',
-                            !gl && generalSection !== id ? 'hover:bg-white/50 dark:hover:bg-slate-900/35' : '',
-                          ]
-                            .filter(Boolean)
-                            .join(' ')}
+                          className="flex min-w-0 w-full flex-1 items-stretch gap-2.5 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
                         >
                           <span
                             className={
@@ -565,6 +541,7 @@ export function ElementIdentityProjectDetailPage() {
                             </p>
                           </div>
                         </button>
+                        </div>
                       </li>
                     ))}
                   </>
@@ -820,15 +797,8 @@ export function ElementIdentityProjectDetailPage() {
                     visibleTypes.map((et) => {
                       const bar = productSourceBar(et.category === 'superstructure' ? 'IFC' : 'MANUAL')
                       return (
-                        <li
-                          key={et.id}
-                          className={[
-                            gl
-                              ? 'glass-card glass-card--static project-mgmt-list-row-card flex min-h-0 shrink-0 items-stretch gap-1.5'
-                              : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
-                            selectedType?.id === et.id ? 'okan-project-list-row--active' : '',
-                          ].join(' ')}
-                        >
+                        <li key={et.id}>
+                          <div className={eiSplitListRowShell(selectedType?.id === et.id)}>
                           <button
                             type="button"
                             onClick={() => {
@@ -837,16 +807,7 @@ export function ElementIdentityProjectDetailPage() {
                               scrollTop(rightCodeRef)
                             }}
                             aria-current={selectedType?.id === et.id ? 'true' : undefined}
-                            className={[
-                              'flex min-w-0 flex-1 items-stretch gap-2.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-cyan-400/50',
-                              gl ? 'rounded-md px-0.5 py-0.5 hover:bg-white/50 dark:hover:bg-white/8' : 'px-3 py-2',
-                              !gl && selectedType?.id === et.id
-                                ? 'okan-project-list-row--active bg-sky-500/10 dark:bg-sky-400/10'
-                                : '',
-                              !gl && selectedType?.id !== et.id ? 'hover:bg-white/50 dark:hover:bg-slate-900/35' : '',
-                            ]
-                              .filter(Boolean)
-                              .join(' ')}
+                            className="flex min-w-0 w-full flex-1 items-stretch gap-2.5 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
                           >
                             <div className="flex min-w-0 flex-1 gap-2">
                               <span
@@ -889,6 +850,7 @@ export function ElementIdentityProjectDetailPage() {
                               </div>
                             </div>
                           </button>
+                          </div>
                         </li>
                       )
                     })
@@ -970,7 +932,7 @@ export function ElementIdentityProjectDetailPage() {
                                 setCodeSub(id)
                                 scrollTop(rightCodeRef)
                               }}
-                              className={`${tabBase} ${codeSub === id ? tabActive : tabIdle}`}
+                              className={eiTabPill(codeSub === id)}
                             >
                               {t(key)}
                             </button>
@@ -1281,15 +1243,8 @@ export function ElementIdentityProjectDetailPage() {
                     const previewLine = templateListPreviewMark(tm, activeFirm, activeProject, overrides)
                     const isActive = activeTemplate.id === tm.id
                     return (
-                      <li
-                        key={tm.id}
-                        className={[
-                          gl
-                            ? 'glass-card glass-card--static project-mgmt-list-row-card flex min-h-0 shrink-0 items-stretch gap-1.5'
-                            : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
-                          isActive ? 'okan-project-list-row--active' : '',
-                        ].join(' ')}
-                      >
+                      <li key={tm.id}>
+                        <div className={eiSplitListRowShell(isActive)}>
                         <button
                           type="button"
                           onClick={() => {
@@ -1298,16 +1253,7 @@ export function ElementIdentityProjectDetailPage() {
                             scrollTop(rightLabelsRef)
                           }}
                           aria-current={isActive ? 'true' : undefined}
-                          className={[
-                            'flex min-w-0 flex-1 flex-col gap-1.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-cyan-400/50',
-                            gl ? 'rounded-md px-0.5 py-0.5 hover:bg-white/50 dark:hover:bg-white/8' : 'px-3 py-2',
-                            !gl && isActive
-                              ? 'okan-project-list-row--active bg-sky-500/10 dark:bg-sky-400/10'
-                              : '',
-                            !gl && !isActive ? 'hover:bg-white/50 dark:hover:bg-slate-900/35' : '',
-                          ]
-                            .filter(Boolean)
-                            .join(' ')}
+                          className="flex min-w-0 w-full flex-1 flex-col gap-1.5 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
                         >
                           <div className="flex items-start gap-2.5">
                             <span
@@ -1358,6 +1304,7 @@ export function ElementIdentityProjectDetailPage() {
                             {previewLine}
                           </p>
                         </button>
+                        </div>
                       </li>
                     )
                   })
@@ -1428,7 +1375,7 @@ export function ElementIdentityProjectDetailPage() {
                               setLabelSub(id)
                               scrollTop(rightLabelsRef)
                             }}
-                            className={`${tabBase} ${labelSub === id ? tabActive : tabIdle}`}
+                            className={eiTabPill(labelSub === id)}
                           >
                             {t(key)}
                           </button>

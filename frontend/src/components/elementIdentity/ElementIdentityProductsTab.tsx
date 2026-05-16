@@ -1,4 +1,4 @@
-import { BookMarked, Package, Plus, Upload } from 'lucide-react'
+import { ArrowRightLeft, BookMarked, Package, Plus, Upload } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ALL_ELEMENT_TYPES } from '../../elementIdentity/catalog/allElementTypes'
 import { TYPOLOGIES_BY_ID } from '../../elementIdentity/catalog/typologies'
@@ -16,10 +16,15 @@ import { ProductDrawingsTab } from './ProductDrawingsTab'
 import { ProductMaterialsTab } from './ProductMaterialsTab'
 import { ProductRebarTab } from './ProductRebarTab'
 import { AddFromStandardCatalogDialog } from './AddFromStandardCatalogDialog'
+import { ProductTransferDialog } from './ProductTransferDialog'
+import { ProductTransferHistoryPanel } from './ProductTransferHistoryPanel'
+import type { ProductTransferLogEntry } from './productTransferTypes'
 import { useElementIdentity } from './elementIdentityContextValue'
+import { projectManagementCardsMock } from '../../data/projectManagementCardsMock'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import { ElementIdentitySplitListPaginationFooter } from './ElementIdentitySplitListPaginationFooter'
 import { useElementIdentitySplitListPagination } from './useElementIdentitySplitListPagination'
+import { eiSplitListRowShell, eiTabPill } from './elementIdentitySplitUi'
 
 type ProductDetailTab = 'general' | 'note' | 'dimensions' | 'materials' | 'rebar' | 'drawings' | 'activity'
 
@@ -65,6 +70,15 @@ export function ElementIdentityProductsTab({
   const { mode } = useThemeMode()
   const gl = mode === 'light'
   const { projectProducts, removeProjectProduct, updateProjectProduct } = useElementIdentity()
+
+  const [transferOpen, setTransferOpen] = useState(false)
+  const [transferLogs, setTransferLogs] = useState<ProductTransferLogEntry[]>([])
+
+  const sourceProjectLabel = useMemo(() => {
+    const card = projectManagementCardsMock.find((c) => c.id === projectId)
+    if (card) return `${card.code} · ${card.name}`
+    return projectId
+  }, [projectId])
 
   const prd = useMemo(
     () => projectProducts.filter((p) => p.projectId === projectId && p.status === 'active'),
@@ -164,17 +178,12 @@ export function ElementIdentityProductsTab({
     [locale],
   )
 
-  const headerBtnCls = gl
+  const headerBtnPrimary = gl
+    ? ['glass-btn', 'primary', 'small', 'inline-flex', 'items-center', 'gap-1.5', 'shrink-0'].join(' ')
+    : 'inline-flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800 dark:border-slate-600 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'
+  const headerBtnSecondary = gl
     ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5', 'shrink-0'].join(' ')
     : eiSplitHeaderButtonPassive
-  const tabBase =
-    'shrink-0 rounded-full border px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 dark:focus-visible:ring-cyan-400/60'
-  const tabActive = gl
-    ? 'border-black/18 bg-white/55 text-black shadow-[inset_0_1px_0_rgb(255_255_255/0.65)] dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50 dark:shadow-none'
-    : 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
-  const tabIdle = gl
-    ? 'border-black/10 bg-white/35 text-black/70 hover:border-black/16 hover:bg-white/50 hover:text-black dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
-    : 'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
   const filterLabelCls = gl
     ? 'text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80'
     : 'text-[11px] font-medium text-slate-600 dark:text-slate-300'
@@ -209,17 +218,27 @@ export function ElementIdentityProductsTab({
       }
       headerActions={
         <>
-          <button type="button" onClick={onOpenNewProduct} className={headerBtnCls}>
+          <button type="button" onClick={onOpenNewProduct} className={headerBtnPrimary}>
             <Plus className="size-3.5 shrink-0" aria-hidden />
             {t('elementIdentity.products.new')}
           </button>
-          <button type="button" onClick={onOpenBulkImport} className={headerBtnCls}>
+          <button type="button" onClick={onOpenBulkImport} className={headerBtnSecondary}>
             <Upload className="size-3.5 shrink-0" aria-hidden />
             {t('elementIdentity.products.bulk')}
           </button>
-          <button type="button" onClick={() => setCatalogOpen(true)} className={headerBtnCls}>
+          <button type="button" onClick={() => setCatalogOpen(true)} className={headerBtnSecondary}>
             <BookMarked className="size-3.5 shrink-0" aria-hidden />
             {t('elementIdentity.products.addFromCatalog')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setTransferOpen(true)}
+            disabled={prd.length === 0}
+            className={headerBtnSecondary}
+            title={prd.length === 0 ? t('elementIdentity.transfer.emptyDisabled') : undefined}
+          >
+            <ArrowRightLeft className="size-3.5 shrink-0" aria-hidden />
+            {t('elementIdentity.transfer.open')}
           </button>
         </>
       }
@@ -227,6 +246,8 @@ export function ElementIdentityProductsTab({
       onFilterOpenChange={setFilterOpen}
       filterAside={
         <div>
+          <ProductTransferHistoryPanel logs={transferLogs} glass={gl} />
+          <div className={transferLogs.length > 0 ? 'mt-3' : undefined}>
           <ElementIdentityFilterSheetHeader
             glass={gl}
             title={t('elementIdentity.detail.productFiltersTitle')}
@@ -283,6 +304,7 @@ export function ElementIdentityProductsTab({
               {t('elementIdentity.reset')}
             </button>
           </div>
+          </div>
         </div>
       }
                 listBody={
@@ -299,16 +321,10 @@ export function ElementIdentityProductsTab({
                   ) : (
                     visibleProducts.map((p) => {
             const bar = productSourceBar(p.source)
+            const rowActive = selectedId === p.id
             return (
-              <li
-                key={p.id}
-                className={[
-                  gl
-                    ? 'glass-card glass-card--static project-mgmt-list-row-card flex min-h-0 shrink-0 items-stretch gap-1.5'
-                    : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
-                  selectedId === p.id ? 'okan-project-list-row--active' : '',
-                ].join(' ')}
-              >
+              <li key={p.id}>
+                <div className={eiSplitListRowShell(rowActive)}>
                 <button
                   type="button"
                   onClick={() => {
@@ -316,17 +332,8 @@ export function ElementIdentityProductsTab({
                     setDetailTab('general')
                     scrollPanelTop()
                   }}
-                  aria-current={selectedId === p.id ? 'true' : undefined}
-                  className={[
-                    'flex min-w-0 flex-1 items-stretch gap-2.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-cyan-400/50',
-                    gl ? 'rounded-md px-0.5 py-0.5 hover:bg-white/50 dark:hover:bg-white/8' : 'px-3 py-2',
-                    !gl && selectedId === p.id
-                      ? 'okan-project-list-row--active bg-sky-500/10 dark:bg-sky-400/10'
-                      : '',
-                    !gl && selectedId !== p.id ? 'hover:bg-white/50 dark:hover:bg-slate-900/35' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
+                  aria-current={rowActive ? 'true' : undefined}
+                  className="flex min-w-0 w-full flex-1 items-stretch gap-2.5 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
                 >
                   <div className="flex min-w-0 flex-1 gap-2">
                     <span
@@ -381,6 +388,7 @@ export function ElementIdentityProductsTab({
                     </span>
                   </div>
                 </button>
+                </div>
               </li>
             )
           })
@@ -426,13 +434,7 @@ export function ElementIdentityProductsTab({
         <div className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
           {selected ? (
             <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3 overflow-hidden sm:gap-4">
-              <header
-                className={
-                  gl
-                    ? 'shrink-0 border-b border-black/12 pb-3 text-left dark:border-white/10'
-                    : 'shrink-0 border-b border-slate-200/25 pb-3 text-left dark:border-white/10'
-                }
-              >
+              <header className="shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10">
                 <p
                   className={
                     gl
@@ -461,7 +463,8 @@ export function ElementIdentityProductsTab({
                   {selected.name}
                 </p>
               </header>
-              <div className="flex shrink-0 gap-1 overflow-x-auto" role="tablist" aria-label={t('elementIdentity.detail.tabProducts')}>
+              <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-3">
+                <div className="flex max-w-full gap-1 overflow-x-auto" role="tablist" aria-label={t('elementIdentity.detail.tabProducts')}>
                   {(
                     [
                       ['general', 'elementIdentity.detail.productSubGeneral'],
@@ -482,11 +485,12 @@ export function ElementIdentityProductsTab({
                         setDetailTab(id)
                         scrollPanelTop()
                       }}
-                      className={`${tabBase} ${detailTab === id ? tabActive : tabIdle}`}
+                      className={eiTabPill(detailTab === id)}
                     >
                       {t(key)}
                     </button>
                   ))}
+                </div>
               </div>
               <div
                 role="tabpanel"
@@ -703,6 +707,17 @@ export function ElementIdentityProductsTab({
       open={catalogOpen}
       projectId={projectId}
       onClose={() => setCatalogOpen(false)}
+    />
+    <ProductTransferDialog
+      open={transferOpen}
+      sourceProjectId={projectId}
+      sourceProjectLabel={sourceProjectLabel}
+      activeProducts={prd}
+      onClose={() => setTransferOpen(false)}
+      onTransferred={(log) => {
+        setTransferLogs((prev) => [log, ...prev])
+        setSelectedId((cur) => (cur && log.productIds.includes(cur) ? null : cur))
+      }}
     />
     </>
   )
