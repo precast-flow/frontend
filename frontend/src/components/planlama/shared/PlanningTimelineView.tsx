@@ -9,7 +9,9 @@ import {
   FileText,
   Filter,
   GripVertical,
+  Layers,
   ListOrdered,
+  Package,
   PauseCircle,
   PlayCircle,
   History,
@@ -58,6 +60,7 @@ import {
   isoFromSlotVisibleForMode,
   itemsOverlapSlotRange,
   mondayOfWeekUtc,
+  planItemsOnSameVehicleTrip,
   snapTimelineSlot,
   spanSlotsFromDurationForMode,
   type PlanItem,
@@ -65,8 +68,21 @@ import {
   type PlanStatusKey,
 } from '../../../data/planningDesignMock'
 import { projectManagementByCode } from '../../../data/projectManagementCardsMock'
+import {
+  DISPATCH_VEHICLE_TONES,
+  type DispatchVehicleType,
+} from '../../../data/dispatchVehicleStyles'
 
 const SHIFT_SHORT = ['S', 'Ö', 'G'] as const
+
+type TimelineResourceRow = {
+  moldId: string
+  name: string
+  lineHint: string
+  hatNo: number
+  maxConcurrent: number
+  vehicleType?: DispatchVehicleType
+}
 
 const MAX_PLAN_CHECKPOINTS = 48
 
@@ -240,16 +256,25 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   const unitConfig = isGeneral && gp ? getUnitConfig(gp.activeUnit) : null
   const timelineUsesShifts =
     !isGeneral || !unitConfig ? true : unitConfig.timelineUsesShifts !== false
+  const isDispatchTimeline =
+    variant === 'dispatch' || (isGeneral && gp?.activeUnit === 'dispatch')
   const slotsPerDay = PLANNING_SHIFTS.length
-  const PLANNING_RESOURCES = isGeneral && gp
+  const PLANNING_RESOURCES: TimelineResourceRow[] = isGeneral && gp
     ? resourcesForUnit(gp.activeUnit).map((r) => ({
         moldId: r.resourceId,
         name: r.name,
         lineHint: r.lineHint,
         hatNo: r.hatNo,
         maxConcurrent: r.maxConcurrent,
+        vehicleType: r.vehicleType,
       }))
-    : PLANNING_MOLDS
+    : PLANNING_MOLDS.map((m) => ({
+        moldId: m.moldId,
+        name: m.name,
+        lineHint: m.lineHint,
+        hatNo: m.hatNo,
+        maxConcurrent: m.maxConcurrent,
+      }))
 
   const canEdit = isGeneral && gp ? access.canEditUnit(gp.activeUnit) : true
 
@@ -340,7 +365,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
     ? unitConfig.statusOptions
     : (Object.keys(STATUS_META) as PlanStatusKey[])
   const [leftDrawerOpen, setLeftDrawerOpen] = useState(false)
-  const [leftDrawerTab, setLeftDrawerTab] = useState<'filters' | 'queue'>('filters')
+  const [leftDrawerTab, setLeftDrawerTab] = useState<'filters' | 'queue' | 'truckLoad'>('filters')
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false)
 
   const [dragId, setDragId] = useState<string | null>(null)
@@ -359,6 +384,11 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   const contextShiftAnchorRef = useRef<HTMLDivElement>(null)
   const shiftCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [assignOpen, setAssignOpen] = useState<{ moldId: string; slot: number } | null>(null)
+  const [truckLoadOpen, setTruckLoadOpen] = useState<{ moldId: string; slotStart: number } | null>(
+    null,
+  )
+  /** Sevkiyat: false → özet kart + modal; true → klasik görünüm (ürün başına ayrı kart). */
+  const [dispatchExpandedTimeline, setDispatchExpandedTimeline] = useState(false)
   const [nonProdModal, setNonProdModal] = useState<{ moldId: string; slot: number; itemId: string } | null>(
     null,
   )
@@ -373,6 +403,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
 
   useEffect(() => {
     setProjectFilter([])
+    setDispatchExpandedTimeline(false)
   }, [gp?.activeUnit])
 
   const projectFilterOptions = useMemo(() => {
@@ -556,14 +587,31 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
     return list
   }, [items, search, moldFilter, statusFilter, projectFilter])
 
-  /** maxConcurrent=1 kuralında satır yüksekliği sabit tutulur (kartlar tek hizada). */
+  /** Sevkiyat: kamyon + gün hücresindeki ürün grupları (sayfa uzamasın diye tek kart). */
+  const dispatchTripGroups = useMemo(() => {
+    const groups = new Map<string, PlanItem[]>()
+    if (!isDispatchTimeline) return groups
+
+    const assigned = new Set<string>()
+    for (const it of filteredItems) {
+      if (assigned.has(it.id)) continue
+      const peers = planItemsOnSameVehicleTrip(items, it, slotIndexForItem, timelineUsesShifts)
+      peers.forEach((p) => assigned.add(p.id))
+      const slotStart = slotIndexForItem(it.startAt)
+      if (slotStart < 0) continue
+      const snapped = snapTimelineSlot(slotStart, timelineUsesShifts)
+      groups.set(`${it.moldId}:${snapped}`, peers)
+    }
+    return groups
+  }, [filteredItems, isDispatchTimeline, items, slotIndexForItem, timelineUsesShifts])
+
   const moldRowHeights = useMemo(() => {
     const heights: Record<string, number> = {}
     for (const mold of PLANNING_RESOURCES) {
       heights[mold.moldId] = BODY_ROW_BASE_MIN
     }
     return heights
-  }, [])
+  }, [PLANNING_RESOURCES])
 
   const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), [])
 
@@ -861,6 +909,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
         setHistoryDrawerOpen(false)
         setSelectedId(null)
         setAssignOpen(null)
+        setTruckLoadOpen(null)
         setDayDetailDate(null)
         setDropTarget(null)
         setDragId(null)
@@ -960,6 +1009,48 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
 
   const selected = items.find((i) => i.id === selectedId) ?? null
 
+  const selectedTruckLoad = useMemo(() => {
+    if (!selected || !isDispatchTimeline) return []
+    return planItemsOnSameVehicleTrip(items, selected, slotIndexForItem, timelineUsesShifts)
+  }, [items, isDispatchTimeline, selected, slotIndexForItem, timelineUsesShifts])
+
+  const assignTruckLoad = useMemo(() => {
+    if (!assignOpen || !isDispatchTimeline) return []
+    const snapped = snapTimelineSlot(assignOpen.slot, timelineUsesShifts)
+    return dispatchTripGroups.get(`${assignOpen.moldId}:${snapped}`) ?? []
+  }, [assignOpen, dispatchTripGroups, isDispatchTimeline, timelineUsesShifts])
+
+  const truckLoadOpenItems = useMemo(() => {
+    if (!truckLoadOpen) return []
+    return dispatchTripGroups.get(`${truckLoadOpen.moldId}:${truckLoadOpen.slotStart}`) ?? []
+  }, [dispatchTripGroups, truckLoadOpen])
+
+  const truckLoadDrawerTone = useMemo(() => {
+    if (!truckLoadOpen) return null
+    const mold = PLANNING_RESOURCES.find((m) => m.moldId === truckLoadOpen.moldId)
+    return mold?.vehicleType ? DISPATCH_VEHICLE_TONES[mold.vehicleType] : null
+  }, [PLANNING_RESOURCES, truckLoadOpen])
+
+  const openTruckLoadDrawer = useCallback(
+    (payload: { moldId: string; slotStart: number }) => {
+      setTruckLoadOpen(payload)
+      setLeftDrawerTab('truckLoad')
+      setLeftDrawerOpen(true)
+    },
+    [],
+  )
+
+  const closeLeftDrawer = useCallback(() => {
+    setLeftDrawerOpen(false)
+    setTruckLoadOpen(null)
+  }, [])
+
+  const openLeftDrawerTab = useCallback((tab: 'filters' | 'queue') => {
+    setTruckLoadOpen(null)
+    setLeftDrawerTab(tab)
+    setLeftDrawerOpen(true)
+  }, [])
+
   const rightInsightOpen =
     historyDrawerOpen || Boolean(dayDetailDate && dayDetailData) || Boolean(selected)
 
@@ -1047,11 +1138,8 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                   <button
                     type="button"
                     onClick={() => {
-                      if (leftDrawerOpen && leftDrawerTab === 'filters') setLeftDrawerOpen(false)
-                      else {
-                        setLeftDrawerTab('filters')
-                        setLeftDrawerOpen(true)
-                      }
+                      if (leftDrawerOpen && leftDrawerTab === 'filters') closeLeftDrawer()
+                      else openLeftDrawerTab('filters')
                     }}
                     aria-expanded={leftDrawerOpen && leftDrawerTab === 'filters'}
                     aria-controls="gm-planning-left-drawer"
@@ -1083,11 +1171,8 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                   <button
                     type="button"
                     onClick={() => {
-                      if (leftDrawerOpen && leftDrawerTab === 'queue') setLeftDrawerOpen(false)
-                      else {
-                        setLeftDrawerTab('queue')
-                        setLeftDrawerOpen(true)
-                      }
+                      if (leftDrawerOpen && leftDrawerTab === 'queue') closeLeftDrawer()
+                      else openLeftDrawerTab('queue')
                     }}
                     aria-expanded={leftDrawerOpen && leftDrawerTab === 'queue'}
                     aria-controls="gm-planning-left-drawer"
@@ -1102,6 +1187,56 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                     <span className="hidden sm:inline">Bekleyen iş</span>
                     <span className="sm:hidden">Kuyruk</span>
                   </button>
+                  ) : null}
+                  {isDispatchTimeline ? (
+                    <button
+                      type="button"
+                      onClick={() => setDispatchExpandedTimeline((v) => !v)}
+                      aria-pressed={dispatchExpandedTimeline}
+                      title={
+                        dispatchExpandedTimeline
+                          ? t('dispatchPlanning.timelineView.compactHint')
+                          : t('dispatchPlanning.timelineView.expandedHint')
+                      }
+                      className={[
+                        'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
+                        dispatchExpandedTimeline
+                          ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
+                          : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
+                      ].join(' ')}
+                    >
+                      <Layers className="size-3.5 shrink-0" aria-hidden />
+                      <span className="hidden sm:inline">
+                        {dispatchExpandedTimeline
+                          ? t('dispatchPlanning.timelineView.compact')
+                          : t('dispatchPlanning.timelineView.expanded')}
+                      </span>
+                    </button>
+                  ) : null}
+                  {isDispatchTimeline && !dispatchExpandedTimeline ? (
+                    <div
+                      className="hidden items-center gap-2 border-l border-slate-200/70 pl-2 dark:border-slate-700/70 lg:flex"
+                      aria-label={t('dispatchPlanning.vehicleType.legendAria')}
+                    >
+                      {(['tir', 'kamyon', 'lowbed'] as const).map((vt) => (
+                        <span
+                          key={vt}
+                          className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-600 dark:text-slate-300"
+                        >
+                          <span
+                            className={`size-2.5 shrink-0 rounded-sm ${
+                              vt === 'tir'
+                                ? 'bg-sky-500'
+                                : vt === 'kamyon'
+                                  ? 'bg-amber-500'
+                                  : 'bg-violet-500'
+                            }`}
+                            aria-hidden
+                          />
+                          {t(`dispatchPlanning.vehicleType.${vt}`)}
+                        </span>
+                      ))}
+                    </div>
                   ) : null}
                 </div>
                 <div className="flex shrink-0 items-center justify-center gap-1.5 md:gap-2">
@@ -1226,17 +1361,28 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                   <div className="mb-3 flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-                        {leftDrawerTab === 'filters' ? 'Plan filtreleri' : 'Bekleyen iş'}
+                        {leftDrawerTab === 'filters'
+                          ? 'Plan filtreleri'
+                          : leftDrawerTab === 'queue'
+                            ? 'Bekleyen iş'
+                            : truckLoadOpen
+                              ? t('dispatchPlanning.truckLoad.title', {
+                                  vehicle: truckLoadOpen.moldId,
+                                  count: String(truckLoadOpenItems.length),
+                                })
+                              : t('dispatchPlanning.truckLoad.viewProducts')}
                       </h4>
                       <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
                         {leftDrawerTab === 'filters'
                           ? filtersDrawerHint
-                          : 'Sürükleyip takvime bırakın · Esc ile kapat'}
+                          : leftDrawerTab === 'queue'
+                            ? 'Sürükleyip takvime bırakın · Esc ile kapat'
+                            : t('dispatchPlanning.truckLoad.hint')}
                       </p>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setLeftDrawerOpen(false)}
+                      onClick={closeLeftDrawer}
                       className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                       aria-label="Paneli kapat"
                     >
@@ -1375,7 +1521,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                         </label>
                       </div>
                     </div>
-                  ) : (
+                  ) : leftDrawerTab === 'queue' ? (
                     <ul
                       id="gm-planning-queue-list"
                       className="divide-y divide-slate-200/50 dark:divide-slate-700/50"
@@ -1404,6 +1550,72 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                         </li>
                       ))}
                     </ul>
+                  ) : (
+                    <ol
+                      id="gm-planning-truck-load-list"
+                      className="list-none divide-y divide-slate-200/50 p-0 dark:divide-slate-700/50"
+                      role="list"
+                      aria-label={t('dispatchPlanning.truckLoad.viewProducts')}
+                    >
+                      {truckLoadOpenItems.map((loadItem, idx) => {
+                        const meta = [
+                          loadItem.orderId,
+                          STATUS_META[loadItem.status].label,
+                          loadItem.projectId,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')
+                        return (
+                          <li key={loadItem.id}>
+                            <button
+                              type="button"
+                              className={[
+                                'group w-full border-0 bg-transparent py-2.5 pr-0.5 text-left transition',
+                                'hover:bg-slate-50/90 dark:hover:bg-slate-800/45',
+                                truckLoadDrawerTone?.rowAccent ??
+                                  'border-l-2 border-l-slate-200/70 pl-2.5 dark:border-l-slate-600',
+                                truckLoadDrawerTone ? 'pl-2' : '',
+                              ].join(' ')}
+                              aria-label={t('dispatchPlanning.truckLoad.position', {
+                                index: String(idx + 1),
+                              })}
+                              onClick={() => {
+                                closeLeftDrawer()
+                                setDayDetailDate(null)
+                                setHistoryDrawerOpen(false)
+                                setSelectedId(loadItem.id)
+                              }}
+                            >
+                              <div className="flex items-start gap-2">
+                                <span
+                                  className={`mt-px w-4 shrink-0 tabular-nums text-[10px] font-semibold ${
+                                    truckLoadDrawerTone?.icon ?? 'text-slate-400 dark:text-slate-500'
+                                  }`}
+                                  aria-hidden
+                                >
+                                  {idx + 1}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <p
+                                    className={`truncate text-xs font-medium leading-snug ${
+                                      truckLoadDrawerTone?.title ??
+                                      'text-slate-900 dark:text-slate-50'
+                                    }`}
+                                  >
+                                    {loadItem.title}
+                                  </p>
+                                  {meta ? (
+                                    <p className="mt-0.5 truncate text-[11px] leading-snug text-slate-500 dark:text-slate-400">
+                                      {meta}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </button>
+                          </li>
+                        )
+                      })}
+                    </ol>
                   )}
                 </aside>
 
@@ -1683,11 +1895,35 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                               </div>
                             </dl>
                           </div>
+                          {isDispatchTimeline && selectedTruckLoad.length > 1 ? (
+                            <div className="rounded-lg border border-sky-200/70 bg-sky-50/40 p-3 dark:border-sky-800/50 dark:bg-sky-950/25">
+                              <button
+                                type="button"
+                                className="w-full rounded-lg border border-sky-400/60 bg-white/90 px-3 py-2 text-sm font-semibold text-sky-900 shadow-sm transition hover:bg-sky-100 dark:border-sky-500/50 dark:bg-sky-900/50 dark:text-sky-50 dark:hover:bg-sky-900"
+                                onClick={() => {
+                                  const slotStart = snapTimelineSlot(
+                                    slotIndexForItem(selected.startAt),
+                                    timelineUsesShifts,
+                                  )
+                                  openTruckLoadDrawer({
+                                    moldId: selected.moldId,
+                                    slotStart,
+                                  })
+                                }}
+                              >
+                                {t('dispatchPlanning.truckLoad.viewProducts')} ({selectedTruckLoad.length})
+                              </button>
+                            </div>
+                          ) : null}
                           <div className="rounded-lg border border-slate-200/70 p-3 dark:border-slate-700/60">
-                            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Kalıp & beton</h3>
+                            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                              {isDispatchTimeline ? t('dispatchPlanning.truckLoad.resourceSection') : 'Kalıp & beton'}
+                            </h3>
                             <dl className="mt-2 space-y-1 text-slate-800 dark:text-slate-200">
                               <div className="flex justify-between gap-2">
-                                <dt className="text-slate-500 dark:text-slate-400">Kalıp</dt>
+                                <dt className="text-slate-500 dark:text-slate-400">
+                                  {isDispatchTimeline ? resourceColumnLabel : 'Kalıp'}
+                                </dt>
                                 <dd>{selected.moldId}</dd>
                               </div>
                               <div className="flex justify-between gap-2">
@@ -1832,6 +2068,10 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
               const rowMinH = moldRowHeights[mold.moldId] ?? BODY_ROW_BASE_MIN
               const prevMold = PLANNING_RESOURCES[moldIdx - 1]
               const isHatStart = !prevMold || prevMold.hatNo !== mold.hatNo
+              const rowVehicleTone =
+                isDispatchTimeline && !dispatchExpandedTimeline && mold.vehicleType
+                  ? DISPATCH_VEHICLE_TONES[mold.vehicleType]
+                  : null
 
               return (
                 <div
@@ -1841,7 +2081,9 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                   }`}
                 >
                   <div
-                    className="gm-planning-sticky-mold-label sticky left-0 z-[60] flex shrink-0 flex-col justify-start border-r border-slate-200/70 px-2 py-2 text-xs dark:border-slate-600/50"
+                    className={`gm-planning-sticky-mold-label sticky left-0 z-[60] flex shrink-0 flex-col justify-start border-r border-slate-200/70 px-2 py-2 text-xs dark:border-slate-600/50 ${
+                      rowVehicleTone?.rowAccent ?? ''
+                    }`}
                     style={{ width: MOLD_COL_PX, minWidth: MOLD_COL_PX, minHeight: rowMinH }}
                   >
                     {isHatStart ? (
@@ -1963,22 +2205,53 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                       const isDragSource = dragId === it.id
                       const passThroughDrag =
                         dragId !== null && (dragId.startsWith('queue:') || !isDragSource)
+                      const slotSnapped = snapTimelineSlot(p.slotStart, timelineUsesShifts)
+                      const tripGroup = isDispatchTimeline
+                        ? dispatchTripGroups.get(`${it.moldId}:${slotSnapped}`)
+                        : null
+                      const tripCount = tripGroup?.length ?? 1
+                      const useCompactDispatch =
+                        isDispatchTimeline && !dispatchExpandedTimeline
+                      if (useCompactDispatch && tripGroup && tripGroup[0]?.id !== it.id) {
+                        return null
+                      }
+                      const isMultiTrip = Boolean(useCompactDispatch && tripCount > 1)
+                      const summaryTone =
+                        isMultiTrip && mold.vehicleType
+                          ? DISPATCH_VEHICLE_TONES[mold.vehicleType]
+                          : null
+                      const tripIndex = tripGroup?.findIndex((x) => x.id === it.id) ?? 0
+                      const cardZIndex =
+                        isDispatchTimeline && dispatchExpandedTimeline && tripCount > 1
+                          ? 20 + tripIndex
+                          : 20
                       return (
                         <div
                           key={it.id}
-                          className={`relative z-20 flex h-full min-h-0 flex-col rounded-xl border border-slate-200/70 ${st.borderClass} border-l-4 ${st.bgClass} shadow-neo-out-sm dark:border-slate-600/45 ${
+                          className={`relative flex h-full min-h-0 flex-col rounded-xl border border-slate-200/70 ${
+                            summaryTone
+                              ? summaryTone.card
+                              : `${st.borderClass} border-l-4 ${st.bgClass}`
+                          } shadow-neo-out-sm dark:border-slate-600/45 ${
                             cap ? 'ring-2 ring-red-500/70' : ''
                           } ${passThroughDrag ? 'pointer-events-none' : 'pointer-events-auto'}`}
                           style={{
                             gridColumn: `${p.slotStart + 1} / span ${p.span}`,
-                            // Kartların birbirini ikinci grid satırına itmesini engelle.
                             gridRow: '1 / 2',
-                            marginTop: 0,
+                            zIndex: cardZIndex,
                             height: `${CELL_ROW_HEIGHT_PX}px`,
                             minHeight: `${CELL_ROW_HEIGHT_PX}px`,
                           }}
-                          title={`${it.title} · ${it.durationHours} saat · öncelik ${it.priority}`}
+                          title={
+                            isMultiTrip
+                              ? t('dispatchPlanning.truckLoad.summaryTitle', {
+                                  count: String(tripCount),
+                                  vehicle: it.moldId,
+                                })
+                              : `${it.title} · ${it.durationHours} saat · öncelik ${it.priority}`
+                          }
                           onClick={(e) => {
+                            if (isMultiTrip) return
                             e.stopPropagation()
                             setDayDetailDate(null)
                             setHistoryDrawerOpen(false)
@@ -1994,8 +2267,9 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                               moldId: it.moldId,
                             })
                           }}
-                          draggable={canEdit}
+                          draggable={canEdit && !isMultiTrip}
                           onDragStart={(e) => {
+                            if (isMultiTrip) return
                             e.dataTransfer.setData('text/plain', it.id)
                             e.dataTransfer.setData('text/plan-item-id', it.id)
                             e.dataTransfer.effectAllowed = 'move'
@@ -2007,25 +2281,63 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                           }}
                         >
                           <div className="flex min-h-0 flex-1 items-stretch gap-0">
-                            {canEdit ? (
+                            {canEdit && !isMultiTrip ? (
                               <span className="flex w-5 shrink-0 cursor-grab items-center justify-center text-gray-400">
                                 <GripVertical className="h-4 w-4" />
                               </span>
                             ) : null}
-                            <div className="min-w-0 flex-1 py-1 pr-1">
-                              <div className="flex items-center gap-1">
-                                {statusIcon(it.status)}
-                                <span className="truncate text-[11px] font-semibold leading-tight text-gray-900 dark:text-gray-50">
-                                  {it.title}
-                                </span>
-                              </div>
-                              {it.orderId ? (
-                                <div className="truncate text-[10px] text-gray-500 dark:text-gray-400">
-                                  {it.orderId}
-                                </div>
-                              ) : null}
+                            <div
+                              className={`min-w-0 flex-1 ${isMultiTrip ? 'py-0.5' : 'py-1 pr-1'}`}
+                            >
+                              {isMultiTrip ? (
+                                <>
+                                  <div className="flex items-center gap-1">
+                                    <Package
+                                      className={`size-3.5 shrink-0 ${summaryTone?.icon ?? 'text-sky-700 dark:text-sky-300'}`}
+                                      aria-hidden
+                                    />
+                                    <span
+                                      className={`truncate text-[11px] font-semibold leading-tight ${summaryTone?.title ?? 'text-sky-950 dark:text-sky-50'}`}
+                                    >
+                                      {t('dispatchPlanning.truckLoad.summaryLabel', {
+                                        count: String(tripCount),
+                                      })}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className={`mt-0.5 w-full rounded-md border px-1.5 py-0.5 text-[10px] font-semibold shadow-sm transition ${
+                                      summaryTone?.button ??
+                                      'border-sky-400/60 bg-white/90 text-sky-800 hover:bg-sky-100 dark:border-sky-500/50 dark:bg-sky-900/60 dark:text-sky-100 dark:hover:bg-sky-900'
+                                    }`}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      openTruckLoadDrawer({
+                                        moldId: it.moldId,
+                                        slotStart: slotSnapped,
+                                      })
+                                    }}
+                                  >
+                                    {t('dispatchPlanning.truckLoad.viewProducts')}
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="flex items-center gap-1">
+                                    {statusIcon(it.status)}
+                                    <span className="truncate text-[11px] font-semibold leading-tight text-gray-900 dark:text-gray-50">
+                                      {it.title}
+                                    </span>
+                                  </div>
+                                  {it.orderId ? (
+                                    <div className="truncate text-[10px] text-gray-500 dark:text-gray-400">
+                                      {it.orderId}
+                                    </div>
+                                  ) : null}
+                                </>
+                              )}
                             </div>
-                            {canEdit ? (
+                            {canEdit && !isMultiTrip ? (
                               <div
                                 role="separator"
                                 aria-orientation="vertical"
@@ -2216,9 +2528,32 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
               Buraya ata (mock)
             </h3>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-              Kalıp {assignOpen.moldId}, slot {assignOpen.slot}.
+              {isDispatchTimeline
+                ? `${resourceColumnLabel} ${assignOpen.moldId}`
+                : `Kalıp ${assignOpen.moldId}, slot ${assignOpen.slot}.`}
             </p>
-            <ul className="mt-3 max-h-48 space-y-1 overflow-auto text-sm">
+            {isDispatchTimeline && assignTruckLoad.length > 0 ? (
+              <div className="mt-2 rounded-lg border border-sky-200/70 bg-sky-50/50 px-2 py-2 text-xs dark:border-sky-800/50 dark:bg-sky-950/30">
+                <p className="font-semibold text-sky-900 dark:text-sky-100">
+                  {t('dispatchPlanning.assign.existingLoad', {
+                    count: String(assignTruckLoad.length),
+                  })}
+                </p>
+                <ul className="mt-1 max-h-24 space-y-0.5 overflow-auto text-slate-700 dark:text-slate-200">
+                  {assignTruckLoad.map((loadItem) => (
+                    <li key={loadItem.id} className="truncate">
+                      {loadItem.title}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            <p className="mt-2 text-xs font-semibold text-gray-700 dark:text-gray-200">
+              {isDispatchTimeline
+                ? t('dispatchPlanning.assign.addProduct')
+                : 'Kuyruktan ata (mock)'}
+            </p>
+            <ul className="mt-2 max-h-48 space-y-1 overflow-auto text-sm">
               {queueItems.map((q) => (
                 <li key={q.queueId}>
                   <button

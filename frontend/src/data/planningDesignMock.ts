@@ -270,6 +270,27 @@ export function itemsOverlapSlotRange(
   return aStart < bEnd && bStart < aEnd
 }
 
+/** Sevkiyat: aynı kamyon (moldId) ve çakışan gün aralığındaki tüm ürünler — kamyonlar karışmaz. */
+export function planItemsOnSameVehicleTrip(
+  items: PlanItem[],
+  anchor: PlanItem,
+  slotIndexForItem: (startAt: string) => number,
+  timelineUsesShifts: boolean,
+): PlanItem[] {
+  const anchorStart = slotIndexForItem(anchor.startAt)
+  const anchorSpan = spanSlotsFromDurationForMode(anchor.durationHours, timelineUsesShifts)
+  if (anchorStart < 0) return [anchor]
+  return items
+    .filter((it) => {
+      if (it.moldId !== anchor.moldId) return false
+      const start = slotIndexForItem(it.startAt)
+      if (start < 0) return false
+      const span = spanSlotsFromDurationForMode(it.durationHours, timelineUsesShifts)
+      return itemsOverlapSlotRange(anchorStart, anchorSpan, start, span)
+    })
+    .sort((a, b) => a.title.localeCompare(b.title, 'tr'))
+}
+
 /**
  * Aynı kalıpta **aynı başlangıç slotuna** (aynı hücreye) düşen birden fazla iş için dikey katman.
  * Slot aralığı örtüşmesi (uzun süreli iş) ile katman vermiyoruz: aksi halde çok günlük tek iş,

@@ -358,7 +358,8 @@ export function ElementIdentityProductsTab({
                       <p
                         className={`text-[11px] font-semibold ${gl ? 'text-black/55 dark:text-white/60' : 'text-slate-500 dark:text-slate-400'}`}
                       >
-                        {t('elementIdentity.products.rev')}: {p.revision}
+                        {t('elementIdentity.products.quantity')}: {p.quantity ?? 1} · {t('elementIdentity.products.rev')}:{' '}
+                        {p.revision}
                       </p>
                     </div>
                   </div>
@@ -449,6 +450,8 @@ export function ElementIdentityProductsTab({
                   }
                 >
                   {selected.name}
+                  {' · '}
+                  {t('elementIdentity.products.quantity')}: {selected.quantity ?? 1}
                 </p>
               </header>
               <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-3">
@@ -533,6 +536,23 @@ export function ElementIdentityProductsTab({
                                 volumeM3: v === '' ? undefined : Math.max(0, Number(v) || 0),
                               })
                             }}
+                            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm tabular-nums dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
+                          />
+                        </label>
+                        <label className="block sm:col-span-2">
+                          <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                            {t('elementIdentity.products.quantity')}
+                          </span>
+                          <input
+                            type="number"
+                            min={1}
+                            step={1}
+                            value={selected.quantity ?? 1}
+                            onChange={(e) =>
+                              patchProduct({
+                                quantity: Math.max(1, Math.floor(Number(e.target.value) || 1)),
+                              })
+                            }
                             className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm tabular-nums dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
                           />
                         </label>

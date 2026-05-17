@@ -18,6 +18,7 @@ export function NewProductDialog({ open, projectId, onClose }: Props) {
   const defaultEt = ALL_ELEMENT_TYPES[0]?.id ?? ''
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
+  const [quantity, setQuantity] = useState('1')
   const [elementTypeId, setElementTypeId] = useState(defaultEt)
   const [typologyId, setTypologyId] = useState('')
 
@@ -31,6 +32,7 @@ export function NewProductDialog({ open, projectId, onClose }: Props) {
     if (!open) return
     setName('')
     setCode('')
+    setQuantity('1')
     setElementTypeId(defaultEt)
   }, [open, defaultEt])
 
@@ -45,7 +47,8 @@ export function NewProductDialog({ open, projectId, onClose }: Props) {
 
   if (!open) return null
 
-  const canSave = Boolean(code.trim() && name.trim() && elementTypeId && typologyId)
+  const parsedQuantity = Math.max(1, Math.floor(Number(quantity) || 0))
+  const canSave = Boolean(code.trim() && name.trim() && elementTypeId && typologyId && parsedQuantity >= 1)
 
   const footer = (
     <div className="flex justify-end gap-2">
@@ -69,9 +72,11 @@ export function NewProductDialog({ open, projectId, onClose }: Props) {
             source: 'MANUAL',
             revision: 1,
             status: 'active',
+            quantity: parsedQuantity,
           })
           setName('')
           setCode('')
+          setQuantity('1')
           setElementTypeId(defaultEt)
           setTypologyId('')
           onClose()
@@ -143,6 +148,19 @@ export function NewProductDialog({ open, projectId, onClose }: Props) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
+          />
+        </label>
+        <label>
+          <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            {t('elementIdentity.products.quantity')}
+          </span>
+          <input
+            type="number"
+            min={1}
+            step={1}
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm tabular-nums dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
           />
         </label>
       </div>

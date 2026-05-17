@@ -3,7 +3,11 @@
  * Tüm proje kartları için çok sayıda ürün + birim planı üretilir.
  */
 import { spanSlotsFromDurationForMode, type PlanStatusKey } from './planningDesignMock'
-import type { GeneralPlanItem, PlanningUnitKey } from './generalPlanningMock'
+import {
+  DISPATCH_MAX_PRODUCTS_PER_TRIP,
+  type GeneralPlanItem,
+  type PlanningUnitKey,
+} from './generalPlanningMock'
 import { projectManagementCardsMock } from './projectManagementCardsMock'
 
 const ANCHOR = new Date('2026-03-24T00:00:00.000Z')
@@ -212,11 +216,19 @@ function createShiftSlotAllocator(resourceIds: readonly string[]): ShiftSlotAllo
   }
 }
 
-/** Gün modu (sevkiyat): araç başına gün slotları çakışmasız. */
-function createDaySlotAllocator(resourceIds: readonly string[]): DaySlotAllocator {
+/**
+ * Sevkiyat: aynı kamyon + gün hücresine birden fazla ürün (karışmadan, yalnızca aynı araçta).
+ * Yeni sefer yalnızca kapasite dolduğunda veya boş gün/araç bulunduğunda açılır.
+ */
+function createDispatchLoadAllocator(
+  resourceIds: readonly string[],
+  maxProductsPerTrip: number,
+): DaySlotAllocator {
   const occupied = new Map<string, Set<number>>()
+  const tripLoad = new Map<string, number>()
 
   const slotSpan = (durationHours: number) => spanSlotsFromDurationForMode(durationHours, false)
+  const tripKey = (resourceId: string, dayStart: number) => `${resourceId}:${dayStart}`
 
   const canPlace = (resourceId: string, start: number, span: number): boolean => {
     const used = occupied.get(resourceId)
@@ -248,12 +260,23 @@ function createDaySlotAllocator(resourceIds: readonly string[]): DaySlotAllocato
       const maxStart = VISIBLE_DAYS * SHIFTS_PER_DAY - span
       if (maxStart < 0) return null
 
+      for (const [key, count] of tripLoad) {
+        if (count >= maxProductsPerTrip) continue
+        const colon = key.indexOf(':')
+        const resourceId = key.slice(0, colon)
+        const dayStart = Number(key.slice(colon + 1))
+        const dayOffset = Math.floor(dayStart / SHIFTS_PER_DAY)
+        tripLoad.set(key, count + 1)
+        return { resourceId, dayOffset, durationHours }
+      }
+
       for (let day = 0; day < VISIBLE_DAYS; day++) {
         const start = day * SHIFTS_PER_DAY
         if (start > maxStart) continue
         for (const resourceId of resourceIds) {
           if (!canPlace(resourceId, start, span)) continue
           mark(resourceId, start, span)
+          tripLoad.set(tripKey(resourceId, start), 1)
           return { resourceId, dayOffset: day, durationHours }
         }
       }
@@ -322,7 +345,10 @@ export function buildExpandedGeneralPlanItems(): GeneralPlanItem[] {
 
   const productionAlloc = createShiftSlotAllocator(PROD_MOLDS)
   const planningAlloc = createShiftSlotAllocator(PROD_MOLDS)
-  const dispatchAlloc = createDaySlotAllocator(DISPATCH_VEHICLES)
+  const dispatchAlloc = createDispatchLoadAllocator(
+    DISPATCH_VEHICLES,
+    DISPATCH_MAX_PRODUCTS_PER_TRIP,
+  )
   const assemblyAlloc = createShiftSlotAllocator(ASSEMBLY_LINES)
 
   PRODUCTS.forEach((p, pi) => {

@@ -18,6 +18,7 @@ export const DEFAULT_PROJECT_PRODUCTS: ProjectProduct[] = [
     createdAt: NOW,
     lifecycleStatus: 'tasarim',
     volumeM3: 12.4,
+    quantity: 24,
     definition: 'Dış cephe duvar paneli, C30.',
   },
   {
@@ -33,6 +34,7 @@ export const DEFAULT_PROJECT_PRODUCTS: ProjectProduct[] = [
     createdAt: NOW,
     lifecycleStatus: 'uretim',
     volumeM3: 24.7,
+    quantity: 12,
   },
   {
     id: 'prd-pm1-003',

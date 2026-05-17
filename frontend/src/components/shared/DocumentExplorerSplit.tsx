@@ -11,6 +11,14 @@ import {
 import '../proje/projectManagementGlassLight.css'
 import { eiSplitFilterToggleClass } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import { SplitListPaginationNav } from './SplitListPaginationNav'
+import { splitDetailHeaderClass, splitListCardClass, splitTabPill } from './splitModuleStyles'
+
+export type DocumentExplorerProjectContext = {
+  name: string
+  code: string
+  customer: string
+  owner: string
+}
 
 type DocDetailTabId = 'gecmis' | 'onizleme'
 
@@ -41,6 +49,8 @@ type Props = {
   listAriaLabel?: string
   /** Cam tema; verilmezse `useThemeMode` kullanılır */
   gl?: boolean
+  /** Proje detayında seçili proje bağlamı (CRM “Seçili müşteri” benzeri) */
+  projectContext?: DocumentExplorerProjectContext
 }
 
 export function DocumentExplorerSplit({
@@ -48,6 +58,7 @@ export function DocumentExplorerSplit({
   persistKey,
   listAriaLabel = 'Döküman listesi',
   gl: glProp,
+  projectContext,
 }: Props) {
   const { mode } = useThemeMode()
   const gl = glProp ?? mode === 'light'
@@ -221,6 +232,16 @@ export function DocumentExplorerSplit({
     setDocExtFilter('all')
     setDocPage(1)
   }
+
+  const projectHeader = projectContext ? (
+    <header className={splitDetailHeaderClass}>
+      <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">Seçili proje</p>
+      <h3 className="mt-1.5 text-xl font-semibold leading-tight text-black dark:text-white">{projectContext.name}</h3>
+      <p className="mt-1 text-sm leading-snug text-black/75 dark:text-white/80">
+        {projectContext.code} · {projectContext.customer} · Sorumlu {projectContext.owner}
+      </p>
+    </header>
+  ) : null
 
   if (documents.length === 0) {
     return (
@@ -436,25 +457,15 @@ export function DocumentExplorerSplit({
             aria-label={listAriaLabel}
           >
             {visibleDocuments.length > 0 ? (
-              visibleDocuments.map((doc) => (
+              visibleDocuments.map((doc) => {
+                const rowActive = selectedDoc?.id === doc.id
+                return (
                 <li
                   key={doc.id}
-                  className={[
-                    gl
-                      ? [
-                          'glass-card',
-                          'glass-card--static',
-                          'project-mgmt-list-row-card',
-                          'list-none',
-                          'flex',
-                          'min-h-0',
-                          'shrink-0',
-                          'items-stretch',
-                          'gap-1.5',
-                        ].join(' ')
-                      : 'list-none flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
-                    selectedDoc?.id === doc.id ? 'okan-project-list-row--active' : '',
-                  ].join(' ')}
+                  className={splitListCardClass(
+                    rowActive,
+                    'list-none flex min-h-0 shrink-0 items-stretch gap-1.5 px-2 py-1.5',
+                  )}
                 >
                   <button
                     type="button"
@@ -462,8 +473,8 @@ export function DocumentExplorerSplit({
                       setSelectedDocId(doc.id)
                       setDocDetailTab('gecmis')
                     }}
-                    aria-current={selectedDoc?.id === doc.id ? 'true' : undefined}
-                    className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/8"
+                    aria-current={rowActive ? 'true' : undefined}
+                    className="min-w-0 flex-1 rounded-md px-0.5 py-0.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40"
                   >
                     <span className="flex items-start gap-2">
                       <span
@@ -506,7 +517,8 @@ export function DocumentExplorerSplit({
                     <span className="text-[10px] leading-tight text-black/55 dark:text-white/60">Rev {doc.revision}</span>
                   </div>
                 </li>
-              ))
+                )
+              })
             ) : (
               <li
                 className={
@@ -600,43 +612,23 @@ export function DocumentExplorerSplit({
         {selectedDoc ? (
           <div key={selectedDocId} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
             <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 lg:max-w-3xl">
-              <header
-                className={
-                  gl
-                    ? 'shrink-0 border-b border-black/12 pb-3 text-center dark:border-white/10'
-                    : 'shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10'
-                }
-              >
-                <p className={infoSectionTitle}>Seçili döküman</p>
-                <h3
-                  className={
-                    gl
-                      ? 'mt-1.5 text-xl font-semibold leading-tight text-black dark:text-white'
-                      : 'mt-1.5 text-sm font-semibold text-slate-900 dark:text-slate-50'
-                  }
-                >
-                  {selectedDoc.name}
-                </h3>
-                <p
-                  className={
-                    gl
-                      ? 'mt-1 text-sm leading-snug text-black/75 dark:text-white/80'
-                      : 'mt-0.5 text-xs text-slate-500 dark:text-slate-400'
-                  }
-                >
+              {projectHeader}
+              <header className={splitDetailHeaderClass}>
+                <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
+                  Seçili döküman
+                </p>
+                <h3 className="mt-1.5 text-xl font-semibold leading-tight text-black dark:text-white">{selectedDoc.name}</h3>
+                <p className="mt-1 text-sm leading-snug text-black/75 dark:text-white/80">
                   Rev {selectedDoc.revision} · {selectedDoc.uploadedBy}
                 </p>
               </header>
 
-              <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-0.5">
+              <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-3">
                 <div
-                  className={
-                    gl
-                      ? 'glass-nav max-w-full flex-wrap justify-center overflow-x-auto p-0'
-                      : 'okan-liquid-pill-track flex max-w-full gap-1 overflow-x-auto rounded-full p-1'
-                  }
+                  className="flex max-w-full flex-wrap justify-center gap-1 overflow-x-auto"
                   role="tablist"
                   aria-label="Seçili döküman panel sekmeleri"
+                  aria-orientation="horizontal"
                 >
                   {(
                     [
@@ -648,17 +640,12 @@ export function DocumentExplorerSplit({
                       key={id}
                       type="button"
                       role="tab"
+                      id={`doc-explorer-tab-${id}`}
                       aria-selected={docDetailTab === id}
+                      aria-controls="doc-explorer-panel"
+                      tabIndex={docDetailTab === id ? 0 : -1}
                       onClick={() => setDocDetailTab(id)}
-                      className={
-                        gl
-                          ? ['nav-item', 'shrink-0', docDetailTab === id ? 'active' : ''].filter(Boolean).join(' ')
-                          : `shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                              docDetailTab === id
-                                ? 'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
-                                : 'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
-                            }`
-                      }
+                      className={splitTabPill(docDetailTab === id)}
                     >
                       {label}
                     </button>
@@ -666,7 +653,12 @@ export function DocumentExplorerSplit({
                 </div>
               </div>
 
-              <div className="okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 pt-3 text-left sm:px-1">
+              <div
+                id="doc-explorer-panel"
+                role="tabpanel"
+                aria-labelledby={`doc-explorer-tab-${docDetailTab}`}
+                className="okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 text-left sm:px-1"
+              >
                 {docDetailTab === 'gecmis' ? (
                   <div
                     className={
@@ -722,12 +714,13 @@ export function DocumentExplorerSplit({
                   </div>
                 )}
               </div>
+              </div>
             </div>
-          </div>
         ) : (
-          <p className={gl ? 'text-sm text-black/70 dark:text-white/75' : 'text-sm text-slate-600 dark:text-slate-300'}>
-            Döküman seçin.
-          </p>
+          <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 lg:max-w-3xl">
+            {projectHeader}
+            <p className="text-center text-sm text-black/80 dark:text-white/80">Döküman seçin.</p>
+          </div>
         )}
       </section>
     </div>
