@@ -6,6 +6,7 @@ import { moduleIdToPath } from '../data/navigation'
 import { useI18n } from '../i18n/I18nProvider'
 import { NavItemIcon, NavSectionIcon } from './sidebarNavIcons'
 import { TopNavChrome, type ChromeMenu } from './TopNavChrome'
+import { TopNavMenuPortal } from './TopNavMenuPortal'
 
 type Props = {
   /** Kenar çubuğu yoksa verilmez; mobil hamburger gösterilmez. */
@@ -119,17 +120,16 @@ function TopNavDropdown({
         />
       </button>
 
-      {open ? (
-        <div
-          ref={panelRef}
-          id={`${menuId}-panel-${ddId}`}
-          role="menu"
-          aria-labelledby={`${menuId}-trigger-${ddId}`}
-          className="gm-topnav-dropdown-panel absolute left-0 top-[calc(100%+6px)] z-[120] max-h-[min(70dvh,22rem)] min-w-[13rem] overflow-y-auto rounded-2xl p-1.5"
-        >
-          <div className="flex flex-col gap-0.5">{children}</div>
-        </div>
-      ) : null}
+      <TopNavMenuPortal
+        open={open}
+        anchorRef={triggerRef}
+        panelRef={panelRef}
+        id={`${menuId}-panel-${ddId}`}
+        labelledBy={`${menuId}-trigger-${ddId}`}
+        className="gm-topnav-dropdown-panel min-w-[13rem] rounded-2xl p-1.5"
+      >
+        <div className="flex flex-col gap-0.5">{children}</div>
+      </TopNavMenuPortal>
     </div>
   )
 }
@@ -154,7 +154,7 @@ export function AppTopNav({ onMenuToggle, onModuleNavigate, startItems, groups, 
   const closeDropdowns = () => setOpenGroupKey(null)
 
   return (
-    <header className="relative z-[100] flex w-full min-w-0 flex-col overflow-visible">
+    <header className="relative z-[1] flex w-full min-w-0 flex-col overflow-visible">
       <div className="gm-topnav-header-accent pointer-events-none absolute inset-x-0 bottom-0 h-px" aria-hidden />
 
       <div className="relative flex w-full min-w-0 flex-col gap-2 px-2 py-1.5 md:flex-row md:items-center md:gap-3 md:px-3 md:py-2">

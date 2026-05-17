@@ -3,6 +3,7 @@ import { ALL_ELEMENT_TYPES } from '../../elementIdentity/catalog/allElementTypes
 import { useI18n } from '../../i18n/I18nProvider'
 import { PmStyleDialog } from '../shared/PmStyleDialog'
 import { useElementIdentity } from './elementIdentityContextValue'
+import { eiSplitHeaderButtonPassive } from './ElementIdentityPieceCodesLikeSplit'
 
 type Props = {
   open: boolean
@@ -72,7 +73,7 @@ export function AddFromStandardCatalogDialog({ open, projectId, onClose }: Props
               setName('')
               onClose()
             }}
-            className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900"
+            className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm disabled:opacity-40`}
           >
             {t('standardSeries.addConfirm')}
           </button>

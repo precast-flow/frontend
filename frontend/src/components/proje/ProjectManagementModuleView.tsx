@@ -25,7 +25,11 @@ import '../muhendislikOkan/engineeringOkanLiquid.css'
 import { useI18n } from '../../i18n/I18nProvider'
 import { useThemeMode } from '../../theme/ThemeProvider'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
-import { eiSplitHeaderButtonPassive } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
+import {
+  eiSplitFilterToggleClass,
+  eiSplitHeaderButtonPassive,
+} from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import {
   splitDetailHeaderClass,
   splitListCardClass,
@@ -203,17 +207,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
       return 1
     }
   })
-  const [pageSize, setPageSize] = useState(() => {
-    try {
-      const raw = sessionStorage.getItem(PROJECT_MANAGEMENT_VIEW_STATE_KEY)
-      if (!raw) return 4
-      const parsed = JSON.parse(raw) as { pageSize?: number }
-      const n = Number(parsed.pageSize)
-      return [4, 6, 8, 10, 15].includes(n) ? n : 4
-    } catch {
-      return 4
-    }
-  })
+  const pageSize = 4
   const [splitRatio, setSplitRatio] = useState(() => {
     try {
       const raw = sessionStorage.getItem(PROJECT_MANAGEMENT_VIEW_STATE_KEY)
@@ -518,7 +512,6 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
       sortMode,
       detailTab,
       listPage: safeListPage,
-      pageSize,
       splitRatio,
     }
     sessionStorage.setItem(PROJECT_MANAGEMENT_VIEW_STATE_KEY, JSON.stringify(next))
@@ -527,7 +520,6 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
     detailTab,
     isResizing,
     ownerFilter,
-    pageSize,
     safeListPage,
     searchQuery,
     selectedId,
@@ -613,25 +605,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                       type="button"
                       onClick={() => setFiltersOpen((v) => !v)}
                       aria-expanded={filtersOpen}
-                      className={
-                        gl
-                          ? [
-                              'glass-btn',
-                              'small',
-                              'inline-flex',
-                              'items-center',
-                              'gap-1.5',
-                              filtersOpen ? 'outline' : 'secondary',
-                            ].join(' ')
-                          : [
-                              'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25',
-                              filtersOpen
-                                ? neutralShell
-                                  ? 'border-black/35 bg-black/10 text-black dark:border-white/20 dark:bg-black/50 dark:text-white'
-                                  : 'border-black/25 bg-black/8 text-black dark:border-white/20 dark:bg-black/45 dark:text-white'
-                                : 'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
-                            ].join(' ')
-                      }
+                      className={eiSplitFilterToggleClass(filtersOpen)}
                     >
                       <Filter className="size-3.5 shrink-0" aria-hidden />
                       Filtrele
@@ -652,14 +626,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     <button
                       type="button"
                       onClick={openCreateDialog}
-                      className={
-                        gl
-                          ? ['glass-btn', 'primary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
-                          : [
-                              'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30',
-                              'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
-                            ].join(' ')
-                      }
+                      className={eiSplitHeaderButtonPassive}
                     >
                       <Plus className="size-3.5 shrink-0" aria-hidden />
                       <span>Proje oluştur</span>
@@ -952,52 +919,14 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                         </p>
                         <div className="flex flex-wrap items-center gap-2">
                           {filtered.length > 0 ? (
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                disabled={safeListPage <= 1}
-                                onClick={() => setListPage((p) => Math.max(1, p - 1))}
-                                className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
-                                  ' ',
-                                )}
-                              >
-                                Önceki
-                              </button>
-                              <span className="tabular-nums text-black/80 dark:text-white/75">
-                                Sayfa {safeListPage}/{listPageCount}
-                              </span>
-                              <button
-                                type="button"
-                                disabled={safeListPage >= listPageCount}
-                                onClick={() => setListPage((p) => Math.min(listPageCount, p + 1))}
-                                className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
-                                  ' ',
-                                )}
-                              >
-                                Sonraki
-                              </button>
-                            </div>
+                            <SplitListPaginationNav
+                              safePage={safeListPage}
+                              pageCount={listPageCount}
+                              onPrev={() => setListPage((p) => Math.max(1, p - 1))}
+                              onNext={() => setListPage((p) => Math.min(listPageCount, p + 1))}
+                              gl
+                            />
                           ) : null}
-                          <label className="flex items-center gap-1 text-black dark:text-white/80">
-                            <span>Sayfa boyutu</span>
-                            <select
-                              value={pageSize}
-                              onChange={(event) => {
-                                setPageSize(Number(event.target.value))
-                                setListPage(1)
-                                requestAnimationFrame(() => {
-                                  listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                                })
-                              }}
-                              className="glass-input px-2 py-1 text-xs"
-                            >
-                              {[4, 6, 8, 10, 15].map((size) => (
-                                <option key={size} value={size}>
-                                  {size}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
                         </div>
                       </div>
                     </div>
@@ -1026,48 +955,15 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                         </p>
                         <div className="flex flex-wrap items-center gap-2">
                           {filtered.length > 0 ? (
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                disabled={safeListPage <= 1}
-                                onClick={() => setListPage((p) => Math.max(1, p - 1))}
-                                className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
-                              >
-                                Önceki
-                              </button>
-                              <span className="tabular-nums text-black/70 dark:text-white/75">
-                                Sayfa {safeListPage}/{listPageCount}
-                              </span>
-                              <button
-                                type="button"
-                                disabled={safeListPage >= listPageCount}
-                                onClick={() => setListPage((p) => Math.min(listPageCount, p + 1))}
-                                className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
-                              >
-                                Sonraki
-                              </button>
-                            </div>
+                            <SplitListPaginationNav
+                              safePage={safeListPage}
+                              pageCount={listPageCount}
+                              onPrev={() => setListPage((p) => Math.max(1, p - 1))}
+                              onNext={() => setListPage((p) => Math.min(listPageCount, p + 1))}
+                              buttonStyle="legacy"
+                              pageIndicatorClassName="tabular-nums text-black/70 dark:text-white/75"
+                            />
                           ) : null}
-                          <label className="flex items-center gap-1 text-black/75 dark:text-white/80">
-                            <span>Sayfa boyutu</span>
-                            <select
-                              value={pageSize}
-                              onChange={(event) => {
-                                setPageSize(Number(event.target.value))
-                                setListPage(1)
-                                requestAnimationFrame(() => {
-                                  listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                                })
-                              }}
-                              className="rounded-md border border-black/22 bg-white px-1.5 py-1 text-xs text-black dark:border-white/15 dark:bg-black/80 dark:text-white"
-                            >
-                              {[4, 6, 8, 10, 15].map((size) => (
-                                <option key={size} value={size}>
-                                  {size}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
                         </div>
                       </div>
                     </div>
@@ -1590,11 +1486,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               <button
                 type="button"
                 onClick={saveProjectDialog}
-                className={
-                  gl
-                    ? ['glass-btn', 'primary', 'small'].join(' ')
-                    : 'rounded-lg bg-black px-3 py-2 text-sm font-semibold text-white hover:bg-neutral-900 dark:bg-white dark:text-black dark:hover:bg-white/90'
-                }
+                className={eiSplitHeaderButtonPassive}
               >
                 {dialogMode === 'create' ? 'Projeyi oluştur' : 'Değişiklikleri kaydet'}
               </button>

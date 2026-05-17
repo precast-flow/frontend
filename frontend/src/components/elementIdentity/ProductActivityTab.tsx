@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { ProductActivity, ProjectProduct } from '../../elementIdentity/types'
 import { useI18n } from '../../i18n/I18nProvider'
 import { newRowId } from './productEditorUtils'
+import { eiSplitHeaderButtonPassive } from './ElementIdentityPieceCodesLikeSplit'
 
 type Props = {
   product: ProjectProduct
@@ -44,7 +45,7 @@ export function ProductActivityTab({ product, onPatch }: Props) {
           type="button"
           onClick={addNote}
           disabled={!note.trim()}
-          className="mt-2 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900"
+          className={`${eiSplitHeaderButtonPassive} mt-2 px-3 py-1.5 text-xs disabled:opacity-40`}
         >
           {locale === 'en' ? 'Append' : 'Ekle'}
         </button>

@@ -178,12 +178,8 @@ export function ElementIdentityProductsTab({
     [locale],
   )
 
-  const headerBtnPrimary = gl
-    ? ['glass-btn', 'primary', 'small', 'inline-flex', 'items-center', 'gap-1.5', 'shrink-0'].join(' ')
-    : 'inline-flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800 dark:border-slate-600 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'
-  const headerBtnSecondary = gl
-    ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5', 'shrink-0'].join(' ')
-    : eiSplitHeaderButtonPassive
+  const headerBtnPrimary = eiSplitHeaderButtonPassive
+  const headerBtnSecondary = eiSplitHeaderButtonPassive
   const filterLabelCls = gl
     ? 'text-xs font-semibold uppercase tracking-wide text-black/75 dark:text-white/80'
     : 'text-[11px] font-medium text-slate-600 dark:text-slate-300'
@@ -295,11 +291,7 @@ export function ElementIdentityProductsTab({
                 setFilterQuery('')
                 setFilterSource('all')
               }}
-              className={
-                gl
-                  ? ['glass-btn', 'secondary', 'small'].join(' ')
-                  : 'rounded-md border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800'
-              }
+              className={`${eiSplitHeaderButtonPassive} px-2 py-1 text-[11px]`}
             >
               {t('elementIdentity.reset')}
             </button>
@@ -418,11 +410,7 @@ export function ElementIdentityProductsTab({
                 if (selectedId) removeProjectProduct(selectedId)
               }}
               disabled={!selected}
-              className={
-                gl
-                  ? ['glass-btn', 'secondary', 'small', 'text-rose-700', 'dark:text-rose-300', 'disabled:opacity-40'].join(' ')
-                  : 'rounded-md border border-rose-300/70 px-2 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-40 dark:border-rose-600/60 dark:text-rose-300 dark:hover:bg-rose-950/40'
-              }
+              className={`${eiSplitHeaderButtonPassive} border-rose-300/70 px-2 py-1 text-[11px] text-rose-700 hover:bg-rose-50/80 disabled:opacity-40 dark:border-rose-600/60 dark:text-rose-300 dark:hover:bg-rose-950/40`}
             >
               {t('elementIdentity.products.remove')}
             </button>

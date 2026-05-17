@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
-import { EI_SPLIT_LIST_PAGE_SIZE } from './useElementIdentitySplitListPagination'
-
+import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
 type ElementIdentitySplitListPaginationFooterProps = {
   gl: boolean
   locale: string
@@ -29,7 +28,6 @@ export function ElementIdentitySplitListPaginationFooter({
   const en = locale === 'en'
   const resultLabel = en ? 'results' : 'sonuç'
   const noResults = en ? 'No results' : 'Sonuç yok'
-  const perPage = en ? `${EI_SPLIT_LIST_PAGE_SIZE} per page` : `Sayfa başına ${EI_SPLIT_LIST_PAGE_SIZE}`
 
   return (
     <div
@@ -56,42 +54,19 @@ export function ElementIdentitySplitListPaginationFooter({
         )}
       </p>
       <div className="flex flex-wrap items-center gap-2">
-        {totalCount > 0 && pageCount > 1 ? (
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              disabled={safePage <= 1}
-              onClick={onPrev}
-              className={
-                gl
-                  ? ['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none', 'disabled:opacity-35'].join(' ')
-                  : 'rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
-              }
-              aria-label={en ? 'Previous page' : 'Önceki sayfa'}
-            >
-              {en ? 'Prev' : 'Önceki'}
-            </button>
-            <span className={`tabular-nums ${gl ? 'text-black/80 dark:text-white/75' : 'text-slate-600 dark:text-slate-300'}`}>
-              {en ? 'Page' : 'Sayfa'} {safePage}/{pageCount}
-            </span>
-            <button
-              type="button"
-              disabled={safePage >= pageCount}
-              onClick={onNext}
-              className={
-                gl
-                  ? ['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none', 'disabled:opacity-35'].join(' ')
-                  : 'rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
-              }
-              aria-label={en ? 'Next page' : 'Sonraki sayfa'}
-            >
-              {en ? 'Next' : 'Sonraki'}
-            </button>
-          </div>
+        {totalCount > 0 ? (
+          <SplitListPaginationNav
+            safePage={safePage}
+            pageCount={pageCount}
+            onPrev={onPrev}
+            onNext={onNext}
+            gl={gl}
+            locale={locale}
+            pageIndicatorClassName={
+              gl ? 'tabular-nums text-black/80 dark:text-white/75' : 'tabular-nums text-slate-600 dark:text-slate-300'
+            }
+          />
         ) : null}
-        <span className={`tabular-nums ${gl ? 'text-black/65 dark:text-white/70' : 'text-slate-500 dark:text-slate-400'}`}>
-          {perPage}
-        </span>
         {trailing}
       </div>
     </div>

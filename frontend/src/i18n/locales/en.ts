@@ -141,18 +141,17 @@ const shell: Record<string, string> = {
   'definitions.hub.elementIdentityTitle': 'Element identity & naming',
   'definitions.hub.elementIdentityDesc':
     'Manage firm codes, typology mapping, IFC import, and naming templates.',
-  'definitions.hub.legacyLink': 'Legacy view (reference)',
   'nav.productionPlanning': 'Production planning',
   'nav.productionSummary': 'Production summary',
   'nav.mes': 'MES',
   'nav.planningDesign': 'Production planning',
   'nav.generalPlanning': 'General planning',
   'main.desc.generalPlanning':
-    'Shared timeline for planning, production, and dispatch; pick a project on the Assembly tab for project-scoped assembly planning.',
+    'Shared timeline for planning, production, and dispatch & assembly unit tabs.',
   'generalPlanning.unitPickerAria': 'Planning unit selection',
   'generalPlanning.unit.planning': 'Planning',
   'generalPlanning.unit.production': 'Production',
-  'generalPlanning.unit.dispatch': 'Dispatch',
+  'generalPlanning.unit.dispatch': 'Dispatch & assembly',
   'generalPlanning.unit.assembly': 'Assembly',
   'generalPlanning.column.mold': 'Mold',
   'generalPlanning.column.vehicle': 'Vehicle / dock',
@@ -160,6 +159,8 @@ const shell: Record<string, string> = {
   'generalPlanning.filter.mold': 'Mold',
   'generalPlanning.filter.vehicle': 'Vehicle',
   'generalPlanning.filter.line': 'Line / crew',
+  'generalPlanning.filter.project': 'Project',
+  'dispatchPlanning.filtersDrawerHint': 'Search, project, vehicle, status, and workdays',
   'generalPlanning.detail.linkedPlans': 'Linked unit plans',
   'generalPlanning.detail.resource': 'Resource',
   'planningDesign.toolbarSearchAria': 'Search plan items',
@@ -172,7 +173,8 @@ const shell: Record<string, string> = {
   'nav.quality': 'Quality',
   'nav.yard': 'Yard',
   'nav.dispatch': 'Dispatch',
-  'nav.dispatchPlanning': 'Dispatch planning',
+  'nav.dispatchPlanning': 'Dispatch & assembly planning',
+  'dispatchPlanning.noAccess': 'You do not have permission to view dispatch & assembly planning.',
   'nav.assemblyPlanning': 'Assembly planning',
   'nav.field': 'Field (site)',
   'nav.reporting': 'Reporting',
@@ -214,7 +216,7 @@ const shell: Record<string, string> = {
   'main.desc.productionPlanning':
     'Production unit timeline — filters, work queue, undo/redo, and plan history (same view as the Production tab in general planning).',
   'main.desc.dispatchPlanning':
-    'Dispatch unit timeline — filters, work queue, undo/redo, and plan history (same view as the Dispatch tab in general planning).',
+    'Dispatch & assembly unit timeline — filters, work queue, undo/redo, and plan history (same view as the Dispatch & assembly tab in general planning).',
   'main.desc.assemblyPlanning':
     'Project-scoped assembly timeline — pick a project to manage assembly lines, work queue, and plan history.',
   'assemblyPlanning.projectPickerLabel': 'Select project for assembly planning',
@@ -1805,7 +1807,6 @@ const shell: Record<string, string> = {
   'profileModule.listSearchLabel': 'Search sections',
   'profileModule.listSearchPh': 'Section name…',
   'profileModule.listSearchAria': 'Search profile sections',
-  'profileModule.legacyLink': 'Legacy view (?legacy=1)',
   'profileModule.intro':
     'Pick a section on the left; personal and work fields share the same prototype state (not sent to a server).',
   'profileModule.filtersTitle': 'Help',
@@ -1823,7 +1824,6 @@ const shell: Record<string, string> = {
   'settingsModule.listSearchLabel': 'Search tabs',
   'settingsModule.listSearchPh': 'Title or hint…',
   'settingsModule.listSearchAria': 'Search settings tabs',
-  'settingsModule.legacyLink': 'Legacy view (?legacy=1)',
   'settingsModule.intro':
     'Pick a tab on the left. Module simulation and scenario shortcuts behave like the previous settings page (local / mock).',
   'settingsModule.filtersTitle': 'Help',
@@ -1833,7 +1833,6 @@ const shell: Record<string, string> = {
   'settingsModule.footerHint': 'Reset defaults and Save do not call a server in this prototype.',
 
   'approvalFlowDesigner.listTitle': 'Saved flows',
-  'approvalFlowDesigner.legacyLink': 'Legacy view (?legacy=1)',
   'approvalFlowDesigner.filtersTitle': 'Help',
   'approvalFlowDesigner.filtersSubtitle': 'Approval flow designer',
   'approvalFlowDesigner.filterBody':
@@ -1953,7 +1952,7 @@ const shell: Record<string, string> = {
 
   'elementIdentity.list.title': 'Projects',
   'elementIdentity.list.searchAria': 'Search projects',
-  'elementIdentity.list.detailCta': 'Open detail',
+  'elementIdentity.list.detailCta': 'Detail',
   'elementIdentity.list.selectHint': 'Pick a project on the left or open its detail page.',
   'elementIdentity.list.summaryTitle': 'Summary',
   'elementIdentity.list.elementsCount': 'Stored elements',
@@ -2198,7 +2197,6 @@ const shell: Record<string, string> = {
 
   'userManagement.listTitle': 'Users',
   'userManagement.newUser': 'New user (mock)',
-  'userManagement.legacyLink': 'Legacy view (?legacy=1)',
   'userManagement.filtersTitle': 'Filters',
   'userManagement.filtersSubtitle': 'Search, role, status, and factory',
   'userManagement.filterSearch': 'Search',
@@ -2263,7 +2261,6 @@ const shell: Record<string, string> = {
   'userManagement.toastSaved': 'Changes saved (mock).',
 
   'rolesPermissions.listTitle': 'Roles',
-  'rolesPermissions.legacyLink': 'Legacy view (?legacy=1)',
   'rolesPermissions.filtersTitle': 'Filters',
   'rolesPermissions.filtersSubtitle': 'Role list, module, and permission search',
   'rolesPermissions.roleListSearch': 'Search role list',

@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n/I18nProvider'
 import { PmStyleDialog } from '../shared/PmStyleDialog'
 import { useElementIdentity } from './elementIdentityContextValue'
 import { newRowId } from './productEditorUtils'
+import { eiSplitHeaderButtonPassive } from './ElementIdentityPieceCodesLikeSplit'
 import {
   PRODUCT_TRANSFER_REASON_ORDER,
   type ProductTransferLogEntry,
@@ -196,7 +197,7 @@ export function ProductTransferDialog({
             type="button"
             disabled={!canGoTarget}
             onClick={() => setStep('target')}
-            className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900"
+            className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm disabled:opacity-40`}
           >
             {t('elementIdentity.ifc.next')}
           </button>
@@ -214,7 +215,7 @@ export function ProductTransferDialog({
               type="button"
               disabled={!canGoConfirm}
               onClick={() => setStep('confirm')}
-              className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900"
+              className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm disabled:opacity-40`}
             >
               {t('elementIdentity.transfer.review')}
             </button>

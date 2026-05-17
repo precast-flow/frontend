@@ -4,6 +4,7 @@ import { TYPOLOGIES_BY_ID } from '../../elementIdentity/catalog/typologies'
 import { useI18n } from '../../i18n/I18nProvider'
 import { PmStyleDialog } from '../shared/PmStyleDialog'
 import { useElementIdentity } from './elementIdentityContextValue'
+import { eiSplitHeaderButtonPassive } from './ElementIdentityPieceCodesLikeSplit'
 
 type Props = {
   open: boolean
@@ -75,7 +76,7 @@ export function NewProductDialog({ open, projectId, onClose }: Props) {
           setTypologyId('')
           onClose()
         }}
-        className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+        className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm disabled:opacity-40`}
       >
         {t('elementIdentity.dialog.manualSave')}
       </button>

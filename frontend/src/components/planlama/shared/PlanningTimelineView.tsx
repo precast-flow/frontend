@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom'
 import {
   Calendar,
   CheckCircle2,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -26,12 +25,14 @@ import {
 import '../../muhendislikOkan/engineeringOkanLiquid.css'
 import { useI18n } from '../../../i18n/I18nProvider'
 import { FilterToolbarSearch } from '../../shared/FilterToolbarSearch'
+import {
+  eiSplitFilterToggleClass,
+  eiSplitHeaderButtonPassive,
+} from '../../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import { useGeneralPlanningOptional } from '../GeneralPlanningContext'
 import { useGeneralPlanningAccess } from '../../../hooks/useGeneralPlanningAccess'
-import { assemblyQueueForProject } from '../../../data/assemblyPlanningProjects'
 import {
   GENERAL_PLAN_QUEUE,
-  INITIAL_GENERAL_PLAN_ITEMS,
   PLANNING_UNIT_LABEL_KEYS,
   crossUnitConsistencyWarnings,
   linkedPlansForProduct,
@@ -63,6 +64,7 @@ import {
   type PlanningDay,
   type PlanStatusKey,
 } from '../../../data/planningDesignMock'
+import { projectManagementByCode } from '../../../data/projectManagementCardsMock'
 
 const SHIFT_SHORT = ['S', 'Ö', 'G'] as const
 
@@ -155,7 +157,6 @@ export type PlanningTimelineVariant =
   | 'general'
   | 'production'
   | 'dispatch'
-  | 'assembly'
 
 type LockedUnitPageMeta = {
   sectionLabelKey: string
@@ -173,11 +174,6 @@ const LOCKED_UNIT_PAGE_META: Partial<Record<PlanningTimelineVariant, LockedUnitP
     sectionLabelKey: 'nav.sidebar.section.logistics',
     pageLabelKey: 'nav.dispatchPlanning',
     toolbarSearchId: 'dispatch-planning-toolbar-search',
-  },
-  assembly: {
-    sectionLabelKey: 'nav.sidebar.section.logistics',
-    pageLabelKey: 'nav.assemblyPlanning',
-    toolbarSearchId: 'assembly-planning-toolbar-search',
   },
 }
 
@@ -239,21 +235,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   const { t } = useI18n()
   const access = useGeneralPlanningAccess()
 
-  const crossUnitPlanItems: GeneralPlanItem[] =
-    gp?.projectScoped && gp ? INITIAL_GENERAL_PLAN_ITEMS : (gp?.items ?? [])
-
-  const selectedAssemblyProject = useMemo(() => {
-    if (!gp?.projectScoped || !gp.selectedProjectCode) return null
-    return (
-      gp.assemblyProjectOptions.find((p) => p.code === gp.selectedProjectCode) ?? {
-        code: gp.selectedProjectCode,
-        name: gp.selectedProjectCode,
-        customer: '',
-        cardId: null,
-        assemblyPlanCount: 0,
-      }
-    )
-  }, [gp?.assemblyProjectOptions, gp?.projectScoped, gp?.selectedProjectCode])
+  const crossUnitPlanItems: GeneralPlanItem[] = gp?.items ?? []
 
   const unitConfig = isGeneral && gp ? getUnitConfig(gp.activeUnit) : null
   const timelineUsesShifts =
@@ -297,15 +279,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   const allGeneralItems = gp?.items ?? []
   const unitFilteredGeneral = useMemo(() => {
     if (!isGeneral || !gp) return []
-    return allGeneralItems
-      .filter((it) => it.unit === gp.activeUnit)
-      .filter(
-        (it) =>
-          !gp.projectScoped ||
-          !gp.selectedProjectCode ||
-          (it.projectId ?? '') === gp.selectedProjectCode,
-      )
-      .map(generalToPlanItem)
+    return allGeneralItems.filter((it) => it.unit === gp.activeUnit).map(generalToPlanItem)
   }, [allGeneralItems, gp, isGeneral])
 
   const items: PlanItem[] = isGeneral && gp ? unitFilteredGeneral : itemsLocal
@@ -319,26 +293,8 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
       const nextUnit =
         typeof action === 'function' ? (action as (p: PlanItem[]) => PlanItem[])(prevUnit) : action
       gp.setItems((all) => {
-        const other = all.filter((it) => {
-          if (it.unit !== gp.activeUnit) return true
-          if (gp.projectScoped && gp.selectedProjectCode) {
-            return (it.projectId ?? '') !== gp.selectedProjectCode
-          }
-          return false
-        })
-        const mapped = nextUnit.map((p) =>
-          planToGeneral(
-            {
-              ...p,
-              projectId:
-                gp.projectScoped && gp.selectedProjectCode
-                  ? gp.selectedProjectCode
-                  : p.projectId,
-            },
-            gp.activeUnit,
-            p.productId,
-          ),
-        )
+        const other = all.filter((it) => it.unit !== gp.activeUnit)
+        const mapped = nextUnit.map((p) => planToGeneral(p, gp.activeUnit, p.productId))
         return [...other, ...mapped]
       })
     },
@@ -364,9 +320,6 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
 
   const queueItems = useMemo(() => {
     if (!isGeneral || !gp) return QUEUE_MOCK
-    if (gp.projectScoped && gp.selectedProjectCode) {
-      return assemblyQueueForProject(gp.selectedProjectCode, INITIAL_GENERAL_PLAN_ITEMS)
-    }
     return GENERAL_PLAN_QUEUE[gp.activeUnit]
   }, [gp, isGeneral])
 
@@ -377,6 +330,11 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   const filterResourceLabel = isGeneral && unitConfig
     ? t(unitConfig.filterResourceLabelKey)
     : 'Kalıp'
+
+  const showProjectFilter = Boolean(isGeneral && unitConfig?.filters.includes('project'))
+  const filtersDrawerHint = showProjectFilter
+    ? t('dispatchPlanning.filtersDrawerHint')
+    : 'Arama, kalıp, durum ve iş günü'
 
   const statusKeysForFilter = isGeneral && unitConfig
     ? unitConfig.statusOptions
@@ -409,16 +367,39 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
 
   const [statusFilter, setStatusFilter] = useState<PlanStatusKey[]>([])
   const [moldFilter, setMoldFilter] = useState<string[]>([])
+  const [projectFilter, setProjectFilter] = useState<string[]>([])
 
   const gridScrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setProjectFilter([])
+  }, [gp?.activeUnit])
+
+  const projectFilterOptions = useMemo(() => {
+    if (!showProjectFilter) return []
+    const codes = new Set<string>()
+    for (const it of items) {
+      if (it.projectId) codes.add(it.projectId)
+    }
+    return [...codes]
+      .sort((a, b) => a.localeCompare(b, 'tr'))
+      .map((code) => {
+        const card = projectManagementByCode.get(code)
+        return {
+          code,
+          label: card ? `${card.code} · ${card.name}` : code,
+        }
+      })
+  }, [items, showProjectFilter])
 
   const activePlanningFilterCount = useMemo(
     () =>
       moldFilter.length +
       statusFilter.length +
+      projectFilter.length +
       (search.trim() ? 1 : 0) +
       (workdaysOnly ? 1 : 0),
-    [moldFilter, statusFilter, search, workdaysOnly],
+    [moldFilter, statusFilter, projectFilter, search, workdaysOnly],
   )
 
   const itemsRef = useRef(items)
@@ -569,8 +550,11 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
     }
     if (moldFilter.length) list = list.filter((it) => moldFilter.includes(it.moldId))
     if (statusFilter.length) list = list.filter((it) => statusFilter.includes(it.status))
+    if (projectFilter.length) {
+      list = list.filter((it) => it.projectId != null && projectFilter.includes(it.projectId))
+    }
     return list
-  }, [items, search, moldFilter, statusFilter])
+  }, [items, search, moldFilter, statusFilter, projectFilter])
 
   /** maxConcurrent=1 kuralında satır yüksekliği sabit tutulur (kartlar tek hizada). */
   const moldRowHeights = useMemo(() => {
@@ -638,26 +622,8 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   const appendCheckpoint = useCallback(
     (nextItems: PlanItem[], label: string, note?: string) => {
       if (isGeneral && gp) {
-        const other = gp.items.filter((it) => {
-          if (it.unit !== gp.activeUnit) return true
-          if (gp.projectScoped && gp.selectedProjectCode) {
-            return (it.projectId ?? '') !== gp.selectedProjectCode
-          }
-          return false
-        })
-        const mapped = nextItems.map((p) =>
-          planToGeneral(
-            {
-              ...p,
-              projectId:
-                gp.projectScoped && gp.selectedProjectCode
-                  ? gp.selectedProjectCode
-                  : p.projectId,
-            },
-            gp.activeUnit,
-            p.productId,
-          ),
-        )
+        const other = gp.items.filter((it) => it.unit !== gp.activeUnit)
+        const mapped = nextItems.map((p) => planToGeneral(p, gp.activeUnit, p.productId))
         gp.appendCheckpoint([...other, ...mapped], label, note)
         return
       }
@@ -1013,25 +979,11 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                     <ChevronRight className="size-3.5 shrink-0 opacity-70" />
                   </li>
                   <li
-                    className={
-                      gp?.projectScoped
-                        ? 'font-medium text-slate-600 dark:text-slate-300'
-                        : 'font-semibold text-slate-800 dark:text-slate-100'
-                    }
-                    aria-current={gp?.projectScoped ? undefined : 'page'}
+                    className="font-semibold text-slate-800 dark:text-slate-100"
+                    aria-current="page"
                   >
                     {t(lockedPageMeta.pageLabelKey)}
                   </li>
-                  {gp?.projectScoped && selectedAssemblyProject ? (
-                    <>
-                      <li className="flex items-center gap-1" aria-hidden>
-                        <ChevronRight className="size-3.5 shrink-0 opacity-70" />
-                      </li>
-                      <li className="font-semibold text-slate-800 dark:text-slate-100" aria-current="page">
-                        {selectedAssemblyProject.code} — {selectedAssemblyProject.name}
-                      </li>
-                    </>
-                  ) : null}
                 </>
               ) : (
                 <>
@@ -1047,58 +999,17 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                     <ChevronRight className="size-3.5 shrink-0 opacity-70" />
                   </li>
                   <li
-                    className={
-                      variant === 'general' && gp?.projectScoped
-                        ? 'font-medium text-slate-600 dark:text-slate-300'
-                        : 'font-semibold text-slate-800 dark:text-slate-100'
-                    }
-                    aria-current={variant === 'general' && gp?.projectScoped ? undefined : 'page'}
+                    className="font-semibold text-slate-800 dark:text-slate-100"
+                    aria-current="page"
                   >
                     {variant === 'general' ? t('nav.generalPlanning') : t('nav.planningDesign')}
                   </li>
-                  {variant === 'general' && gp?.projectScoped ? (
-                    <>
-                      <li className="flex items-center gap-1" aria-hidden>
-                        <ChevronRight className="size-3.5 shrink-0 opacity-70" />
-                      </li>
-                      <li
-                        className={
-                          selectedAssemblyProject
-                            ? 'font-medium text-slate-600 dark:text-slate-300'
-                            : 'font-semibold text-slate-800 dark:text-slate-100'
-                        }
-                        aria-current={selectedAssemblyProject ? undefined : 'page'}
-                      >
-                        {t(PLANNING_UNIT_LABEL_KEYS.assembly)}
-                      </li>
-                      {selectedAssemblyProject ? (
-                        <>
-                          <li className="flex items-center gap-1" aria-hidden>
-                            <ChevronRight className="size-3.5 shrink-0 opacity-70" />
-                          </li>
-                          <li
-                            className="font-semibold text-slate-800 dark:text-slate-100"
-                            aria-current="page"
-                          >
-                            {selectedAssemblyProject.code} — {selectedAssemblyProject.name}
-                          </li>
-                        </>
-                      ) : null}
-                    </>
-                  ) : null}
                 </>
               )}
             </ol>
           </nav>
         </div>
 
-        {gp?.projectScoped && !gp.selectedProjectCode ? (
-          <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-slate-300/80 bg-white/50 p-10 text-center dark:border-slate-600/60 dark:bg-slate-900/30">
-            <p className="max-w-md text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-              {t('assemblyPlanning.emptyProject')}
-            </p>
-          </div>
-        ) : (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/80 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/45">
           <div
             className="gm-planning-design-view flex min-h-0 flex-1 flex-col"
@@ -1107,54 +1018,6 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
             <div className="gm-planning-design-shell flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent">
               <div className="gm-planning-toolbar relative z-[75] grid min-h-11 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 overflow-visible border-b border-slate-200/70 px-3 py-2 dark:border-slate-700/50 md:gap-3">
                 <div className="flex min-w-0 flex-wrap items-center justify-self-start gap-2">
-                  {gp?.projectScoped && gp.assemblyProjectOptions.length > 0 ? (
-                    <div className="flex min-w-0 flex-col gap-0.5">
-                      <label
-                        className="sr-only"
-                        htmlFor={
-                          variant === 'general'
-                            ? 'general-planning-assembly-project-picker'
-                            : 'assembly-planning-project-picker'
-                        }
-                      >
-                        {t('assemblyPlanning.projectPickerLabel')}
-                      </label>
-                      <div className="relative min-w-[14rem] max-w-xs">
-                        <select
-                          id={
-                            variant === 'general'
-                              ? 'general-planning-assembly-project-picker'
-                              : 'assembly-planning-project-picker'
-                          }
-                          value={gp.selectedProjectCode ?? ''}
-                          onChange={(e) => {
-                            gp.setSelectedProjectCode(e.target.value)
-                            setSelectedId(null)
-                            setDayDetailDate(null)
-                          }}
-                          className="w-full appearance-none rounded-lg border border-slate-200/70 bg-white/80 py-1.5 pl-2.5 pr-8 text-xs font-semibold text-slate-800 shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:border-slate-700/70 dark:bg-slate-900/55 dark:text-slate-100"
-                        >
-                          {gp.assemblyProjectOptions.map((p) => (
-                            <option key={p.code} value={p.code}>
-                              {p.code} — {p.name}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown
-                          className="pointer-events-none absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-slate-500 dark:text-slate-400"
-                          aria-hidden
-                        />
-                      </div>
-                      {selectedAssemblyProject?.customer ? (
-                        <span className="truncate px-0.5 text-[10px] text-slate-500 dark:text-slate-400">
-                          {selectedAssemblyProject.customer}
-                          {selectedAssemblyProject.assemblyPlanCount > 0
-                            ? ` · ${selectedAssemblyProject.assemblyPlanCount} ${t('assemblyPlanning.planCountSuffix')}`
-                            : null}
-                        </span>
-                      ) : null}
-                    </div>
-                  ) : null}
                   {variant === 'general' && gp ? (
                     <div
                       className="flex flex-wrap gap-1 rounded-lg border border-slate-200/70 bg-white/60 p-0.5 dark:border-slate-700/70 dark:bg-slate-900/40"
@@ -1192,12 +1055,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                     }}
                     aria-expanded={leftDrawerOpen && leftDrawerTab === 'filters'}
                     aria-controls="gm-planning-left-drawer"
-                    className={[
-                      'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
-                      leftDrawerOpen && leftDrawerTab === 'filters'
-                        ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
-                        : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
-                    ].join(' ')}
+                    className={eiSplitFilterToggleClass(leftDrawerOpen && leftDrawerTab === 'filters')}
                   >
                     <Filter className="size-3.5 shrink-0" aria-hidden />
                     Filtrele
@@ -1360,8 +1218,8 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                 <aside
                   id="gm-planning-left-drawer"
                   className={[
-                    'absolute inset-y-0 left-0 z-20 w-80 overflow-y-auto rounded-r-xl border border-slate-200/70 bg-white/95 p-3 shadow-xl backdrop-blur-sm transition-transform dark:border-slate-700/70 dark:bg-slate-900/95',
-                    leftDrawerOpen ? 'translate-x-0' : '-translate-x-[105%]',
+                    'absolute inset-y-0 left-0 z-20 w-80 overflow-y-auto rounded-r-xl border border-slate-200/70 bg-white p-3 shadow-xl transition-transform duration-200 ease-out will-change-transform dark:border-slate-700/70 dark:bg-slate-900',
+                    leftDrawerOpen ? 'translate-x-0' : '-translate-x-[105%] pointer-events-none',
                   ].join(' ')}
                   aria-hidden={!leftDrawerOpen}
                 >
@@ -1372,7 +1230,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                       </h4>
                       <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
                         {leftDrawerTab === 'filters'
-                          ? 'Arama, kalıp, durum ve iş günü'
+                          ? filtersDrawerHint
                           : 'Sürükleyip takvime bırakın · Esc ile kapat'}
                       </p>
                     </div>
@@ -1400,6 +1258,54 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                           className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
                         />
                       </div>
+                      {showProjectFilter ? (
+                        <div>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                              {t('generalPlanning.filter.project')}
+                            </p>
+                            {projectFilter.length > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => setProjectFilter([])}
+                                className="text-[11px] font-medium text-sky-700 hover:underline dark:text-sky-300"
+                              >
+                                Temizle
+                              </button>
+                            ) : null}
+                          </div>
+                          {projectFilterOptions.length ? (
+                            <div className="mt-2 flex flex-col gap-1.5">
+                              {projectFilterOptions.map((p) => {
+                                const on = projectFilter.includes(p.code)
+                                return (
+                                  <button
+                                    key={p.code}
+                                    type="button"
+                                    onClick={() =>
+                                      setProjectFilter((prev) =>
+                                        on ? prev.filter((x) => x !== p.code) : [...prev, p.code],
+                                      )
+                                    }
+                                    title={p.label}
+                                    className={`rounded-lg px-2.5 py-1.5 text-left text-xs font-medium leading-snug ${
+                                      on
+                                        ? 'border border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
+                                        : 'bg-white text-slate-700 ring-1 ring-slate-300/70 dark:bg-slate-900/50 dark:text-slate-200 dark:ring-slate-600/60'
+                                    }`}
+                                  >
+                                    {p.label}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          ) : (
+                            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                              Plan kayıtlarında proje kodu bulunamadı.
+                            </p>
+                          )}
+                        </div>
+                      ) : null}
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
                           {filterResourceLabel}
@@ -1418,7 +1324,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                                 }
                                 className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                                   on
-                                    ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                                    ? 'border border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
                                     : 'bg-white text-slate-700 ring-1 ring-slate-300/70 dark:bg-slate-900/50 dark:text-slate-200 dark:ring-slate-600/60'
                                 }`}
                               >
@@ -1444,7 +1350,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                                 }
                                 className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                                   on
-                                    ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                                    ? 'border border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
                                     : 'bg-white text-slate-700 ring-1 ring-slate-300/70 dark:bg-slate-900/50 dark:text-slate-200 dark:ring-slate-600/60'
                                 }`}
                               >
@@ -1623,7 +1529,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                             Bu gün için plan yok.
                             <button
                               type="button"
-                              className="mt-3 w-full rounded-lg bg-slate-900 py-2 text-sm font-semibold text-white dark:bg-slate-100 dark:text-slate-900"
+                              className={`${eiSplitHeaderButtonPassive} mt-3 w-full justify-center py-2 text-sm`}
                               onClick={() => {
                                 setDayDetailDate(null)
                                 setAssignOpen({ moldId: PLANNING_RESOURCES[0]!.moldId, slot: 0 })
@@ -1854,7 +1760,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
 
                 <div
                   ref={gridScrollRef}
-                  className="gm-planning-scroll-host box-border h-full min-h-0 min-w-0 overflow-auto transition-[padding] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                  className="gm-planning-scroll-host box-border h-full min-h-0 min-w-0 overflow-auto"
                   style={{
                     paddingLeft: leftDrawerOpen ? '20rem' : 0,
                     paddingRight: rightInsightOpen ? 'min(22rem, calc(100vw - 2rem))' : 0,
@@ -2019,7 +1925,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                                   concreteRecipeId: 'RC-C30-01',
                                   estimatedVolumeM3: 8,
                                   estimatedSteelKg: 600,
-                                  projectId: gp?.projectScoped ? gp.selectedProjectCode ?? undefined : undefined,
+                                  projectId: undefined,
                                   tags: ['queue'],
                                   warnings: np ? ['Üretim dışı güne yerleşim (mock)'] : [],
                                 }
@@ -2189,7 +2095,6 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
             </div>
           </div>
         </div>
-        )}
       </div>
     </div>
 
@@ -2221,7 +2126,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                   setContextMenu(null)
                 }}
               >
-                Detay görüntüle
+                Detay
               </button>
 
               <div
@@ -2344,7 +2249,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                         concreteRecipeId: 'RC-C30-01',
                         estimatedVolumeM3: 8,
                         estimatedSteelKg: 600,
-                        projectId: gp?.projectScoped ? gp.selectedProjectCode ?? undefined : undefined,
+                        projectId: undefined,
                         tags: ['queue'],
                         warnings: np ? ['Üretim dışı güne yerleşim (mock)'] : [],
                       }
@@ -2361,7 +2266,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
             <button
               type="button"
               onClick={() => setAssignOpen(null)}
-              className="mt-3 w-full rounded-xl bg-gray-800 py-2 text-sm font-semibold text-white dark:bg-gray-200 dark:text-gray-900"
+              className={`${eiSplitHeaderButtonPassive} mt-3 w-full justify-center py-2 text-sm`}
             >
               Kapat
             </button>
@@ -2407,7 +2312,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
               <button
                 type="button"
                 onClick={() => setNonProdModal(null)}
-                className="rounded-xl bg-gray-800 px-4 py-2 text-sm font-semibold text-white dark:bg-gray-200 dark:text-gray-900"
+                className={`${eiSplitHeaderButtonPassive} px-4 py-2 text-sm`}
               >
                 Onayla
               </button>

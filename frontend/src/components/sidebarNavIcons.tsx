@@ -56,7 +56,6 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   'general-planning': Layers,
   'production-planning': CalendarRange,
   'dispatch-planning': Truck,
-  'assembly-planning': HardHat,
   'production-factory-ops': Building2,
   quality: ShieldCheck,
   yard: Warehouse,

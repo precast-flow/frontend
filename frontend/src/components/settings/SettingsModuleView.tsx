@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { ChevronsLeftRight, Filter, GripVertical, X } from 'lucide-react'
 import { useI18n } from '../../i18n/I18nProvider'
 import { useThemeMode } from '../../theme/ThemeProvider'
@@ -9,6 +8,7 @@ import { SettingsTabPanels } from './SettingsTabPanels'
 import { SETTINGS_TAB_DEFS, type SettingsPageState, type SettingsTabId } from './useSettingsPageState'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 import '../proje/projectManagementGlassLight.css'
+import { eiSplitFilterToggleClass, eiSplitHeaderButtonPassive } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 
 const SETTINGS_SPLIT_STATE_KEY = 'settings-page:split-state'
 const SETTINGS_DEFAULT_SPLIT_RATIO = 40
@@ -40,18 +40,9 @@ export function SettingsModuleView(props: Props) {
 
   const { onNavigate, tab, setTab } = props
 
-  const headerBtnCls = gl
-    ? 'glass-btn small secondary inline-flex items-center gap-1.5'
-    : 'inline-flex items-center gap-1.5 rounded-lg border border-black/18 bg-white/70 px-2 py-1.5 text-xs font-semibold text-black transition hover:bg-white dark:border-white/12 dark:bg-black/40 dark:text-white/90 dark:hover:bg-black/55'
+  const headerBtnCls = `${eiSplitHeaderButtonPassive} inline-flex items-center gap-1.5`
 
-  const filterBtnCls = gl
-    ? ['glass-btn', 'small', 'inline-flex', 'items-center', 'gap-1.5', filterOpen ? 'outline' : 'secondary'].join(' ')
-    : [
-        'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25',
-        filterOpen
-          ? 'border-black/35 bg-black/10 text-black dark:border-white/20 dark:bg-black/50 dark:text-white'
-          : 'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
-      ].join(' ')
+  const filterBtnCls = eiSplitFilterToggleClass(filterOpen)
 
   const visibleTabDefs = useMemo(() => {
     const q = listSearch.trim().toLocaleLowerCase('tr-TR')
@@ -167,9 +158,6 @@ export function SettingsModuleView(props: Props) {
                     <button type="button" onClick={() => onNavigate('profile')} className={headerBtnCls}>
                       {t('settings.gotoProfile')}
                     </button>
-                    <Link to="/settings?legacy=1" className={`${headerBtnCls} no-underline`}>
-                      {t('settingsModule.legacyLink')}
-                    </Link>
                     <button
                       type="button"
                       onClick={() => setFilterOpen((v) => !v)}
@@ -345,7 +333,7 @@ export function SettingsModuleView(props: Props) {
                   </p>
 
                   <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-                    <SettingsTabPanels appearance="module" stickyFooter {...props} />
+                    <SettingsTabPanels stickyFooter {...props} />
                   </div>
                 </div>
               </div>

@@ -5,6 +5,7 @@ import type { ProjectProduct } from '../../elementIdentity/types'
 import { useI18n } from '../../i18n/I18nProvider'
 import { PmStyleDialog } from '../shared/PmStyleDialog'
 import { useElementIdentity } from './elementIdentityContextValue'
+import { eiSplitHeaderButtonPassive } from './ElementIdentityPieceCodesLikeSplit'
 
 type Step = 0 | 1 | 2
 
@@ -127,7 +128,7 @@ export function BulkProductImportDialog({ open, projectId, onClose }: Props) {
           type="button"
           disabled={!file}
           onClick={parse}
-          className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+          className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm disabled:opacity-40`}
         >
           {t('elementIdentity.ifc.parse')}
         </button>
@@ -136,7 +137,7 @@ export function BulkProductImportDialog({ open, projectId, onClose }: Props) {
         <button
           type="button"
           onClick={() => setStep(2)}
-          className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+          className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm`}
         >
           {t('elementIdentity.ifc.next')}
         </button>
@@ -145,7 +146,7 @@ export function BulkProductImportDialog({ open, projectId, onClose }: Props) {
         <button
           type="button"
           onClick={confirm}
-          className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+          className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm`}
         >
           {t('elementIdentity.dialog.confirm')}
         </button>

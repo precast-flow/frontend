@@ -13,6 +13,11 @@ import '../proje/projectManagementGlassLight.css'
 import { useI18n } from '../../i18n/I18nProvider'
 import { useThemeMode } from '../../theme/ThemeProvider'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
+import {
+  eiSplitFilterToggleClass,
+  eiSplitHeaderButtonPassive,
+} from './ElementIdentityPieceCodesLikeSplit'
+import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
 import { eiSplitListRowShell, eiTabPill } from './elementIdentitySplitUi'
 import { useElementIdentity } from './elementIdentityContextValue'
 
@@ -110,17 +115,7 @@ export function ElementIdentityProjectListView() {
       return 1
     }
   })
-  const [pageSize, setPageSize] = useState(() => {
-    try {
-      const raw = sessionStorage.getItem(VIEW_STATE_KEY)
-      if (!raw) return 4
-      const v = JSON.parse(raw) as { pageSize?: number }
-      const n = Number(v.pageSize)
-      return [4, 6, 8, 10, 15].includes(n) ? n : 4
-    } catch {
-      return 4
-    }
-  })
+  const pageSize = 4
   const [detailTab, setDetailTab] = useState<DetailTabId>(() => {
     try {
       const raw = sessionStorage.getItem(VIEW_STATE_KEY)
@@ -256,13 +251,12 @@ export function ElementIdentityProjectListView() {
           detailTab,
           selectedId: activeProjectId,
           listPage: safeListPage,
-          pageSize,
         }),
       )
     } catch {
       /* ignore */
     }
-  }, [splitRatio, detailTab, activeProjectId, safeListPage, pageSize])
+  }, [splitRatio, detailTab, activeProjectId, safeListPage])
 
   const activeFilterCount = searchQuery.trim() ? 1 : 0
 
@@ -340,25 +334,7 @@ export function ElementIdentityProjectListView() {
                       type="button"
                       onClick={() => setFiltersOpen((v) => !v)}
                       aria-expanded={filtersOpen}
-                      className={
-                        gl
-                          ? [
-                              'glass-btn',
-                              'small',
-                              'inline-flex',
-                              'items-center',
-                              'gap-1.5',
-                              filtersOpen ? 'outline' : 'secondary',
-                            ].join(' ')
-                          : [
-                              'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25',
-                              filtersOpen
-                                ? neutralShell
-                                  ? 'border-black/35 bg-black/10 text-black dark:border-white/20 dark:bg-black/50 dark:text-white'
-                                  : 'border-black/25 bg-black/8 text-black dark:border-white/20 dark:bg-black/45 dark:text-white'
-                                : 'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
-                            ].join(' ')
-                      }
+                      className={eiSplitFilterToggleClass(filtersOpen)}
                     >
                       <Filter className="size-3.5 shrink-0" aria-hidden />
                       Filtrele
@@ -400,11 +376,7 @@ export function ElementIdentityProjectListView() {
                     <button
                       type="button"
                       onClick={() => setFiltersOpen(false)}
-                      className={
-                        gl
-                          ? 'card-button inline-flex size-7 items-center justify-center p-0'
-                          : 'inline-flex size-7 items-center justify-center rounded-lg border border-black/20 text-black/80 hover:bg-black/5 dark:border-white/15 dark:text-white/80 dark:hover:bg-white/10'
-                      }
+                      className={`${eiSplitHeaderButtonPassive} inline-flex size-7 items-center justify-center p-0`}
                       aria-label="Filtreyi kapat"
                     >
                       {gl ? <X className="size-3.5" aria-hidden /> : <span className="text-lg leading-none">×</span>}
@@ -438,11 +410,7 @@ export function ElementIdentityProjectListView() {
                         setListPage(1)
                         setFiltersOpen(false)
                       }}
-                      className={
-                        gl
-                          ? ['glass-btn', 'secondary', 'small'].join(' ')
-                          : 'rounded-md border border-black/22 px-2 py-1 text-[11px] font-semibold text-black hover:bg-black/5 dark:border-white/15 dark:text-white dark:hover:bg-white/10'
-                      }
+                      className={`${eiSplitHeaderButtonPassive} px-2 py-1 text-[11px]`}
                     >
                       Temizle
                     </button>
@@ -508,11 +476,7 @@ export function ElementIdentityProjectListView() {
                               to={`/eleman-kimlik/${lite.id}`}
                               state={{ fromElementIdentityList: true }}
                               title={t('elementIdentity.list.detailCta')}
-                              className={
-                                gl
-                                  ? ['glass-btn', 'secondary', 'small', 'ml-auto', 'inline-flex', 'items-center', 'gap-0.5', 'no-underline'].join(' ')
-                                  : 'inline-flex items-center justify-end gap-0.5 rounded-lg border border-slate-300 bg-white px-1.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm hover:bg-slate-50 no-underline dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
-                              }
+                              className={`${eiSplitHeaderButtonPassive} ml-auto inline-flex shrink-0 items-center gap-0.5 self-center py-1 pl-2 pr-2 text-[11px] no-underline`}
                             >
                               {t('elementIdentity.list.detailCta')}
                               <ChevronRight className="size-3 opacity-70" strokeWidth={2} aria-hidden />
@@ -583,58 +547,14 @@ export function ElementIdentityProjectListView() {
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
                       {filtered.length > 0 ? (
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            disabled={safeListPage <= 1}
-                            onClick={() => setListPage((p) => Math.max(1, p - 1))}
-                            className={[
-                              'glass-btn',
-                              'secondary',
-                              'small',
-                              'disabled:pointer-events-none disabled:opacity-35',
-                            ].join(' ')}
-                          >
-                            Önceki
-                          </button>
-                          <span className="tabular-nums text-black/80 dark:text-white/75">
-                            Sayfa {safeListPage}/{listPageCount}
-                          </span>
-                          <button
-                            type="button"
-                            disabled={safeListPage >= listPageCount}
-                            onClick={() => setListPage((p) => Math.min(listPageCount, p + 1))}
-                            className={[
-                              'glass-btn',
-                              'secondary',
-                              'small',
-                              'disabled:pointer-events-none disabled:opacity-35',
-                            ].join(' ')}
-                          >
-                            Sonraki
-                          </button>
-                        </div>
+                        <SplitListPaginationNav
+                          safePage={safeListPage}
+                          pageCount={listPageCount}
+                          onPrev={() => setListPage((p) => Math.max(1, p - 1))}
+                          onNext={() => setListPage((p) => Math.min(listPageCount, p + 1))}
+                          gl
+                        />
                       ) : null}
-                      <label className="flex items-center gap-1 text-black dark:text-white/80">
-                        <span>Sayfa boyutu</span>
-                        <select
-                          value={pageSize}
-                          onChange={(event) => {
-                            setPageSize(Number(event.target.value))
-                            setListPage(1)
-                            requestAnimationFrame(() => {
-                              listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                            })
-                          }}
-                          className="glass-input px-2 py-1 text-xs"
-                        >
-                          {[4, 6, 8, 10, 15].map((size) => (
-                            <option key={size} value={size}>
-                              {size}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
                     </div>
                   </div>
                 </div>
@@ -655,48 +575,15 @@ export function ElementIdentityProjectListView() {
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
                       {filtered.length > 0 ? (
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            disabled={safeListPage <= 1}
-                            onClick={() => setListPage((p) => Math.max(1, p - 1))}
-                            className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
-                          >
-                            Önceki
-                          </button>
-                          <span className="tabular-nums text-black/70 dark:text-white/75">
-                            Sayfa {safeListPage}/{listPageCount}
-                          </span>
-                          <button
-                            type="button"
-                            disabled={safeListPage >= listPageCount}
-                            onClick={() => setListPage((p) => Math.min(listPageCount, p + 1))}
-                            className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
-                          >
-                            Sonraki
-                          </button>
-                        </div>
+                        <SplitListPaginationNav
+                          safePage={safeListPage}
+                          pageCount={listPageCount}
+                          onPrev={() => setListPage((p) => Math.max(1, p - 1))}
+                          onNext={() => setListPage((p) => Math.min(listPageCount, p + 1))}
+                          buttonStyle="legacy"
+                          pageIndicatorClassName="tabular-nums text-black/70 dark:text-white/75"
+                        />
                       ) : null}
-                      <label className="flex items-center gap-1 text-black/75 dark:text-white/80">
-                        <span>Sayfa boyutu</span>
-                        <select
-                          value={pageSize}
-                          onChange={(event) => {
-                            setPageSize(Number(event.target.value))
-                            setListPage(1)
-                            requestAnimationFrame(() => {
-                              listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                            })
-                          }}
-                          className="rounded-md border border-black/22 bg-white px-1.5 py-1 text-xs text-black dark:border-white/15 dark:bg-black/80 dark:text-white"
-                        >
-                          {[4, 6, 8, 10, 15].map((size) => (
-                            <option key={size} value={size}>
-                              {size}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
                     </div>
                   </div>
                 </div>
@@ -763,13 +650,10 @@ export function ElementIdentityProjectListView() {
                       <Link
                         to={`/eleman-kimlik/${selected.id}`}
                         state={{ fromElementIdentityList: true }}
-                        className={
-                          gl
-                            ? 'glass-btn secondary small mt-2 inline-flex w-fit max-w-[calc(100%-1rem)] shrink-0 items-center justify-center gap-1'
-                            : 'mt-2 inline-flex w-fit max-w-[calc(100%-1rem)] items-center justify-center rounded-md border border-black/22 px-2.5 py-1.5 text-xs font-semibold text-black hover:bg-black/5 dark:border-white/15 dark:text-white dark:hover:bg-white/10'
-                        }
+                        className={`${eiSplitHeaderButtonPassive} mt-2 inline-flex w-fit max-w-[calc(100%-1rem)] shrink-0 items-center justify-center gap-1 px-2.5 py-1.5 text-xs no-underline`}
                       >
-                        {t('elementIdentity.list.detailCta')} (tam sayfa)
+                        {t('elementIdentity.list.detailCta')}
+                        <ChevronRight className="size-3 opacity-70" strokeWidth={2} aria-hidden />
                       </Link>
                     </header>
 

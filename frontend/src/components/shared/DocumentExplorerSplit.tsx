@@ -9,10 +9,12 @@ import {
   documentIcon,
 } from './documentExplorerTypes'
 import '../proje/projectManagementGlassLight.css'
+import { eiSplitFilterToggleClass } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import { SplitListPaginationNav } from './SplitListPaginationNav'
 
 type DocDetailTabId = 'gecmis' | 'onizleme'
 
-const DOC_PAGE_SIZE_OPTIONS = [4, 6, 8, 12] as const
+const DOC_LIST_PAGE_SIZE = 6
 const DEFAULT_DOC_SPLIT_RATIO = 40
 
 type PersistShape = {
@@ -57,7 +59,7 @@ export function DocumentExplorerSplit({
   const [docExtFilter, setDocExtFilter] = useState<'all' | 'PDF' | 'IFC' | 'XLSX' | 'DOCX' | 'ZIP' | 'DWG'>('all')
   const [docSort, setDocSort] = useState<'date-desc' | 'date-asc' | 'name-asc'>('date-desc')
   const [docPage, setDocPage] = useState(1)
-  const [docPageSize, setDocPageSize] = useState<(typeof DOC_PAGE_SIZE_OPTIONS)[number]>(6)
+  const docPageSize = DOC_LIST_PAGE_SIZE
   const [docSplitRatio, setDocSplitRatio] = useState(DEFAULT_DOC_SPLIT_RATIO)
   const [isDocResizing, setIsDocResizing] = useState(false)
   const [isDocResizerHover, setIsDocResizerHover] = useState(false)
@@ -82,8 +84,6 @@ export function DocumentExplorerSplit({
       if (parsed.docExtFilter) setDocExtFilter(parsed.docExtFilter)
       if (parsed.docSort) setDocSort(parsed.docSort)
       if (typeof parsed.docPage === 'number' && parsed.docPage > 0) setDocPage(parsed.docPage)
-      if (typeof parsed.docPageSize === 'number' && (DOC_PAGE_SIZE_OPTIONS as readonly number[]).includes(parsed.docPageSize))
-        setDocPageSize(parsed.docPageSize as (typeof DOC_PAGE_SIZE_OPTIONS)[number])
       if (typeof parsed.docSplitRatio === 'number')
         setDocSplitRatio(Math.min(55, Math.max(30, parsed.docSplitRatio)))
       if (typeof parsed.selectedDocId === 'string' && documents.some((d) => d.id === parsed.selectedDocId)) {
@@ -198,14 +198,12 @@ export function DocumentExplorerSplit({
       docExtFilter,
       docSort,
       docPage: safeDocPage,
-      docPageSize,
       docSplitRatio,
     }
     sessionStorage.setItem(persistKey, JSON.stringify(next))
   }, [
     docDetailTab,
     docExtFilter,
-    docPageSize,
     docQuery,
     docSort,
     docSplitRatio,
@@ -274,18 +272,7 @@ export function DocumentExplorerSplit({
                 type="button"
                 onClick={() => setIsDocFilterOpen((prev) => !prev)}
                 aria-expanded={isDocFilterOpen}
-                className={
-                  gl
-                    ? ['glass-btn', 'small', 'inline-flex', 'items-center', 'gap-1.5', isDocFilterOpen ? 'outline' : 'secondary'].join(
-                        ' ',
-                      )
-                    : [
-                        'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25',
-                        isDocFilterOpen
-                          ? 'border-black/35 bg-black/10 text-black dark:border-white/20 dark:bg-black/50 dark:text-white'
-                          : 'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
-                      ].join(' ')
-                }
+                className={eiSplitFilterToggleClass(isDocFilterOpen)}
               >
                 <Filter className="size-3.5 shrink-0" aria-hidden />
                 Filtrele
@@ -543,16 +530,8 @@ export function DocumentExplorerSplit({
               docPageEnd={docPageEnd}
               safeDocPage={safeDocPage}
               docPageCount={docPageCount}
-              docPageSize={docPageSize}
               onPrev={() => setDocPage((p) => Math.max(1, p - 1))}
               onNext={() => setDocPage((p) => Math.min(docPageCount, p + 1))}
-              onPageSizeChange={(size) => {
-                setDocPageSize(size)
-                setDocPage(1)
-                requestAnimationFrame(() => {
-                  docListRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                })
-              }}
             />
           </div>
         ) : (
@@ -564,16 +543,8 @@ export function DocumentExplorerSplit({
               docPageEnd={docPageEnd}
               safeDocPage={safeDocPage}
               docPageCount={docPageCount}
-              docPageSize={docPageSize}
               onPrev={() => setDocPage((p) => Math.max(1, p - 1))}
               onNext={() => setDocPage((p) => Math.min(docPageCount, p + 1))}
-              onPageSizeChange={(size) => {
-                setDocPageSize(size)
-                setDocPage(1)
-                requestAnimationFrame(() => {
-                  docListRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                })
-              }}
             />
           </div>
         )}
@@ -770,10 +741,8 @@ function DocListFooter({
   docPageEnd,
   safeDocPage,
   docPageCount,
-  docPageSize,
   onPrev,
   onNext,
-  onPageSizeChange,
 }: {
   gl: boolean
   filteredCount: number
@@ -781,10 +750,8 @@ function DocListFooter({
   docPageEnd: number
   safeDocPage: number
   docPageCount: number
-  docPageSize: number
   onPrev: () => void
   onNext: () => void
-  onPageSizeChange: (size: (typeof DOC_PAGE_SIZE_OPTIONS)[number]) => void
 }) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
@@ -801,54 +768,18 @@ function DocListFooter({
       </p>
       <div className="flex flex-wrap items-center gap-2">
         {filteredCount > 0 ? (
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              disabled={safeDocPage <= 1}
-              onClick={onPrev}
-              className={
-                gl
-                  ? ['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(' ')
-                  : 'rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10'
-              }
-            >
-              Önceki
-            </button>
-            <span className={gl ? 'tabular-nums text-black/80 dark:text-white/75' : 'tabular-nums text-black/70 dark:text-white/75'}>
-              Sayfa {safeDocPage}/{docPageCount}
-            </span>
-            <button
-              type="button"
-              disabled={safeDocPage >= docPageCount}
-              onClick={onNext}
-              className={
-                gl
-                  ? ['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(' ')
-                  : 'rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10'
-              }
-            >
-              Sonraki
-            </button>
-          </div>
-        ) : null}
-        <label className={gl ? 'flex items-center gap-1 text-black dark:text-white/80' : 'flex items-center gap-1 text-black/75 dark:text-white/80'}>
-          <span>Sayfa boyutu</span>
-          <select
-            value={docPageSize}
-            onChange={(event) => onPageSizeChange(Number(event.target.value) as (typeof DOC_PAGE_SIZE_OPTIONS)[number])}
-            className={
-              gl
-                ? 'glass-input px-2 py-1 text-xs'
-                : 'rounded-md border border-black/22 bg-white px-1.5 py-1 text-xs text-black dark:border-white/15 dark:bg-black/80 dark:text-white'
+          <SplitListPaginationNav
+            safePage={safeDocPage}
+            pageCount={docPageCount}
+            onPrev={onPrev}
+            onNext={onNext}
+            gl={gl}
+            buttonStyle={gl ? 'glass' : 'legacy'}
+            pageIndicatorClassName={
+              gl ? 'tabular-nums text-black/80 dark:text-white/75' : 'tabular-nums text-black/70 dark:text-white/75'
             }
-          >
-            {DOC_PAGE_SIZE_OPTIONS.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
-        </label>
+          />
+        ) : null}
       </div>
     </div>
   )

@@ -24,7 +24,11 @@ import { useThemeMode } from '../../theme/ThemeProvider'
 import { CrmNewCustomerModal } from './CrmNewCustomerModal'
 import { NeoSwitch } from '../NeoSwitch'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
-import { eiSplitHeaderButtonPassive } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
+import {
+  eiSplitFilterToggleClass,
+  eiSplitHeaderButtonPassive,
+} from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import {
   splitDetailHeaderClass,
   splitListCardClass,
@@ -99,7 +103,7 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
   const [selectedId, setSelectedId] = useState(crmCustomers[0]!.id)
   const [detailTab, setDetailTab] = useState<DetailTabId>('genel')
   const [listPage, setListPage] = useState(1)
-  const [pageSize, setPageSize] = useState(CRM_LIST_PAGE_SIZE)
+  const pageSize = CRM_LIST_PAGE_SIZE
   const [splitRatio, setSplitRatio] = useState(40)
   const [isResizing, setIsResizing] = useState(false)
   const [isResizerHover, setIsResizerHover] = useState(false)
@@ -518,25 +522,7 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                       type="button"
                       onClick={() => setFiltersOpen((v) => !v)}
                       aria-expanded={filtersOpen}
-                      className={
-                        gl
-                          ? [
-                              'glass-btn',
-                              'small',
-                              'inline-flex',
-                              'items-center',
-                              'gap-1.5',
-                              filtersOpen ? 'outline' : 'secondary',
-                            ].join(' ')
-                          : [
-                              'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25',
-                              filtersOpen
-                                ? neutralShell
-                                  ? 'border-black/35 bg-black/10 text-black dark:border-white/20 dark:bg-black/50 dark:text-white'
-                                  : 'border-black/25 bg-black/8 text-black dark:border-white/20 dark:bg-black/45 dark:text-white'
-                                : 'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
-                            ].join(' ')
-                      }
+                      className={eiSplitFilterToggleClass(filtersOpen)}
                     >
                       <Filter className="size-3.5 shrink-0" aria-hidden />
                       <span>Filtrele</span>
@@ -557,14 +543,7 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                     <button
                       type="button"
                       onClick={openCreateCustomerDialog}
-                      className={
-                        gl
-                          ? ['glass-btn', 'primary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
-                          : [
-                              'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30',
-                              'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
-                            ].join(' ')
-                      }
+                      className={eiSplitHeaderButtonPassive}
                     >
                       <Plus className="size-3.5 shrink-0" aria-hidden />
                       <span>Yeni müşteri</span>
@@ -697,11 +676,7 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                     <button
                       type="button"
                       onClick={openCreateCustomerDialog}
-                      className={
-                        gl
-                          ? ['glass-btn', 'primary', 'small', 'px-5', 'py-2.5', 'text-sm', 'font-semibold'].join(' ')
-                          : 'okan-liquid-btn-primary px-5 py-2.5 text-sm font-semibold'
-                      }
+                      className={eiSplitHeaderButtonPassive}
                     >
                       Yeni müşteri
                     </button>
@@ -769,44 +744,13 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                             sonuç
                           </p>
                           <div className="flex flex-wrap items-center gap-2">
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                disabled={safeListPage <= 1}
-                                onClick={() => setListPage((p) => Math.max(1, p - 1))}
-                                className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
-                                  ' ',
-                                )}
-                              >
-                                Önceki
-                              </button>
-                              <span className="tabular-nums text-black/80 dark:text-white/75">
-                                Sayfa {safeListPage}/{listTotalPages}
-                              </span>
-                              <button
-                                type="button"
-                                disabled={safeListPage >= listTotalPages}
-                                onClick={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
-                                className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
-                                  ' ',
-                                )}
-                              >
-                                Sonraki
-                              </button>
-                            </div>
-                            <label className="flex items-center gap-1 text-black dark:text-white/80">
-                              <span>Sayfa boyutu</span>
-                              <select
-                                value={pageSize}
-                                onChange={(event) => setPageSize(Number(event.target.value))}
-                                className="glass-input px-2 py-1 text-xs"
-                              >
-                                <option value={6}>6</option>
-                                <option value={8}>8</option>
-                                <option value={12}>12</option>
-                                <option value={16}>16</option>
-                              </select>
-                            </label>
+                            <SplitListPaginationNav
+                              safePage={safeListPage}
+                              pageCount={listTotalPages}
+                              onPrev={() => setListPage((p) => Math.max(1, p - 1))}
+                              onNext={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
+                              gl
+                            />
                           </div>
                         </div>
                       </div>
@@ -816,40 +760,14 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                         {listPageStart}-{listPageEnd} / {list.length} sonuç
                       </span>
                       <div className="flex flex-wrap items-center gap-2">
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            disabled={safeListPage <= 1}
-                            onClick={() => setListPage((p) => Math.max(1, p - 1))}
-                            className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
-                          >
-                            Önceki
-                          </button>
-                          <span className="tabular-nums text-black/70 dark:text-white/75">
-                            Sayfa {safeListPage}/{listTotalPages}
-                          </span>
-                          <button
-                            type="button"
-                            disabled={safeListPage >= listTotalPages}
-                            onClick={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
-                            className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
-                          >
-                            Sonraki
-                          </button>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <label className="text-black/55 dark:text-white/65">Sayfa boyutu:</label>
-                          <select
-                            value={pageSize}
-                            onChange={(event) => setPageSize(Number(event.target.value))}
-                            className="rounded-md border border-black/22 bg-white px-1.5 py-0.5 text-[11px] text-black dark:border-white/15 dark:bg-black/80 dark:text-white"
-                          >
-                            <option value={6}>6</option>
-                            <option value={8}>8</option>
-                            <option value={12}>12</option>
-                            <option value={16}>16</option>
-                          </select>
-                        </div>
+                        <SplitListPaginationNav
+                          safePage={safeListPage}
+                          pageCount={listTotalPages}
+                          onPrev={() => setListPage((p) => Math.max(1, p - 1))}
+                          onNext={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
+                          buttonStyle="legacy"
+                          pageIndicatorClassName="tabular-nums text-black/70 dark:text-white/75"
+                        />
                       </div>
                     </div>
                     )}

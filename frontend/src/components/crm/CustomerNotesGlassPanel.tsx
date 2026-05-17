@@ -1,5 +1,6 @@
 import { StickyNote } from 'lucide-react'
 import type { CrmCustomer } from '../../data/crmCustomers'
+import { eiSplitHeaderButtonPassive } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 
 type Props = {
   customer: CrmCustomer
@@ -212,14 +213,7 @@ export function CustomerNotesGlassPanel({ customer, gl }: Props) {
             <p className={gl ? 'text-xs text-black/70 dark:text-white/75' : 'text-xs text-slate-600 dark:text-slate-300'}>
               Notlar yalnızca bu müşteri kartına bağlıdır (mock).
             </p>
-            <button
-              type="button"
-              className={
-                gl
-                  ? ['glass-btn', 'primary', 'small'].join(' ')
-                  : 'rounded-lg border border-black/22 bg-white px-3 py-1.5 text-xs font-semibold text-black hover:bg-black/5 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10'
-              }
-            >
+            <button type="button" className={eiSplitHeaderButtonPassive}>
               Kaydet
             </button>
           </div>

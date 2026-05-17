@@ -10,7 +10,7 @@ export type PlanningToolbarActionId =
   | 'save'
   | 'publish'
 
-export type PlanningFilterType = 'search' | 'resource' | 'status' | 'workdays'
+export type PlanningFilterType = 'search' | 'project' | 'resource' | 'status' | 'workdays'
 
 export type PlanningUnitConfig = {
   unit: PlanningUnitKey
@@ -49,7 +49,7 @@ const BASE_TOOLBAR: PlanningToolbarActionId[] = [
 const OPS_TOOLBAR: PlanningToolbarActionId[] = ['filters', 'queue', 'undo', 'redo', 'history']
 
 /** Genel planlama araç çubuğunda gösterilen birimler (koordinasyon / «Planlama» sekmesi hariç). */
-export const GENERAL_PLANNING_UI_UNITS = ['production', 'dispatch', 'assembly'] as const satisfies readonly PlanningUnitKey[]
+export const GENERAL_PLANNING_UI_UNITS = ['production', 'dispatch'] as const satisfies readonly PlanningUnitKey[]
 
 export const GENERAL_PLANNING_UNIT_CONFIGS: Record<PlanningUnitKey, PlanningUnitConfig> = {
   planning: {
@@ -77,7 +77,7 @@ export const GENERAL_PLANNING_UNIT_CONFIGS: Record<PlanningUnitKey, PlanningUnit
     resourceColumnLabelKey: 'generalPlanning.column.vehicle',
     filterResourceLabelKey: 'generalPlanning.filter.vehicle',
     statusOptions: ['PLANNED', 'IN_PROGRESS', 'PRODUCED_OK', 'HOLD_UNCERTAIN', 'CANCELLED'],
-    filters: ['search', 'resource', 'status', 'workdays'],
+    filters: ['search', 'project', 'resource', 'status', 'workdays'],
     toolbarActions: OPS_TOOLBAR,
     queueEnabled: true,
     summaryUsesSteel: false,
