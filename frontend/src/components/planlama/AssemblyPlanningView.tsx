@@ -1,4 +1,6 @@
-import { GeneralPlanningProvider } from './GeneralPlanningContext'
+import { useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { GeneralPlanningProvider, useGeneralPlanningOptional } from './GeneralPlanningContext'
 import { PlanningTimelineView } from './shared/PlanningTimelineView'
 import { UNIT_VIEW_PERMISSIONS } from '../../data/generalPlanningUnitConfig'
 import { useGeneralPlanningAccess } from '../../hooks/useGeneralPlanningAccess'
@@ -18,10 +20,46 @@ function AssemblyPlanningInner() {
   return <PlanningTimelineView variant="assembly" />
 }
 
-/** Genel planlama — Montaj birimi görünümü (lojistik modülü altında ayrı sayfa). */
+function AssemblyPlanningProjectUrlSync({
+  projectFromUrl,
+  setSearchParams,
+}: {
+  projectFromUrl: string | null
+  setSearchParams: ReturnType<typeof useSearchParams>[1]
+}) {
+  const gp = useGeneralPlanningOptional()
+
+  useEffect(() => {
+    if (!gp?.projectScoped || !gp.selectedProjectCode) return
+    if (projectFromUrl === gp.selectedProjectCode) return
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('project', gp.selectedProjectCode!)
+        return next
+      },
+      { replace: true },
+    )
+  }, [gp?.projectScoped, gp?.selectedProjectCode, projectFromUrl, setSearchParams])
+
+  return null
+}
+
+/** Genel planlama — Montaj birimi görünümü; planlar proje bazlı yönetilir. */
 export function AssemblyPlanningView() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const projectFromUrl = searchParams.get('project')
+
   return (
-    <GeneralPlanningProvider lockUnit="assembly">
+    <GeneralPlanningProvider
+      lockUnit="assembly"
+      projectScoped
+      initialProjectCode={projectFromUrl}
+    >
+      <AssemblyPlanningProjectUrlSync
+        projectFromUrl={projectFromUrl}
+        setSearchParams={setSearchParams}
+      />
       <AssemblyPlanningInner />
     </GeneralPlanningProvider>
   )
