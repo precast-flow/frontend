@@ -93,6 +93,7 @@ export function BulkProductImportDialog({ open, projectId, onClose }: Props) {
         source: 'IFC',
         revision: activeSame.length > 0 && r.conflictAction === 'revision' ? maxRev + 1 : 1,
         status: 'active',
+        quantity: 1,
         note: file?.fileName,
         createdAt: new Date().toISOString(),
       }

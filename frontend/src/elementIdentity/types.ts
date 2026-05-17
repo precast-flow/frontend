@@ -368,6 +368,8 @@ export type ProjectProduct = {
   definition?: string
   lifecycleStatus?: ProductLifecycleStatus
   volumeM3?: number
+  /** Projede bu ürün satırı için planlanan ürün adedi */
+  quantity?: number
   /** Tipoloji identifyingDimensions anahtarları → mm veya adet */
   dimensions?: Record<string, number>
   materials?: ProductMaterialEntry[]

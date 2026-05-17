@@ -19,6 +19,18 @@ import '../muhendislikOkan/engineeringOkanLiquid.css'
 import './projectManagementGlassLight.css'
 import { eiSplitFilterToggleClass } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
+import { splitDetailHeaderClass, splitListCardClass, splitTabPill } from '../shared/splitModuleStyles'
+
+export type ProjectDetailPieceCodesProjectContext = {
+  name: string
+  code: string
+  customer: string
+  owner: string
+}
+
+type ProjectDetailPieceCodesPanelProps = {
+  project: ProjectDetailPieceCodesProjectContext
+}
 
 /** Sol ürün listesinde her sayfada gösterilecek kayıt sayısı */
 const PIECE_LIST_PAGE_SIZE = 6
@@ -52,7 +64,7 @@ function rebarShapeLabel(shape: RebarShapeType, locale: 'tr' | 'en'): string {
   return locale === 'en' ? en[shape] : tr[shape]
 }
 
-export function ProjectDetailPieceCodesPanel() {
+export function ProjectDetailPieceCodesPanel({ project }: ProjectDetailPieceCodesPanelProps) {
   const { locale } = useI18n()
   const { mode } = useThemeMode()
   const gl = mode === 'light'
@@ -247,12 +259,20 @@ export function ProjectDetailPieceCodesPanel() {
   const sectionHeading = gl
     ? 'text-xs font-semibold uppercase tracking-wide text-black/55 dark:text-white/60'
     : 'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'
-  const tabBaseDetail =
-    'shrink-0 rounded-full border px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 dark:focus-visible:ring-cyan-400/60 sm:text-sm'
-  const tabActiveDetail =
-    'border-sky-300/70 bg-sky-100/70 text-slate-900 dark:border-sky-500/50 dark:bg-sky-900/35 dark:text-slate-50'
-  const tabIdleDetail =
-    'border-slate-200/70 bg-white/55 text-slate-600 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-900/35 dark:text-slate-300 dark:hover:text-slate-100'
+
+  const detailColumn = (
+    <>
+      <header className={splitDetailHeaderClass}>
+        <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
+          Seçili proje
+        </p>
+        <h3 className="mt-1.5 text-xl font-semibold leading-tight text-black dark:text-white">{project.name}</h3>
+        <p className="mt-1 text-sm leading-snug text-black/75 dark:text-white/80">
+          {project.code} · {project.customer} · Sorumlu {project.owner}
+        </p>
+      </header>
+    </>
+  )
 
   return (
     <div
@@ -486,38 +506,21 @@ export function ProjectDetailPieceCodesPanel() {
                 const lifePct = getPartLifecycleProgressPercent(p.lifecycleStatus)
                 const lifeStyles = getPartLifecycleBarStyles(p.lifecycleStatus)
                 const lifeLabel = getPartLifecycleLabel(p.lifecycleStatus, locale)
+                const rowActive = selectedId === p.id
                 return (
                   <li
                     key={p.id}
-                    className={[
-                      gl
-                        ? [
-                            'glass-card',
-                            'glass-card--static',
-                            'project-mgmt-list-row-card',
-                            'flex',
-                            'min-h-0',
-                            'shrink-0',
-                            'items-stretch',
-                            'gap-1.5',
-                          ].join(' ')
-                        : 'flex min-h-0 shrink-0 items-stretch gap-1.5 rounded-lg border border-black/15 bg-white/70 px-2 py-1.5 dark:border-white/12 dark:bg-black/45',
-                      selectedId === p.id ? 'okan-project-list-row--active' : '',
-                    ].join(' ')}
+                    className={splitListCardClass(
+                      rowActive,
+                      'flex min-h-0 shrink-0 items-stretch gap-1.5 px-2 py-1.5',
+                    )}
                   >
                     <button
                       type="button"
                       onClick={() => selectPart(p.id)}
-                      aria-current={selectedId === p.id ? 'true' : undefined}
+                      aria-current={rowActive ? 'true' : undefined}
                       aria-label={`${p.code}, ${lifeLabel}, ${lifePct}%`}
-                      className={[
-                        'flex min-w-0 flex-1 items-stretch gap-2.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-cyan-400/50',
-                        gl ? 'rounded-md px-0.5 py-0.5 hover:bg-white/50 dark:hover:bg-white/8' : 'px-3 py-2',
-                        !gl && selectedId === p.id ? 'okan-project-list-row--active bg-sky-500/10 dark:bg-sky-400/10' : '',
-                        !gl && selectedId !== p.id ? 'hover:bg-white/50 dark:hover:bg-slate-900/35' : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
+                      className="flex min-w-0 flex-1 items-stretch gap-2.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40"
                     >
                     <div className="flex min-w-0 flex-1 gap-2">
                       <span
@@ -700,83 +703,26 @@ export function ProjectDetailPieceCodesPanel() {
         {selected ? (
           <div key={selected.id} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
             <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 lg:max-w-3xl">
-            <header
-              className={
-                gl
-                  ? 'shrink-0 border-b border-black/12 pb-3 text-center dark:border-white/10'
-                  : 'shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10'
-              }
-            >
-              <p
-                className={
-                  gl
-                    ? 'text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65'
-                    : sectionHeading
-                }
-              >
+            {detailColumn}
+            <header className={splitDetailHeaderClass}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
                 Seçili parça
               </p>
-              <h3
-                className={
-                  gl
-                    ? 'mt-1.5 font-mono text-xl font-semibold leading-tight text-black dark:text-white'
-                    : `mt-1.5 font-mono text-xl font-semibold text-slate-900 dark:text-slate-50`
-                }
-              >
+              <h3 className="mt-1.5 font-mono text-xl font-semibold leading-tight text-black dark:text-white">
                 {selected.code}
               </h3>
-              <p
-                className={
-                  gl
-                    ? 'mt-1 text-sm leading-snug text-black/75 dark:text-white/80'
-                    : 'mt-1 text-sm text-slate-600 dark:text-slate-300'
-                }
-              >
+              <p className="mt-1 text-sm leading-snug text-black/75 dark:text-white/80">
                 {selected.familyLabel} · {selected.productType}
               </p>
             </header>
 
-            {gl ? (
-              <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-0.5">
-                <div
-                  className="okan-liquid-pill-track flex max-w-full gap-1 overflow-x-auto rounded-full p-1"
-                  role="tablist"
-                  aria-label="Parça detay sekmeleri"
-                  aria-orientation="horizontal"
-                >
-                  {(
-                    [
-                      ['genel', locale === 'en' ? 'Properties' : 'Ürün özellikleri'],
-                      ['boyutlar', locale === 'en' ? 'Dimensions' : 'Boyut bilgileri'],
-                      ['materyaller', locale === 'en' ? 'Materials' : 'Ürün materyalleri'],
-                      ['donati', locale === 'en' ? 'Reinforcement' : 'Donatı'],
-                      ['pdf', locale === 'en' ? 'Drawings' : 'Çizimler'],
-                      ['aktivite', locale === 'en' ? 'Activity' : 'Aktivite geçmişi'],
-                    ] as const satisfies readonly (readonly [PartDetailTabId, string])[]
-                  ).map(([id, label]) => (
-                    <button
-                      key={id}
-                      type="button"
-                      role="tab"
-                      aria-selected={detailTab === id}
-                      onClick={() => {
-                        setDetailTab(id)
-                        scrollPanelTop()
-                      }}
-                      className={`shrink-0 rounded-full px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 ${
-                        detailTab === id
-                          ? 'okan-liquid-pill-active okan-project-tab-active text-black dark:text-white'
-                          : 'text-black/70 hover:text-black dark:text-white/75 dark:hover:text-white'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
             <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-3">
-              <div className="flex max-w-full gap-1 overflow-x-auto" role="tablist" aria-label="Parça detay sekmeleri">
+              <div
+                className="flex max-w-full flex-wrap justify-center gap-1 overflow-x-auto"
+                role="tablist"
+                aria-label="Parça detay sekmeleri"
+                aria-orientation="horizontal"
+              >
                 {(
                   [
                     ['genel', locale === 'en' ? 'Properties' : 'Ürün özellikleri'],
@@ -791,29 +737,29 @@ export function ProjectDetailPieceCodesPanel() {
                     key={id}
                     type="button"
                     role="tab"
+                    id={`piece-detail-tab-${id}`}
                     aria-selected={detailTab === id}
+                    aria-controls="piece-detail-panel"
+                    tabIndex={detailTab === id ? 0 : -1}
                     onClick={() => {
                       setDetailTab(id)
                       scrollPanelTop()
                     }}
-                    className={`${tabBaseDetail} ${detailTab === id ? tabActiveDetail : tabIdleDetail}`}
+                    className={splitTabPill(detailTab === id)}
                   >
                     {label}
                   </button>
                 ))}
               </div>
             </div>
-            )}
 
             <div
+              id="piece-detail-panel"
               role="tabpanel"
-              className={[
-                'okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 text-center sm:px-1',
-                gl ? '' : 'mt-3',
-              ]
-                .filter(Boolean)
-                .join(' ')}
+              aria-labelledby={`piece-detail-tab-${detailTab}`}
+              className="okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 text-center sm:px-1"
             >
+
               {detailTab === 'genel' ? (
                 <div className="flex flex-col gap-6 text-left">
                   <section>
@@ -1220,9 +1166,12 @@ export function ProjectDetailPieceCodesPanel() {
             </div>
           </div>
         ) : (
-          <p className={gl ? 'text-center text-sm text-black/80 dark:text-white/80' : 'text-center text-sm text-slate-600 dark:text-slate-300'}>
-            Listeden bir parça seçin.
-          </p>
+          <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 lg:max-w-3xl">
+            {detailColumn}
+            <p className="text-center text-sm text-black/80 dark:text-white/80">
+              Listeden bir parça seçin.
+            </p>
+          </div>
         )}
       </aside>
     </div>

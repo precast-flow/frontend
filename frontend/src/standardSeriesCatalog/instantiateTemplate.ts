@@ -16,6 +16,7 @@ export function buildProjectProductFromTemplate(
     source: 'STANDARD_LIBRARY',
     revision: 1,
     status: 'active',
+    quantity: 1,
     note: template.note,
     definition: template.definition,
     lifecycleStatus: template.lifecycleStatus,

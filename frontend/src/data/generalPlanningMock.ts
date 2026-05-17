@@ -8,6 +8,7 @@ import {
   type QueueItem,
 } from './planningDesignMock'
 import { buildExpandedGeneralPlanItems } from './generalPlanningMockItems'
+import type { DispatchVehicleType } from './dispatchVehicleStyles'
 
 export type PlanningUnitKey = 'planning' | 'production' | 'dispatch' | 'assembly'
 
@@ -17,6 +18,8 @@ export type PlanningResource = {
   lineHint: string
   hatNo: number
   maxConcurrent: number
+  /** Sevkiyat araç tipi (özet görünüm renkleri). */
+  vehicleType?: DispatchVehicleType
 }
 
 export type GeneralPlanItem = {
@@ -41,15 +44,74 @@ export type GeneralPlanItem = {
   warnings: string[]
 }
 
+/** Aynı kamyon + gün hücresinde üst üste planlanabilecek ürün sayısı üst sınırı. */
+export const DISPATCH_MAX_PRODUCTS_PER_TRIP = 8
+
 export const DISPATCH_RESOURCES: PlanningResource[] = [
-  { resourceId: 'V-01', name: 'Tır 01 — Mamak', lineHint: 'ramp A', hatNo: 1, maxConcurrent: 1 },
-  { resourceId: 'V-02', name: 'Tır 02 — Mamak', lineHint: 'ramp A', hatNo: 1, maxConcurrent: 1 },
-  { resourceId: 'V-03', name: 'Kamyon 03', lineHint: 'ramp B', hatNo: 2, maxConcurrent: 1 },
-  { resourceId: 'V-04', name: 'Kamyon 04', lineHint: 'ramp B', hatNo: 2, maxConcurrent: 1 },
-  { resourceId: 'V-05', name: 'Lowbed 05', lineHint: 'ağır yük', hatNo: 3, maxConcurrent: 1 },
-  { resourceId: 'V-06', name: 'Tır 06 — Sincan', lineHint: 'ramp C', hatNo: 3, maxConcurrent: 1 },
-  { resourceId: 'V-07', name: 'Kamyon 07', lineHint: 'şehir içi', hatNo: 4, maxConcurrent: 1 },
-  { resourceId: 'V-08', name: 'Lowbed 08', lineHint: 'ağır yük', hatNo: 4, maxConcurrent: 1 },
+  {
+    resourceId: 'V-01',
+    name: 'Tır 01 — Mamak',
+    lineHint: 'ramp A',
+    hatNo: 1,
+    maxConcurrent: DISPATCH_MAX_PRODUCTS_PER_TRIP,
+    vehicleType: 'tir',
+  },
+  {
+    resourceId: 'V-02',
+    name: 'Tır 02 — Mamak',
+    lineHint: 'ramp A',
+    hatNo: 1,
+    maxConcurrent: DISPATCH_MAX_PRODUCTS_PER_TRIP,
+    vehicleType: 'tir',
+  },
+  {
+    resourceId: 'V-03',
+    name: 'Kamyon 03',
+    lineHint: 'ramp B',
+    hatNo: 2,
+    maxConcurrent: DISPATCH_MAX_PRODUCTS_PER_TRIP,
+    vehicleType: 'kamyon',
+  },
+  {
+    resourceId: 'V-04',
+    name: 'Kamyon 04',
+    lineHint: 'ramp B',
+    hatNo: 2,
+    maxConcurrent: DISPATCH_MAX_PRODUCTS_PER_TRIP,
+    vehicleType: 'kamyon',
+  },
+  {
+    resourceId: 'V-05',
+    name: 'Lowbed 05',
+    lineHint: 'ağır yük',
+    hatNo: 3,
+    maxConcurrent: DISPATCH_MAX_PRODUCTS_PER_TRIP,
+    vehicleType: 'lowbed',
+  },
+  {
+    resourceId: 'V-06',
+    name: 'Tır 06 — Sincan',
+    lineHint: 'ramp C',
+    hatNo: 3,
+    maxConcurrent: DISPATCH_MAX_PRODUCTS_PER_TRIP,
+    vehicleType: 'tir',
+  },
+  {
+    resourceId: 'V-07',
+    name: 'Kamyon 07',
+    lineHint: 'şehir içi',
+    hatNo: 4,
+    maxConcurrent: DISPATCH_MAX_PRODUCTS_PER_TRIP,
+    vehicleType: 'kamyon',
+  },
+  {
+    resourceId: 'V-08',
+    name: 'Lowbed 08',
+    lineHint: 'ağır yük',
+    hatNo: 4,
+    maxConcurrent: DISPATCH_MAX_PRODUCTS_PER_TRIP,
+    vehicleType: 'lowbed',
+  },
 ]
 
 export const ASSEMBLY_RESOURCES: PlanningResource[] = [
