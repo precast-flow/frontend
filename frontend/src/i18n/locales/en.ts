@@ -148,7 +148,7 @@ const shell: Record<string, string> = {
   'nav.planningDesign': 'Production planning',
   'nav.generalPlanning': 'General planning',
   'main.desc.generalPlanning':
-    'Shared timeline for planning, production, dispatch, and assembly; unit picker and permission-based tools.',
+    'Shared timeline for planning, production, and dispatch; pick a project on the Assembly tab for project-scoped assembly planning.',
   'generalPlanning.unitPickerAria': 'Planning unit selection',
   'generalPlanning.unit.planning': 'Planning',
   'generalPlanning.unit.production': 'Production',
@@ -216,7 +216,11 @@ const shell: Record<string, string> = {
   'main.desc.dispatchPlanning':
     'Dispatch unit timeline — filters, work queue, undo/redo, and plan history (same view as the Dispatch tab in general planning).',
   'main.desc.assemblyPlanning':
-    'Assembly unit timeline — filters, work queue, undo/redo, and plan history (same view as the Assembly tab in general planning).',
+    'Project-scoped assembly timeline — pick a project to manage assembly lines, work queue, and plan history.',
+  'assemblyPlanning.projectPickerLabel': 'Select project for assembly planning',
+  'assemblyPlanning.planCountSuffix': 'plans',
+  'assemblyPlanning.emptyProject':
+    'Select a project above to view the assembly schedule. Plans are shown only for the selected project.',
   'main.desc.productionSummary':
     'Morning production summary — KPIs, critical orders, shift filter; Step 13 / prod-01 (mock).',
   'main.desc.mes':

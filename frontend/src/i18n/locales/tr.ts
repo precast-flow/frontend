@@ -148,7 +148,7 @@ const shell: Record<string, string> = {
   'nav.planningDesign': 'Üretim planlama',
   'nav.generalPlanning': 'Genel planlama',
   'main.desc.generalPlanning':
-    'Planlama, üretim, sevkiyat ve montaj birimleri için ortak takvim; birim seçici ve yetkiye göre dinamik araçlar.',
+    'Planlama, üretim ve sevkiyat için ortak takvim; Montaj sekmesinde proje seçerek proje bazlı montaj planı yönetin.',
   'generalPlanning.unitPickerAria': 'Planlama birimi seçimi',
   'generalPlanning.unit.planning': 'Planlama',
   'generalPlanning.unit.production': 'Üretim',
@@ -216,7 +216,11 @@ const shell: Record<string, string> = {
   'main.desc.dispatchPlanning':
     'Sevkiyat birimi takvimi — filtreler, iş kuyruğu, geri al/yinele ve plan geçmişi (genel planlamadaki Sevkiyat sekmesi ile aynı görünüm).',
   'main.desc.assemblyPlanning':
-    'Montaj birimi takvimi — filtreler, iş kuyruğu, geri al/yinele ve plan geçmişi (genel planlamadaki Montaj sekmesi ile aynı görünüm).',
+    'Proje bazlı montaj takvimi — proje seçerek montaj hatları, iş kuyruğu ve plan geçmişini yönetin.',
+  'assemblyPlanning.projectPickerLabel': 'Montaj planı için proje seçin',
+  'assemblyPlanning.planCountSuffix': 'plan',
+  'assemblyPlanning.emptyProject':
+    'Montaj planı görüntülemek için üstten bir proje seçin. Planlar yalnızca seçili proje için gösterilir.',
   'main.desc.productionSummary':
     'Sabah üretim özeti — KPI, kritik emirler, vardiya filtresi; Adım 13 / prod-01 (mock).',
   'main.desc.mes':

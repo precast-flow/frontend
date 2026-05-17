@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import {
   Calendar,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -27,8 +28,10 @@ import { useI18n } from '../../../i18n/I18nProvider'
 import { FilterToolbarSearch } from '../../shared/FilterToolbarSearch'
 import { useGeneralPlanningOptional } from '../GeneralPlanningContext'
 import { useGeneralPlanningAccess } from '../../../hooks/useGeneralPlanningAccess'
+import { assemblyQueueForProject } from '../../../data/assemblyPlanningProjects'
 import {
   GENERAL_PLAN_QUEUE,
+  INITIAL_GENERAL_PLAN_ITEMS,
   PLANNING_UNIT_LABEL_KEYS,
   crossUnitConsistencyWarnings,
   linkedPlansForProduct,
@@ -236,6 +239,22 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   const { t } = useI18n()
   const access = useGeneralPlanningAccess()
 
+  const crossUnitPlanItems: GeneralPlanItem[] =
+    gp?.projectScoped && gp ? INITIAL_GENERAL_PLAN_ITEMS : (gp?.items ?? [])
+
+  const selectedAssemblyProject = useMemo(() => {
+    if (!gp?.projectScoped || !gp.selectedProjectCode) return null
+    return (
+      gp.assemblyProjectOptions.find((p) => p.code === gp.selectedProjectCode) ?? {
+        code: gp.selectedProjectCode,
+        name: gp.selectedProjectCode,
+        customer: '',
+        cardId: null,
+        assemblyPlanCount: 0,
+      }
+    )
+  }, [gp?.assemblyProjectOptions, gp?.projectScoped, gp?.selectedProjectCode])
+
   const unitConfig = isGeneral && gp ? getUnitConfig(gp.activeUnit) : null
   const timelineUsesShifts =
     !isGeneral || !unitConfig ? true : unitConfig.timelineUsesShifts !== false
@@ -278,7 +297,15 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   const allGeneralItems = gp?.items ?? []
   const unitFilteredGeneral = useMemo(() => {
     if (!isGeneral || !gp) return []
-    return allGeneralItems.filter((it) => it.unit === gp.activeUnit).map(generalToPlanItem)
+    return allGeneralItems
+      .filter((it) => it.unit === gp.activeUnit)
+      .filter(
+        (it) =>
+          !gp.projectScoped ||
+          !gp.selectedProjectCode ||
+          (it.projectId ?? '') === gp.selectedProjectCode,
+      )
+      .map(generalToPlanItem)
   }, [allGeneralItems, gp, isGeneral])
 
   const items: PlanItem[] = isGeneral && gp ? unitFilteredGeneral : itemsLocal
@@ -292,9 +319,25 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
       const nextUnit =
         typeof action === 'function' ? (action as (p: PlanItem[]) => PlanItem[])(prevUnit) : action
       gp.setItems((all) => {
-        const other = all.filter((it) => it.unit !== gp.activeUnit)
+        const other = all.filter((it) => {
+          if (it.unit !== gp.activeUnit) return true
+          if (gp.projectScoped && gp.selectedProjectCode) {
+            return (it.projectId ?? '') !== gp.selectedProjectCode
+          }
+          return false
+        })
         const mapped = nextUnit.map((p) =>
-          planToGeneral(p, gp.activeUnit, p.productId),
+          planToGeneral(
+            {
+              ...p,
+              projectId:
+                gp.projectScoped && gp.selectedProjectCode
+                  ? gp.selectedProjectCode
+                  : p.projectId,
+            },
+            gp.activeUnit,
+            p.productId,
+          ),
         )
         return [...other, ...mapped]
       })
@@ -319,7 +362,13 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
 
   const planHistory = isGeneral && gp ? gp.planHistory : planHistoryLocal
 
-  const queueItems = isGeneral && gp ? GENERAL_PLAN_QUEUE[gp.activeUnit] : QUEUE_MOCK
+  const queueItems = useMemo(() => {
+    if (!isGeneral || !gp) return QUEUE_MOCK
+    if (gp.projectScoped && gp.selectedProjectCode) {
+      return assemblyQueueForProject(gp.selectedProjectCode, INITIAL_GENERAL_PLAN_ITEMS)
+    }
+    return GENERAL_PLAN_QUEUE[gp.activeUnit]
+  }, [gp, isGeneral])
 
   const resourceColumnLabel = isGeneral && unitConfig
     ? t(unitConfig.resourceColumnLabelKey)
@@ -589,8 +638,26 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   const appendCheckpoint = useCallback(
     (nextItems: PlanItem[], label: string, note?: string) => {
       if (isGeneral && gp) {
-        const other = gp.items.filter((it) => it.unit !== gp.activeUnit)
-        const mapped = nextItems.map((p) => planToGeneral(p, gp.activeUnit, p.productId))
+        const other = gp.items.filter((it) => {
+          if (it.unit !== gp.activeUnit) return true
+          if (gp.projectScoped && gp.selectedProjectCode) {
+            return (it.projectId ?? '') !== gp.selectedProjectCode
+          }
+          return false
+        })
+        const mapped = nextItems.map((p) =>
+          planToGeneral(
+            {
+              ...p,
+              projectId:
+                gp.projectScoped && gp.selectedProjectCode
+                  ? gp.selectedProjectCode
+                  : p.projectId,
+            },
+            gp.activeUnit,
+            p.productId,
+          ),
+        )
         gp.appendCheckpoint([...other, ...mapped], label, note)
         return
       }
@@ -945,9 +1012,26 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                   <li className="flex items-center gap-1" aria-hidden>
                     <ChevronRight className="size-3.5 shrink-0 opacity-70" />
                   </li>
-                  <li className="font-semibold text-slate-800 dark:text-slate-100" aria-current="page">
+                  <li
+                    className={
+                      gp?.projectScoped
+                        ? 'font-medium text-slate-600 dark:text-slate-300'
+                        : 'font-semibold text-slate-800 dark:text-slate-100'
+                    }
+                    aria-current={gp?.projectScoped ? undefined : 'page'}
+                  >
                     {t(lockedPageMeta.pageLabelKey)}
                   </li>
+                  {gp?.projectScoped && selectedAssemblyProject ? (
+                    <>
+                      <li className="flex items-center gap-1" aria-hidden>
+                        <ChevronRight className="size-3.5 shrink-0 opacity-70" />
+                      </li>
+                      <li className="font-semibold text-slate-800 dark:text-slate-100" aria-current="page">
+                        {selectedAssemblyProject.code} — {selectedAssemblyProject.name}
+                      </li>
+                    </>
+                  ) : null}
                 </>
               ) : (
                 <>
@@ -962,15 +1046,59 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                   <li className="flex items-center gap-1" aria-hidden>
                     <ChevronRight className="size-3.5 shrink-0 opacity-70" />
                   </li>
-                  <li className="font-semibold text-slate-800 dark:text-slate-100" aria-current="page">
+                  <li
+                    className={
+                      variant === 'general' && gp?.projectScoped
+                        ? 'font-medium text-slate-600 dark:text-slate-300'
+                        : 'font-semibold text-slate-800 dark:text-slate-100'
+                    }
+                    aria-current={variant === 'general' && gp?.projectScoped ? undefined : 'page'}
+                  >
                     {variant === 'general' ? t('nav.generalPlanning') : t('nav.planningDesign')}
                   </li>
+                  {variant === 'general' && gp?.projectScoped ? (
+                    <>
+                      <li className="flex items-center gap-1" aria-hidden>
+                        <ChevronRight className="size-3.5 shrink-0 opacity-70" />
+                      </li>
+                      <li
+                        className={
+                          selectedAssemblyProject
+                            ? 'font-medium text-slate-600 dark:text-slate-300'
+                            : 'font-semibold text-slate-800 dark:text-slate-100'
+                        }
+                        aria-current={selectedAssemblyProject ? undefined : 'page'}
+                      >
+                        {t(PLANNING_UNIT_LABEL_KEYS.assembly)}
+                      </li>
+                      {selectedAssemblyProject ? (
+                        <>
+                          <li className="flex items-center gap-1" aria-hidden>
+                            <ChevronRight className="size-3.5 shrink-0 opacity-70" />
+                          </li>
+                          <li
+                            className="font-semibold text-slate-800 dark:text-slate-100"
+                            aria-current="page"
+                          >
+                            {selectedAssemblyProject.code} — {selectedAssemblyProject.name}
+                          </li>
+                        </>
+                      ) : null}
+                    </>
+                  ) : null}
                 </>
               )}
             </ol>
           </nav>
         </div>
 
+        {gp?.projectScoped && !gp.selectedProjectCode ? (
+          <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-slate-300/80 bg-white/50 p-10 text-center dark:border-slate-600/60 dark:bg-slate-900/30">
+            <p className="max-w-md text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              {t('assemblyPlanning.emptyProject')}
+            </p>
+          </div>
+        ) : (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/80 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/45">
           <div
             className="gm-planning-design-view flex min-h-0 flex-1 flex-col"
@@ -979,6 +1107,54 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
             <div className="gm-planning-design-shell flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent">
               <div className="gm-planning-toolbar relative z-[75] grid min-h-11 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 overflow-visible border-b border-slate-200/70 px-3 py-2 dark:border-slate-700/50 md:gap-3">
                 <div className="flex min-w-0 flex-wrap items-center justify-self-start gap-2">
+                  {gp?.projectScoped && gp.assemblyProjectOptions.length > 0 ? (
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      <label
+                        className="sr-only"
+                        htmlFor={
+                          variant === 'general'
+                            ? 'general-planning-assembly-project-picker'
+                            : 'assembly-planning-project-picker'
+                        }
+                      >
+                        {t('assemblyPlanning.projectPickerLabel')}
+                      </label>
+                      <div className="relative min-w-[14rem] max-w-xs">
+                        <select
+                          id={
+                            variant === 'general'
+                              ? 'general-planning-assembly-project-picker'
+                              : 'assembly-planning-project-picker'
+                          }
+                          value={gp.selectedProjectCode ?? ''}
+                          onChange={(e) => {
+                            gp.setSelectedProjectCode(e.target.value)
+                            setSelectedId(null)
+                            setDayDetailDate(null)
+                          }}
+                          className="w-full appearance-none rounded-lg border border-slate-200/70 bg-white/80 py-1.5 pl-2.5 pr-8 text-xs font-semibold text-slate-800 shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:border-slate-700/70 dark:bg-slate-900/55 dark:text-slate-100"
+                        >
+                          {gp.assemblyProjectOptions.map((p) => (
+                            <option key={p.code} value={p.code}>
+                              {p.code} — {p.name}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown
+                          className="pointer-events-none absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-slate-500 dark:text-slate-400"
+                          aria-hidden
+                        />
+                      </div>
+                      {selectedAssemblyProject?.customer ? (
+                        <span className="truncate px-0.5 text-[10px] text-slate-500 dark:text-slate-400">
+                          {selectedAssemblyProject.customer}
+                          {selectedAssemblyProject.assemblyPlanCount > 0
+                            ? ` · ${selectedAssemblyProject.assemblyPlanCount} ${t('assemblyPlanning.planCountSuffix')}`
+                            : null}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {variant === 'general' && gp ? (
                     <div
                       className="flex flex-wrap gap-1 rounded-lg border border-slate-200/70 bg-white/60 p-0.5 dark:border-slate-700/70 dark:bg-slate-900/40"
@@ -1628,7 +1804,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                                 {t('generalPlanning.detail.linkedPlans')}
                               </h3>
                               <ul className="mt-2 space-y-2 text-xs">
-                                {linkedPlansForProduct(gp.items, selected.productId).map((lp) => (
+                                {linkedPlansForProduct(crossUnitPlanItems, selected.productId).map((lp) => (
                                   <li
                                     key={lp.id}
                                     className="rounded-md border border-slate-200/60 bg-white/70 px-2 py-1.5 dark:border-slate-700/50 dark:bg-slate-900/40"
@@ -1651,9 +1827,9 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                                   </li>
                                 ))}
                               </ul>
-                              {crossUnitConsistencyWarnings(gp.items, selected.productId).length > 0 ? (
+                              {crossUnitConsistencyWarnings(crossUnitPlanItems, selected.productId).length > 0 ? (
                                 <ul className="mt-2 space-y-1 text-[11px] font-medium text-amber-800 dark:text-amber-200">
-                                  {crossUnitConsistencyWarnings(gp.items, selected.productId).map((w) => (
+                                  {crossUnitConsistencyWarnings(crossUnitPlanItems, selected.productId).map((w) => (
                                     <li key={w}>⚠ {w}</li>
                                   ))}
                                 </ul>
@@ -1843,6 +2019,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                                   concreteRecipeId: 'RC-C30-01',
                                   estimatedVolumeM3: 8,
                                   estimatedSteelKg: 600,
+                                  projectId: gp?.projectScoped ? gp.selectedProjectCode ?? undefined : undefined,
                                   tags: ['queue'],
                                   warnings: np ? ['Üretim dışı güne yerleşim (mock)'] : [],
                                 }
@@ -2012,6 +2189,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
 
@@ -2166,6 +2344,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                         concreteRecipeId: 'RC-C30-01',
                         estimatedVolumeM3: 8,
                         estimatedSteelKg: 600,
+                        projectId: gp?.projectScoped ? gp.selectedProjectCode ?? undefined : undefined,
                         tags: ['queue'],
                         warnings: np ? ['Üretim dışı güne yerleşim (mock)'] : [],
                       }
