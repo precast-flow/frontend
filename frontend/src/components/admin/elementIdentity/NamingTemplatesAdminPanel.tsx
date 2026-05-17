@@ -14,6 +14,7 @@ import {
   TableShell,
   Pagination,
   usePaginatedRows,
+  eiSplitHeaderButtonPassive,
 } from './_widgets'
 
 const DEFAULT_TOKENS: NamingTokenConfig[] = [
@@ -92,7 +93,7 @@ export function NamingTemplatesAdminPanel() {
         <button
           type="button"
           onClick={() => setIsAddModalOpen(true)}
-          className="rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-neo-out transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900"
+          className={eiSplitHeaderButtonPassive}
         >
           Yeni ekle
         </button>

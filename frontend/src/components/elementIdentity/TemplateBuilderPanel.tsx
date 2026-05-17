@@ -8,6 +8,7 @@ import type {
 } from '../../elementIdentity/types'
 import { useElementIdentity } from './elementIdentityContextValue'
 import { LivePreview } from './LivePreview'
+import { eiSplitHeaderButtonPassive } from './ElementIdentityPieceCodesLikeSplit'
 
 export type TemplateBuilderPanelProps = {
   /** `embedded`: Tanımlar detay etiket sekmesi — sol palet + genel seçenekler, ortada önizleme ve sıra */
@@ -525,7 +526,7 @@ export function TemplateBuilderPanel({ layout = 'full' }: TemplateBuilderPanelPr
               type="button"
               onClick={save}
               disabled={!dirty}
-              className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900"
+              className={`${eiSplitHeaderButtonPassive} px-3 py-1.5 text-xs disabled:opacity-40`}
             >
               {t('elementIdentity.save')}
             </button>
@@ -618,7 +619,7 @@ export function TemplateBuilderPanel({ layout = 'full' }: TemplateBuilderPanelPr
           <button
             onClick={save}
             disabled={!dirty}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900"
+            className={`${eiSplitHeaderButtonPassive} px-4 py-2 text-xs disabled:opacity-40`}
           >
             {t('elementIdentity.save')}
           </button>

@@ -4,6 +4,7 @@ import { ELEMENT_TYPES_BY_ID } from '../../elementIdentity/catalog/elementTypes'
 import { TYPOLOGIES_BY_ID } from '../../elementIdentity/catalog/typologies'
 import { resolveInstanceMark } from '../../elementIdentity/firm/nameResolver'
 import { useElementIdentity } from './elementIdentityContextValue'
+import { eiSplitFilterPillActive, eiSplitFilterPillIdle } from './ElementIdentityPieceCodesLikeSplit'
 
 export function ProjectElementsPanel() {
   const { t, locale } = useI18n()
@@ -203,8 +204,8 @@ function Chip({
       className={[
         'rounded-full px-3 py-1 text-[11px] font-medium transition',
         active
-          ? 'bg-gray-800 text-white shadow-neo-out dark:bg-gray-200 dark:text-gray-900'
-          : 'bg-gray-100 text-gray-700 shadow-neo-in dark:bg-gray-900/70 dark:text-gray-200',
+          ? `${eiSplitFilterPillActive} shadow-sm`
+          : `${eiSplitFilterPillIdle}`,
       ].join(' ')}
     >
       {label}

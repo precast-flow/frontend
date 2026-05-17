@@ -250,6 +250,11 @@ export const projectManagementCardsMock: ProjectCardItem[] = [
   },
 ]
 
+/** Proje kodu → kart (planlama filtreleri için O(1) arama). */
+export const projectManagementByCode = new Map(
+  projectManagementCardsMock.map((p) => [p.code, p] as const),
+)
+
 export const projectManagementActivitiesMock: ProjectMiniActivity[] = [
   { id: 'a1', projectId: 'pm-1', at: '14.04 10:00', text: 'Durum "Devam ediyor" olarak guncellendi.' },
   { id: 'a2', projectId: 'pm-1', at: '14.04 09:42', text: 'Sorumlu degisimi: OY -> SG (mock).' },

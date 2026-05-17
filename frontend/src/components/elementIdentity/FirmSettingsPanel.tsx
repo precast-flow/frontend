@@ -13,6 +13,7 @@ import type {
   UnitSystem,
 } from '../../elementIdentity/types'
 import { useElementIdentity } from './elementIdentityContextValue'
+import { eiSplitFilterPillActive, eiSplitFilterPillIdle } from './ElementIdentityPieceCodesLikeSplit'
 import { LivePreview } from './LivePreview'
 
 type SidebarKey = 'elementTypes' | 'typologies' | 'sizeFormats' | 'firmProfile'
@@ -392,8 +393,8 @@ function FilterChip({
       className={[
         'rounded-full px-3 py-1 text-xs font-medium transition',
         active
-          ? 'bg-gray-800 text-white shadow-neo-out dark:bg-gray-200 dark:text-gray-900'
-          : 'bg-gray-100 text-gray-700 shadow-neo-in dark:bg-gray-900/70 dark:text-gray-200',
+          ? `${eiSplitFilterPillActive} shadow-sm`
+          : `${eiSplitFilterPillIdle}`,
       ].join(' ')}
     >
       {label}

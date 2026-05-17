@@ -7,6 +7,11 @@ import { MOCK_IFC_FILES, type MockIfcFile } from '../../elementIdentity/ifc/mock
 import { resolveInstanceMark } from '../../elementIdentity/firm/nameResolver'
 import type { ProjectElement, SourceSystem } from '../../elementIdentity/types'
 import { useElementIdentity } from './elementIdentityContextValue'
+import {
+  eiSplitFilterPillActive,
+  eiSplitFilterPillIdle,
+  eiSplitHeaderButtonPassive,
+} from './ElementIdentityPieceCodesLikeSplit'
 
 type Step = 1 | 2 | 3
 
@@ -155,7 +160,7 @@ export function IfcImportWizardPanel({
                 className={[
                   'flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold',
                   isActive
-                    ? 'bg-gray-800 text-white shadow-neo-out dark:bg-gray-200 dark:text-gray-900'
+                    ? `${eiSplitFilterPillActive} shadow-sm`
                     : isDone
                       ? 'bg-emerald-600 text-white'
                       : 'bg-gray-200 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
@@ -254,7 +259,7 @@ export function IfcImportWizardPanel({
             <button
               disabled={!selectedFile}
               onClick={() => selectedFile && parseFile(selectedFile)}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900"
+            className={`${eiSplitHeaderButtonPassive} px-4 py-2 text-sm disabled:opacity-40`}
             >
               {t('elementIdentity.ifc.parse')}
             </button>
@@ -396,7 +401,7 @@ export function IfcImportWizardPanel({
             <button
               disabled={stats.included === 0}
               onClick={doImport}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900"
+              className={`${eiSplitHeaderButtonPassive} px-4 py-2 text-sm disabled:opacity-40`}
             >
               {t('elementIdentity.ifc.doImport')} ({stats.included})
             </button>
@@ -448,7 +453,7 @@ export function IfcImportWizardPanel({
             </button>
             <button
               onClick={onNavigateToList}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white dark:bg-slate-100 dark:text-slate-900"
+              className={`${eiSplitHeaderButtonPassive} px-4 py-2 text-sm`}
             >
               Proje eleman listesine git →
             </button>
@@ -494,8 +499,8 @@ function Chip({
       className={[
         'rounded-full px-3 py-1 text-[11px] font-medium transition',
         active
-          ? 'bg-gray-800 text-white shadow-neo-out dark:bg-gray-200 dark:text-gray-900'
-          : 'bg-gray-100 text-gray-700 shadow-neo-in dark:bg-gray-900/70 dark:text-gray-200',
+          ? `${eiSplitFilterPillActive} shadow-sm`
+          : `${eiSplitFilterPillIdle}`,
       ].join(' ')}
     >
       {label}

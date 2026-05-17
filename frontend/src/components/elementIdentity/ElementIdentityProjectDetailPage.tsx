@@ -245,9 +245,7 @@ export function ElementIdentityProjectDetailPage() {
     requestAnimationFrame(() => labelsListRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
   }
 
-  const headerBtnCls = gl
-    ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5', 'shrink-0'].join(' ')
-    : eiSplitHeaderButtonPassive
+  const headerBtnCls = eiSplitHeaderButtonPassive
 
   const generalSectionDefs = useMemo(() => {
     const defs = [
@@ -487,11 +485,7 @@ export function ElementIdentityProjectDetailPage() {
                             setFilterOpenGeneral(false)
                             scrollTop(rightGeneralRef)
                           }}
-                          className={
-                            gl
-                              ? ['glass-btn', 'secondary', 'small', 'w-full', 'justify-start', 'text-left'].join(' ')
-                              : 'rounded-lg border border-slate-200/70 bg-white/80 px-2 py-2 text-left text-xs font-semibold text-slate-800 hover:bg-sky-50 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-sky-950/40'
-                          }
+                          className={`${eiSplitHeaderButtonPassive} w-full justify-start px-2 py-2 text-left text-xs`}
                         >
                           {t(key)}
                         </button>
@@ -771,11 +765,7 @@ export function ElementIdentityProjectDetailPage() {
                           setCodeTypeQuery('')
                           setGroupFilter(new Set(GROUP_ORDER.map((x) => x.id)))
                         }}
-                        className={
-                          gl
-                            ? ['glass-btn', 'secondary', 'small', 'w-full'].join(' ')
-                            : 'w-full rounded-md border border-slate-300 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800'
-                        }
+                        className={`${eiSplitHeaderButtonPassive} w-full justify-center py-1.5 text-[11px]`}
                       >
                         {t('elementIdentity.reset')}
                       </button>
@@ -1216,11 +1206,7 @@ export function ElementIdentityProjectDetailPage() {
                       <button
                         type="button"
                         onClick={() => setLabelFilterQuery('')}
-                        className={
-                          gl
-                            ? ['glass-btn', 'secondary', 'small', 'w-full'].join(' ')
-                            : 'w-full rounded-md border border-slate-300 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800'
-                        }
+                        className={`${eiSplitHeaderButtonPassive} w-full justify-center py-1.5 text-[11px]`}
                       >
                         {t('elementIdentity.reset')}
                       </button>
@@ -1392,9 +1378,7 @@ export function ElementIdentityProjectDetailPage() {
                               type="button"
                               onClick={assignTemplateAsProjectDefault}
                               className={
-                                gl
-                                  ? ['glass-btn', 'secondary', 'w-full'].join(' ')
-                                  : 'w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800'
+                                `${eiSplitHeaderButtonPassive} w-full justify-center px-4 py-2.5 text-sm`
                               }
                             >
                               {t('elementIdentity.labels.setProjectDefault')}
@@ -1403,9 +1387,7 @@ export function ElementIdentityProjectDetailPage() {
                               type="button"
                               onClick={assignTemplateAsFirmDefaultFuture}
                               className={
-                                gl
-                                  ? ['glass-btn', 'secondary', 'w-full'].join(' ')
-                                  : 'w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800'
+                                `${eiSplitHeaderButtonPassive} w-full justify-center px-4 py-2.5 text-sm`
                               }
                             >
                               {t('elementIdentity.labels.setFirmAllFuture')}
@@ -1419,9 +1401,7 @@ export function ElementIdentityProjectDetailPage() {
                                 setNewLabelOpen(true)
                               }}
                               className={
-                                gl
-                                  ? ['glass-btn', 'secondary', 'w-full'].join(' ')
-                                  : 'w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800'
+                                `${eiSplitHeaderButtonPassive} w-full justify-center px-4 py-2.5 text-sm`
                               }
                             >
                               {t('elementIdentity.labels.createFromLabel')}

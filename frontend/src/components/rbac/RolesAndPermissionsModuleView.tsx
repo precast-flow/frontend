@@ -1,5 +1,5 @@
 import { useId, useMemo, useRef, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { Info, Lock, Search, Shield, Trash2, Users } from 'lucide-react'
 import {
   MOCK_ROLE_TEMPLATES,
@@ -14,7 +14,6 @@ import { useThemeMode } from '../../theme/ThemeProvider'
 import { PmStyleDialog } from '../shared/PmStyleDialog'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import {
-  eiSplitHeaderButtonPassive,
   ElementIdentityFilterSheetHeader,
   ElementIdentityPieceCodesLikeSplit,
 } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
@@ -124,20 +123,6 @@ export function RolesAndPermissionsModuleView(props: RolesPermissionsState) {
                 className={gl ? 'project-mgmt-toolbar-search' : ''}
                 inputClassName={gl ? 'glass-input' : ''}
               />
-            }
-            headerActions={
-              <Link
-                to="/roller-izinler?legacy=1"
-                className={
-                  gl
-                    ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5', 'no-underline'].join(
-                        ' ',
-                      )
-                    : `${eiSplitHeaderButtonPassive} no-underline`
-                }
-              >
-                {t('rolesPermissions.legacyLink')}
-              </Link>
             }
             isFilterOpen={filterOpen}
             onFilterOpenChange={setFilterOpen}

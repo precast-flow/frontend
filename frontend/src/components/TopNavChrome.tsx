@@ -5,6 +5,7 @@ import { useThemeMode } from '../theme/ThemeProvider'
 import { useFactoryContext } from '../context/FactoryContext'
 import { useI18n } from '../i18n/I18nProvider'
 import { notificationFeedItems } from '../data/dashboardMock'
+import { TopNavMenuPortal } from './TopNavMenuPortal'
 
 export type ChromeMenu = null | 'notif' | 'user'
 
@@ -21,14 +22,23 @@ export function TopNavChrome({ chromeMenu, setChromeMenu, onModuleNavigate }: Pr
   const { mode, toggle: toggleTheme } = useThemeMode()
   const { selectedCodes } = useFactoryContext()
 
-  const notifWrapRef = useRef<HTMLDivElement>(null)
-  const userWrapRef = useRef<HTMLDivElement>(null)
+  const notifTriggerRef = useRef<HTMLButtonElement>(null)
+  const notifPanelRef = useRef<HTMLDivElement>(null)
+  const userTriggerRef = useRef<HTMLButtonElement>(null)
+  const userPanelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!chromeMenu) return
     const onDoc = (e: MouseEvent) => {
       const node = e.target as Node
-      if (notifWrapRef.current?.contains(node) || userWrapRef.current?.contains(node)) return
+      if (
+        notifTriggerRef.current?.contains(node) ||
+        notifPanelRef.current?.contains(node) ||
+        userTriggerRef.current?.contains(node) ||
+        userPanelRef.current?.contains(node)
+      ) {
+        return
+      }
       setChromeMenu(null)
     }
     document.addEventListener('mousedown', onDoc)
@@ -51,8 +61,9 @@ export function TopNavChrome({ chromeMenu, setChromeMenu, onModuleNavigate }: Pr
         )}
       </button>
 
-      <div className="relative" ref={notifWrapRef}>
+      <div className="relative shrink-0">
         <button
+          ref={notifTriggerRef}
           type="button"
           id={`${menuId}-notif-trigger`}
           aria-haspopup="menu"
@@ -71,44 +82,46 @@ export function TopNavChrome({ chromeMenu, setChromeMenu, onModuleNavigate }: Pr
           </span>
         </button>
 
-        {chromeMenu === 'notif' ? (
-          <div
-            id={`${menuId}-notif-panel`}
-            role="menu"
-            aria-labelledby={`${menuId}-notif-trigger`}
-            className="gm-topnav-dropdown-panel absolute right-0 top-[calc(100%+6px)] z-[125] max-h-[min(70dvh,24rem)] w-[min(100vw-2rem,22rem)] overflow-y-auto rounded-2xl p-2"
-          >
-            <p className="border-b border-slate-200/90 px-2 pb-2 text-xs font-semibold text-slate-900 dark:border-white/10 dark:text-slate-100">
-              {t('topbar.notifTitle')}
-            </p>
-            <ul className="py-1">
-              {notificationFeedItems.map((n) => (
-                <li key={n.id}>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="gm-topnav-dd-item flex w-full flex-col gap-0.5 rounded-xl px-2 py-2.5 text-left text-sm text-slate-800 focus-visible:outline-none dark:text-[var(--glass-text-primary)]"
-                    onClick={() => {
-                      setChromeMenu(null)
-                      onModuleNavigate?.(n.moduleId)
-                    }}
-                  >
-                    <span className="font-semibold">{n.title}</span>
-                    <span className="text-xs text-slate-600 dark:text-[var(--glass-text-muted)]">{n.detail}</span>
-                    <span className="text-[11px] text-slate-500 dark:text-[var(--glass-text-muted)]">{n.time}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <p className="gm-topnav-dd-muted border-t border-slate-200/90 px-2 pt-2 text-[11px] dark:border-white/10">
-              {t('topbar.notifFoot')}
-            </p>
-          </div>
-        ) : null}
+        <TopNavMenuPortal
+          open={chromeMenu === 'notif'}
+          anchorRef={notifTriggerRef}
+          panelRef={notifPanelRef}
+          id={`${menuId}-notif-panel`}
+          labelledBy={`${menuId}-notif-trigger`}
+          align="end"
+          className="gm-topnav-dropdown-panel w-[min(100vw-2rem,22rem)] rounded-2xl p-2"
+        >
+          <p className="border-b border-slate-200/90 px-2 pb-2 text-xs font-semibold text-slate-900 dark:border-white/10 dark:text-slate-100">
+            {t('topbar.notifTitle')}
+          </p>
+          <ul className="py-1">
+            {notificationFeedItems.map((n) => (
+              <li key={n.id}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="gm-topnav-dd-item flex w-full flex-col gap-0.5 rounded-xl px-2 py-2.5 text-left text-sm text-slate-800 focus-visible:outline-none dark:text-[var(--glass-text-primary)]"
+                  onClick={() => {
+                    setChromeMenu(null)
+                    onModuleNavigate?.(n.moduleId)
+                  }}
+                >
+                  <span className="font-semibold">{n.title}</span>
+                  <span className="text-xs text-slate-600 dark:text-[var(--glass-text-muted)]">{n.detail}</span>
+                  <span className="text-[11px] text-slate-500 dark:text-[var(--glass-text-muted)]">{n.time}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="gm-topnav-dd-muted border-t border-slate-200/90 px-2 pt-2 text-[11px] dark:border-white/10">
+            {t('topbar.notifFoot')}
+          </p>
+        </TopNavMenuPortal>
       </div>
 
-      <div className="relative" ref={userWrapRef}>
+      <div className="relative shrink-0">
         <button
+          ref={userTriggerRef}
           type="button"
           id={`${menuId}-user-trigger`}
           aria-haspopup="menu"
@@ -130,60 +143,61 @@ export function TopNavChrome({ chromeMenu, setChromeMenu, onModuleNavigate }: Pr
           />
         </button>
 
-        {chromeMenu === 'user' ? (
-          <div
-            id={`${menuId}-user-panel`}
-            role="menu"
-            aria-labelledby={`${menuId}-user-trigger`}
-            className="gm-topnav-dropdown-panel absolute right-0 top-[calc(100%+6px)] z-[125] w-56 rounded-2xl py-2"
+        <TopNavMenuPortal
+          open={chromeMenu === 'user'}
+          anchorRef={userTriggerRef}
+          panelRef={userPanelRef}
+          id={`${menuId}-user-panel`}
+          labelledBy={`${menuId}-user-trigger`}
+          align="end"
+          className="gm-topnav-dropdown-panel w-56 rounded-2xl py-2"
+        >
+          <p className="gm-topnav-dd-heading border-b border-slate-200/90 px-3 py-2 text-xs text-slate-600 dark:border-white/10 dark:text-[var(--glass-text-muted)]">
+            {t('topbar.userLoggedIn')}{' '}
+            <span className="font-medium text-slate-900 dark:text-[var(--glass-text-primary)]">ayse@acme.com</span>
+          </p>
+          <p className="px-3 py-2 text-[11px] leading-relaxed text-slate-600 dark:text-[var(--glass-text-muted)]">
+            {t('topbar.userCompany')}{' '}
+            <span className="font-medium text-slate-800 dark:text-[var(--glass-text-primary)]">
+              {selectedCodes.join(', ')}
+            </span>
+          </p>
+          <button
+            type="button"
+            role="menuitem"
+            className="gm-topnav-dd-item flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-slate-800 dark:text-[var(--glass-text-primary)]"
+            onClick={() => {
+              setChromeMenu(null)
+              navigate('/profile')
+            }}
           >
-            <p className="gm-topnav-dd-heading border-b border-slate-200/90 px-3 py-2 text-xs text-slate-600 dark:border-white/10 dark:text-[var(--glass-text-muted)]">
-              {t('topbar.userLoggedIn')}{' '}
-              <span className="font-medium text-slate-900 dark:text-[var(--glass-text-primary)]">ayse@acme.com</span>
-            </p>
-            <p className="px-3 py-2 text-[11px] leading-relaxed text-slate-600 dark:text-[var(--glass-text-muted)]">
-              {t('topbar.userCompany')}{' '}
-              <span className="font-medium text-slate-800 dark:text-[var(--glass-text-primary)]">
-                {selectedCodes.join(', ')}
-              </span>
-            </p>
-            <button
-              type="button"
-              role="menuitem"
-              className="gm-topnav-dd-item flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-slate-800 dark:text-[var(--glass-text-primary)]"
-              onClick={() => {
-                setChromeMenu(null)
-                navigate('/profile')
-              }}
-            >
-              <User className="size-4 opacity-70" aria-hidden />
-              {t('topbar.profile')}
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              className="gm-topnav-dd-item flex w-full px-3 py-2.5 text-left text-sm text-slate-800 dark:text-[var(--glass-text-primary)]"
-              onClick={() => {
-                setChromeMenu(null)
-                navigate('/settings')
-              }}
-            >
-              {t('topbar.settings')}
-            </button>
-            <div className="my-1 h-px bg-slate-200/90 dark:bg-white/15" role="separator" />
-            <button
-              type="button"
-              role="menuitem"
-              className="gm-topnav-dd-item flex w-full px-3 py-2.5 text-left text-sm text-slate-500 dark:text-[var(--glass-text-muted)]"
-              onClick={() => {
-                setChromeMenu(null)
-                navigate('/login')
-              }}
-            >
-              {t('topbar.logout')}
-            </button>
-          </div>
-        ) : null}
+            <User className="size-4 opacity-70" aria-hidden />
+            {t('topbar.profile')}
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="gm-topnav-dd-item flex w-full px-3 py-2.5 text-left text-sm text-slate-800 dark:text-[var(--glass-text-primary)]"
+            onClick={() => {
+              setChromeMenu(null)
+              navigate('/settings')
+            }}
+          >
+            {t('topbar.settings')}
+          </button>
+          <div className="my-1 h-px bg-slate-200/90 dark:bg-white/15" role="separator" />
+          <button
+            type="button"
+            role="menuitem"
+            className="gm-topnav-dd-item flex w-full px-3 py-2.5 text-left text-sm text-slate-500 dark:text-[var(--glass-text-muted)]"
+            onClick={() => {
+              setChromeMenu(null)
+              navigate('/login')
+            }}
+          >
+            {t('topbar.logout')}
+          </button>
+        </TopNavMenuPortal>
       </div>
     </div>
   )

@@ -2,7 +2,7 @@
  * Genel planlama — genişletilmiş mock plan öğeleri (üretici).
  * Tüm proje kartları için çok sayıda ürün + birim planı üretilir.
  */
-import type { PlanStatusKey } from './planningDesignMock'
+import { spanSlotsFromDurationForMode, type PlanStatusKey } from './planningDesignMock'
 import type { GeneralPlanItem, PlanningUnitKey } from './generalPlanningMock'
 import { projectManagementCardsMock } from './projectManagementCardsMock'
 
@@ -36,20 +36,9 @@ const ELEMENT_DEFS = [
 
 const RECIPES = ['RC-C30-01', 'RC-C35-02', 'RC-C40-01'] as const
 
-const ASM_EXTRA_SUFFIXES = [
-  ' — blok A',
-  ' — blok B',
-  ' — blok C',
-  ' — vinç seti',
-  ' — gece vardiyası',
-  ' — revizyon',
-  ' — saha 2',
-  ' — tamamlayıcı',
-  ' — öncelikli',
-  ' — ikinci montaj',
-  ' — cephe hattı',
-  ' — iç avlu',
-] as const
+/** Görünür hafta uzunluğu (PlanningTimelineView ile uyumlu). */
+const VISIBLE_DAYS = 14
+const SHIFTS_PER_DAY = 3
 
 export type ProductSeed = {
   linkedProductId: string
@@ -103,12 +92,11 @@ function item(
   }
 }
 
-/** Proje başına ürün sayısı — duruma göre ağırlıklı. */
+/** Proje başına ürün sayısı (mock — orta yoğunluk). */
 function productCountForProject(projectIndex: number, status: string): number {
-  const base = 14 + (projectIndex % 4)
-  if (status === 'devam' || status === 'riskli') return base + 6
-  if (status === 'planlama') return base + 2
-  if (status === 'tamamlandi') return base + 4
+  const base = 4 + (projectIndex % 2)
+  if (status === 'devam' || status === 'riskli') return base + 2
+  if (status === 'tamamlandi') return base + 1
   return base
 }
 
@@ -142,7 +130,188 @@ export function buildAllProductSeeds(): ProductSeed[] {
 
 const PRODUCTS: ProductSeed[] = buildAllProductSeeds()
 
-/** Genişletilmiş genel plan mock listesi */
+type ShiftAllocation = {
+  resourceId: string
+  dayOffset: number
+  shift: 0 | 1 | 2
+  durationHours: number
+}
+
+type DayAllocation = {
+  resourceId: string
+  dayOffset: number
+  durationHours: number
+}
+
+type ShiftSlotAllocator = {
+  occupiedSlotCount: () => number
+  totalCapacity: () => number
+  allocate: (durationHours: number) => ShiftAllocation | null
+}
+
+type DaySlotAllocator = {
+  occupiedSlotCount: () => number
+  totalCapacity: () => number
+  allocate: (durationHours: number) => DayAllocation | null
+}
+
+/** Vardiya modunda kaynak × slot çakışması olmadan yerleşim. */
+function createShiftSlotAllocator(resourceIds: readonly string[]): ShiftSlotAllocator {
+  const occupied = new Map<string, Set<number>>()
+
+  const slotSpan = (durationHours: number) => spanSlotsFromDurationForMode(durationHours, true)
+
+  const canPlace = (resourceId: string, start: number, span: number): boolean => {
+    const used = occupied.get(resourceId)
+    if (!used) return true
+    for (let s = start; s < start + span; s++) {
+      if (used.has(s)) return false
+    }
+    return true
+  }
+
+  const mark = (resourceId: string, start: number, span: number): void => {
+    let used = occupied.get(resourceId)
+    if (!used) {
+      used = new Set()
+      occupied.set(resourceId, used)
+    }
+    for (let s = start; s < start + span; s++) used.add(s)
+  }
+
+  return {
+    occupiedSlotCount: () => {
+      let n = 0
+      for (const used of occupied.values()) n += used.size
+      return n
+    },
+    totalCapacity: () => resourceIds.length * VISIBLE_DAYS * SHIFTS_PER_DAY,
+    allocate: (durationHours: number): ShiftAllocation | null => {
+      const span = slotSpan(durationHours)
+      const maxStart = VISIBLE_DAYS * SHIFTS_PER_DAY - span
+      if (maxStart < 0) return null
+
+      for (let day = 0; day < VISIBLE_DAYS; day++) {
+        for (let shift = 0; shift < SHIFTS_PER_DAY; shift++) {
+          const start = day * SHIFTS_PER_DAY + shift
+          if (start > maxStart) continue
+          for (const resourceId of resourceIds) {
+            if (!canPlace(resourceId, start, span)) continue
+            mark(resourceId, start, span)
+            return {
+              resourceId,
+              dayOffset: day,
+              shift: shift as 0 | 1 | 2,
+              durationHours,
+            }
+          }
+        }
+      }
+      return null
+    },
+  }
+}
+
+/** Gün modu (sevkiyat): araç başına gün slotları çakışmasız. */
+function createDaySlotAllocator(resourceIds: readonly string[]): DaySlotAllocator {
+  const occupied = new Map<string, Set<number>>()
+
+  const slotSpan = (durationHours: number) => spanSlotsFromDurationForMode(durationHours, false)
+
+  const canPlace = (resourceId: string, start: number, span: number): boolean => {
+    const used = occupied.get(resourceId)
+    if (!used) return true
+    for (let s = start; s < start + span; s++) {
+      if (used.has(s)) return false
+    }
+    return true
+  }
+
+  const mark = (resourceId: string, start: number, span: number): void => {
+    let used = occupied.get(resourceId)
+    if (!used) {
+      used = new Set()
+      occupied.set(resourceId, used)
+    }
+    for (let s = start; s < start + span; s++) used.add(s)
+  }
+
+  return {
+    occupiedSlotCount: () => {
+      let n = 0
+      for (const used of occupied.values()) n += used.size
+      return n
+    },
+    totalCapacity: () => resourceIds.length * VISIBLE_DAYS * SHIFTS_PER_DAY,
+    allocate: (durationHours: number): DayAllocation | null => {
+      const span = slotSpan(durationHours)
+      const maxStart = VISIBLE_DAYS * SHIFTS_PER_DAY - span
+      if (maxStart < 0) return null
+
+      for (let day = 0; day < VISIBLE_DAYS; day++) {
+        const start = day * SHIFTS_PER_DAY
+        if (start > maxStart) continue
+        for (const resourceId of resourceIds) {
+          if (!canPlace(resourceId, start, span)) continue
+          mark(resourceId, start, span)
+          return { resourceId, dayOffset: day, durationHours }
+        }
+      }
+      return null
+    },
+  }
+}
+
+/** Takvim doluluk hedefi — çok dolu / çok seyrek arasında denge. */
+const FILL_RATIO_PRODUCTION = 0.44
+const FILL_RATIO_SECONDARY = 0.38
+const MAX_FILLER_PRODUCTION = 16
+const MAX_FILLER_SECONDARY = 10
+
+/** Üretimde tüm ürünler; diğer birimlerde her 2. ürün. */
+const SCHEDULE_EVERY_NTH_SECONDARY = 2
+
+function fillShiftSlots(
+  alloc: ShiftSlotAllocator,
+  targetRatio: number,
+  pushRow: (row: GeneralPlanItem) => void,
+  build: (slot: ShiftAllocation, fillerIndex: number) => GeneralPlanItem,
+  maxFillers: number,
+): void {
+  const target = Math.floor(alloc.totalCapacity() * targetRatio)
+  let fillerIndex = 0
+  while (alloc.occupiedSlotCount() < target && fillerIndex < maxFillers) {
+    const slot = alloc.allocate(8)
+    if (!slot) break
+    pushRow(build(slot, fillerIndex++))
+  }
+}
+
+function fillDaySlots(
+  alloc: DaySlotAllocator,
+  targetRatio: number,
+  pushRow: (row: GeneralPlanItem) => void,
+  build: (slot: DayAllocation, fillerIndex: number) => GeneralPlanItem,
+  maxFillers: number,
+): void {
+  const target = Math.floor(alloc.totalCapacity() * targetRatio)
+  let fillerIndex = 0
+  while (alloc.occupiedSlotCount() < target && fillerIndex < maxFillers) {
+    const slot = alloc.allocate(24)
+    if (!slot) break
+    pushRow(build(slot, fillerIndex++))
+  }
+}
+
+function productionDurationHours(index: number): number {
+  return index % 8 === 0 ? 16 : 8
+}
+
+function dispatchDurationHours(index: number): number {
+  return index % 10 === 0 ? 48 : 24
+}
+
+/** Genişletilmiş genel plan mock listesi — kaynak başına çakışmasız, dolu takvim. */
 export function buildExpandedGeneralPlanItems(): GeneralPlanItem[] {
   const out: GeneralPlanItem[] = []
   let seq = 600
@@ -151,21 +320,23 @@ export function buildExpandedGeneralPlanItems(): GeneralPlanItem[] {
     out.push(row)
   }
 
-  // —— Üretim: her ürün + ek yük ——
+  const productionAlloc = createShiftSlotAllocator(PROD_MOLDS)
+  const planningAlloc = createShiftSlotAllocator(PROD_MOLDS)
+  const dispatchAlloc = createDaySlotAllocator(DISPATCH_VEHICLES)
+  const assemblyAlloc = createShiftSlotAllocator(ASSEMBLY_LINES)
+
   PRODUCTS.forEach((p, pi) => {
-    const mold = PROD_MOLDS[pi % PROD_MOLDS.length]
-    const dayOffset = pi % 12
-    const shift = (pi % 3) as 0 | 1 | 2
-    const dur = pi % 5 === 0 ? 16 : pi % 7 === 0 ? 24 : 8
+    const slot = productionAlloc.allocate(productionDurationHours(pi))
+    if (!slot) return
     push(
       item({
         id: `GP-${seq++}-U`,
         unit: 'production',
-        resourceId: mold,
+        resourceId: slot.resourceId,
         linkedProductId: p.linkedProductId,
         title: p.title,
         productId: p.productId,
-        ...shiftSlot(dayOffset, shift, dur),
+        ...shiftSlot(slot.dayOffset, slot.shift, slot.durationHours),
         status: PROD_STATUSES[pi % PROD_STATUSES.length],
         priority: (pi % 4) + 1,
         concreteRecipeId: p.recipe,
@@ -173,81 +344,90 @@ export function buildExpandedGeneralPlanItems(): GeneralPlanItem[] {
         estimatedSteelKg: p.steel,
         projectId: p.projectId,
         orderId: p.orderId,
-        warnings: pi % 9 === 0 ? ['Kalıp yoğunluğu (mock)'] : [],
+        warnings: pi % 11 === 0 ? ['Kalıp rezervasyonu onaylandı (mock)'] : [],
       }),
     )
   })
+  fillShiftSlots(productionAlloc, FILL_RATIO_PRODUCTION, push, (slot, fi) =>
+    item({
+      id: `GP-${seq++}-UF`,
+      unit: 'production',
+      resourceId: slot.resourceId,
+      linkedProductId: `FILL-PROD-${fi}`,
+      title: `Rezerve — ${slot.resourceId} G${slot.dayOffset + 1}`,
+      productId: `FILL-PROD-${fi}`,
+      ...shiftSlot(slot.dayOffset, slot.shift, slot.durationHours),
+      status: 'PLANNED',
+      priority: 3,
+      concreteRecipeId: RECIPES[fi % RECIPES.length],
+      estimatedVolumeM3: 8,
+      estimatedSteelKg: 420,
+      projectId: projectManagementCardsMock[fi % projectManagementCardsMock.length]?.code,
+      orderId: `SO-FILL-${88000 + fi}`,
+      tags: ['rezerve'],
+    }),
+    MAX_FILLER_PRODUCTION,
+  )
 
-  // Proje bazlı ek üretim slotları
-  projectManagementCardsMock.forEach((project, projectIndex) => {
-    const projectProducts = PRODUCTS.filter((p) => p.projectId === project.code)
-    const extraCount = 6 + (projectIndex % 5)
-    for (let e = 0; e < extraCount; e++) {
-      const p = projectProducts[e % projectProducts.length]
-      if (!p) continue
-      const mold = PROD_MOLDS[(projectIndex + e) % PROD_MOLDS.length]
-      push(
-        item({
-          id: `GP-${seq++}-U`,
-          unit: 'production',
-          resourceId: mold,
-          linkedProductId: p.linkedProductId,
-          title: `${p.title} — ek döküm`,
-          productId: p.productId,
-          ...shiftSlot(1 + ((projectIndex + e) % 11), ((e + projectIndex) % 3) as 0 | 1 | 2, e % 4 === 0 ? 16 : 8),
-          status: PROD_STATUSES[(projectIndex + e) % PROD_STATUSES.length],
-          priority: ((projectIndex + e) % 3) + 1,
-          concreteRecipeId: p.recipe,
-          estimatedVolumeM3: p.volume * 0.85,
-          estimatedSteelKg: p.steel,
-          projectId: p.projectId,
-          orderId: p.orderId,
-          tags: ['ek-uretim'],
-        }),
-      )
-    }
-  })
-
-  // —— Koordinasyon (planlama birimi): proje başına tüm ürünlerin ilk 10'u ——
-  projectManagementCardsMock.forEach((project, projectIndex) => {
-    const projectProducts = PRODUCTS.filter((p) => p.projectId === project.code)
-    projectProducts.slice(0, 10).forEach((p, i) => {
-      push(
-        item({
-          id: `GP-${seq++}-P`,
-          unit: 'planning',
-          resourceId: PROD_MOLDS[(projectIndex + i) % PROD_MOLDS.length],
-          linkedProductId: p.linkedProductId,
-          title: `${p.title} — koordinasyon`,
-          productId: p.productId,
-          ...shiftSlot(i % 8, (i % 3) as 0 | 1 | 2),
-          status: i % 2 === 0 ? 'PLANNED' : 'ORDERED_DESIGN',
-          priority: (i % 4) + 1,
-          concreteRecipeId: p.recipe,
-          estimatedVolumeM3: p.volume,
-          estimatedSteelKg: p.steel,
-          projectId: p.projectId,
-          orderId: p.orderId,
-          tags: ['coord'],
-        }),
-      )
-    })
-  })
-
-  // —— Sevkiyat: her ürün + proje başına ek sevkiyat ——
   PRODUCTS.forEach((p, pi) => {
-    const vehicle = DISPATCH_VEHICLES[pi % DISPATCH_VEHICLES.length]
-    const dayOffset = 1 + (pi % 11)
-    const spanDays = pi % 4 === 0 ? 48 : 24
+    if (pi % SCHEDULE_EVERY_NTH_SECONDARY !== 0) return
+    const slot = planningAlloc.allocate(8)
+    if (!slot) return
+    push(
+      item({
+        id: `GP-${seq++}-P`,
+        unit: 'planning',
+        resourceId: slot.resourceId,
+        linkedProductId: p.linkedProductId,
+        title: `${p.title} — koordinasyon`,
+        productId: p.productId,
+        ...shiftSlot(slot.dayOffset, slot.shift, slot.durationHours),
+        status: pi % 2 === 0 ? 'PLANNED' : 'ORDERED_DESIGN',
+        priority: (pi % 4) + 1,
+        concreteRecipeId: p.recipe,
+        estimatedVolumeM3: p.volume,
+        estimatedSteelKg: p.steel,
+        projectId: p.projectId,
+        orderId: p.orderId,
+        tags: ['coord'],
+      }),
+    )
+  })
+  fillShiftSlots(planningAlloc, FILL_RATIO_SECONDARY, push, (slot, fi) =>
+    item({
+      id: `GP-${seq++}-PF`,
+      unit: 'planning',
+      resourceId: slot.resourceId,
+      linkedProductId: `FILL-PLAN-${fi}`,
+      title: `Slot rezervasyonu — ${slot.resourceId}`,
+      productId: `FILL-PLAN-${fi}`,
+      ...shiftSlot(slot.dayOffset, slot.shift, slot.durationHours),
+      status: 'PLANNED',
+      priority: 3,
+      concreteRecipeId: RECIPES[fi % RECIPES.length],
+      estimatedVolumeM3: 6,
+      estimatedSteelKg: 300,
+      projectId: projectManagementCardsMock[fi % projectManagementCardsMock.length]?.code,
+      orderId: `SO-FILL-${88100 + fi}`,
+      tags: ['coord', 'rezerve'],
+    }),
+    MAX_FILLER_SECONDARY,
+  )
+
+  PRODUCTS.forEach((p, pi) => {
+    if (pi % SCHEDULE_EVERY_NTH_SECONDARY !== 0) return
+    const dur = dispatchDurationHours(pi)
+    const slot = dispatchAlloc.allocate(dur)
+    if (!slot) return
     push(
       item({
         id: `GP-${seq++}-S`,
         unit: 'dispatch',
-        resourceId: vehicle,
+        resourceId: slot.resourceId,
         linkedProductId: p.linkedProductId,
         title: `${p.title} — sevkiyat`,
         productId: p.productId,
-        ...daySlot(dayOffset, spanDays),
+        ...daySlot(slot.dayOffset, slot.durationHours),
         status: DISPATCH_STATUSES[pi % DISPATCH_STATUSES.length],
         priority: (pi % 4) + 1,
         concreteRecipeId: p.recipe,
@@ -256,55 +436,45 @@ export function buildExpandedGeneralPlanItems(): GeneralPlanItem[] {
         projectId: p.projectId,
         orderId: p.orderId,
         tags: ['dispatch'],
-        warnings: pi % 6 === 0 ? ['Rampada bekleme riski'] : [],
+        warnings: pi % 7 === 0 ? ['Rampada bekleme riski'] : [],
       }),
     )
   })
+  fillDaySlots(dispatchAlloc, FILL_RATIO_SECONDARY, push, (slot, fi) =>
+    item({
+      id: `GP-${seq++}-SF`,
+      unit: 'dispatch',
+      resourceId: slot.resourceId,
+      linkedProductId: `FILL-SHIP-${fi}`,
+      title: `Rampa rezervasyonu — ${slot.resourceId}`,
+      productId: `FILL-SHIP-${fi}`,
+      ...daySlot(slot.dayOffset, slot.durationHours),
+      status: 'PLANNED',
+      priority: 3,
+      concreteRecipeId: RECIPES[fi % RECIPES.length],
+      estimatedVolumeM3: 10,
+      estimatedSteelKg: 0,
+      projectId: projectManagementCardsMock[fi % projectManagementCardsMock.length]?.code,
+      orderId: `SO-FILL-${88200 + fi}`,
+      tags: ['dispatch', 'rezerve'],
+    }),
+    MAX_FILLER_SECONDARY,
+  )
 
-  projectManagementCardsMock.forEach((project, projectIndex) => {
-    const projectProducts = PRODUCTS.filter((p) => p.projectId === project.code)
-    const extraShip = 4 + (projectIndex % 4)
-    for (let e = 0; e < extraShip; e++) {
-      const p = projectProducts[e % projectProducts.length]
-      if (!p) continue
-      push(
-        item({
-          id: `GP-${seq++}-S`,
-          unit: 'dispatch',
-          resourceId: DISPATCH_VEHICLES[(projectIndex + e) % DISPATCH_VEHICLES.length],
-          linkedProductId: p.linkedProductId,
-          title: `${p.title} — ek sevkiyat`,
-          productId: p.productId,
-          ...daySlot(2 + ((projectIndex + e * 2) % 10), e % 2 === 0 ? 48 : 24),
-          status: DISPATCH_STATUSES[(projectIndex + e) % DISPATCH_STATUSES.length],
-          priority: ((projectIndex + e) % 4) + 1,
-          concreteRecipeId: p.recipe,
-          estimatedVolumeM3: p.volume,
-          estimatedSteelKg: 0,
-          projectId: p.projectId,
-          orderId: p.orderId,
-          tags: ['dispatch', 'ek-sevkiyat'],
-          warnings: e % 3 === 0 ? ['Gece yükleme — rampa rezervasyonu'] : [],
-        }),
-      )
-    }
-  })
-
-  // —— Montaj: her ürün için temel plan ——
   PRODUCTS.forEach((p, pi) => {
-    const line = ASSEMBLY_LINES[pi % ASSEMBLY_LINES.length]
-    const dayOffset = 2 + (pi % 10)
-    const shift = (pi % 3) as 0 | 1 | 2
-    const dur = pi % 5 === 0 ? 16 : 8
+    if (pi % SCHEDULE_EVERY_NTH_SECONDARY !== 0) return
+    const dur = pi % 6 === 0 ? 16 : 8
+    const slot = assemblyAlloc.allocate(dur)
+    if (!slot) return
     push(
       item({
         id: `GP-${seq++}-M`,
         unit: 'assembly',
-        resourceId: line,
+        resourceId: slot.resourceId,
         linkedProductId: p.linkedProductId,
         title: `${p.title} — montaj`,
         productId: p.productId,
-        ...shiftSlot(dayOffset, shift, dur),
+        ...shiftSlot(slot.dayOffset, slot.shift, slot.durationHours),
         status: ASM_STATUSES[pi % ASM_STATUSES.length],
         priority: (pi % 4) + 1,
         concreteRecipeId: p.recipe,
@@ -316,81 +486,26 @@ export function buildExpandedGeneralPlanItems(): GeneralPlanItem[] {
       }),
     )
   })
-
-  // —— Montaj: proje başına yoğun ek planlar (montaj planlama ekranı için) ——
-  projectManagementCardsMock.forEach((project, projectIndex) => {
-    const projectProducts = PRODUCTS.filter((p) => p.projectId === project.code)
-    if (!projectProducts.length) return
-
-    const statusBoost =
-      project.status === 'devam' || project.status === 'riskli' ? 14 : project.status === 'tamamlandi' ? 8 : 10
-    const extraAsm = statusBoost + (projectIndex % 5)
-
-    for (let e = 0; e < extraAsm; e++) {
-      const p = projectProducts[e % projectProducts.length]
-      const suffix = ASM_EXTRA_SUFFIXES[e % ASM_EXTRA_SUFFIXES.length]
-      const line = ASSEMBLY_LINES[(projectIndex + e) % ASSEMBLY_LINES.length]
-      const dayOffset = (projectIndex % 3) + (e % 11)
-      const shift = ((projectIndex + e) % 3) as 0 | 1 | 2
-      const dur = e % 4 === 0 ? 16 : e % 6 === 0 ? 12 : 8
-      const warnings: string[] = []
-      if (project.status === 'riskli' && e % 4 === 0) {
-        warnings.push('Hava koşulu — vinç penceresi dar')
-      }
-      if (e % 7 === 0) {
-        warnings.push('Şantiye erişim onayı bekleniyor')
-      }
-      if (project.priority === 'kritik' && e % 5 === 0) {
-        warnings.push('Kritik proje — öncelikli montaj')
-      }
-
-      push(
-        item({
-          id: `GP-${seq++}-M`,
-          unit: 'assembly',
-          resourceId: line,
-          linkedProductId: `${p.linkedProductId}-ASM-${e}`,
-          title: `${p.title}${suffix} — montaj`,
-          productId: p.productId,
-          ...shiftSlot(dayOffset, shift, dur),
-          status: ASM_STATUSES[(projectIndex + e) % ASM_STATUSES.length],
-          priority: project.priority === 'kritik' ? 1 : ((projectIndex + e) % 4) + 1,
-          concreteRecipeId: p.recipe,
-          estimatedVolumeM3: p.volume * (0.7 + (e % 5) * 0.06),
-          estimatedSteelKg: 0,
-          projectId: p.projectId,
-          orderId: p.orderId,
-          tags: ['assembly', 'ek-montaj'],
-          warnings,
-        }),
-      )
-    }
-
-    // Aynı hatta üst üste binen ikinci vardiya (kapasite testi)
-    for (let h = 0; h < 4; h++) {
-      const p = projectProducts[(h * 3) % projectProducts.length]
-      const line = ASSEMBLY_LINES[h % ASSEMBLY_LINES.length]
-      push(
-        item({
-          id: `GP-${seq++}-M`,
-          unit: 'assembly',
-          resourceId: line,
-          linkedProductId: `${p.linkedProductId}-HAT-${h}`,
-          title: `${p.title} — hat ${h + 1} yoğunluk`,
-          productId: p.productId,
-          ...shiftSlot(3 + h, (h % 3) as 0 | 1 | 2, 8),
-          status: 'IN_PROGRESS',
-          priority: 2,
-          concreteRecipeId: p.recipe,
-          estimatedVolumeM3: p.volume,
-          estimatedSteelKg: 0,
-          projectId: p.projectId,
-          orderId: p.orderId,
-          tags: ['assembly', 'hat-yogun'],
-        }),
-      )
-    }
-  })
+  fillShiftSlots(assemblyAlloc, FILL_RATIO_SECONDARY, push, (slot, fi) =>
+    item({
+      id: `GP-${seq++}-MF`,
+      unit: 'assembly',
+      resourceId: slot.resourceId,
+      linkedProductId: `FILL-ASM-${fi}`,
+      title: `Montaj penceresi — ${slot.resourceId}`,
+      productId: `FILL-ASM-${fi}`,
+      ...shiftSlot(slot.dayOffset, slot.shift, slot.durationHours),
+      status: 'PLANNED',
+      priority: 3,
+      concreteRecipeId: RECIPES[fi % RECIPES.length],
+      estimatedVolumeM3: 7,
+      estimatedSteelKg: 0,
+      projectId: projectManagementCardsMock[fi % projectManagementCardsMock.length]?.code,
+      orderId: `SO-FILL-${88300 + fi}`,
+      tags: ['assembly', 'rezerve'],
+    }),
+    MAX_FILLER_SECONDARY,
+  )
 
   return out
 }

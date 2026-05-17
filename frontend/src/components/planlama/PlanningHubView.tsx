@@ -9,7 +9,6 @@ const DESC_KEY_BY_MODULE: Record<string, string> = {
   'unit-work-queue': 'main.desc.unitWorkQueue',
   crm: 'main.desc.crm',
   project: 'main.desc.project',
-  'planning-design': 'main.desc.planningDesign',
   'general-planning': 'main.desc.generalPlanning',
 }
 

@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ChevronsLeftRight, Filter, GripVertical, Package, X } from 'lucide-react'
+import { ChevronsLeftRight, Filter, GripVertical, Package, X } from 'lucide-react'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { TYPOLOGIES_BY_ID } from '../../elementIdentity/catalog/typologies'
@@ -17,6 +17,8 @@ import {
 import { resolveTypologyDimensionRows } from './projectDetailPartDimensionUtils'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 import './projectManagementGlassLight.css'
+import { eiSplitFilterToggleClass } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
 
 /** Sol ürün listesinde her sayfada gösterilecek kayıt sayısı */
 const PIECE_LIST_PAGE_SIZE = 6
@@ -289,25 +291,7 @@ export function ProjectDetailPieceCodesPanel() {
               type="button"
               onClick={() => setIsFilterOpen((prev) => !prev)}
               aria-expanded={isFilterOpen}
-              className={
-                gl
-                  ? [
-                      'glass-btn',
-                      'small',
-                      'inline-flex',
-                      'items-center',
-                      'gap-1.5',
-                      'self-center',
-                      'shrink-0',
-                      isFilterOpen ? 'outline' : 'secondary',
-                    ].join(' ')
-                  : [
-                      'inline-flex shrink-0 items-center gap-1.5 self-center rounded-lg border px-2 py-1.5 text-xs font-semibold transition',
-                      isFilterOpen
-                        ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 hover:bg-sky-100 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100 dark:hover:bg-sky-900/45'
-                        : 'border-slate-200/70 bg-white/70 text-slate-700 hover:bg-white dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200 dark:hover:bg-slate-900',
-                    ].join(' ')
-              }
+              className={`${eiSplitFilterToggleClass(isFilterOpen)} self-center shrink-0`}
             >
               <Filter className="size-3.5" aria-hidden />
               Filtrele
@@ -613,39 +597,21 @@ export function ProjectDetailPieceCodesPanel() {
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   {pageCount > 1 ? (
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        disabled={safePage <= 1}
-                        onClick={() => {
-                          setPage((p) => Math.max(1, p - 1))
-                          listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                        }}
-                        className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none', 'disabled:opacity-35'].join(' ')}
-                        aria-label={locale === 'en' ? 'Previous page' : 'Önceki sayfa'}
-                      >
-                        {locale === 'en' ? 'Prev' : 'Önceki'}
-                      </button>
-                      <span className="tabular-nums text-black/80 dark:text-white/75">
-                        {locale === 'en' ? 'Page' : 'Sayfa'} {safePage}/{pageCount}
-                      </span>
-                      <button
-                        type="button"
-                        disabled={safePage >= pageCount}
-                        onClick={() => {
-                          setPage((p) => Math.min(pageCount, p + 1))
-                          listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                        }}
-                        className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none', 'disabled:opacity-35'].join(' ')}
-                        aria-label={locale === 'en' ? 'Next page' : 'Sonraki sayfa'}
-                      >
-                        {locale === 'en' ? 'Next' : 'Sonraki'}
-                      </button>
-                    </div>
+                    <SplitListPaginationNav
+                      safePage={safePage}
+                      pageCount={pageCount}
+                      locale={locale}
+                      gl
+                      onPrev={() => {
+                        setPage((p) => Math.max(1, p - 1))
+                        listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+                      }}
+                      onNext={() => {
+                        setPage((p) => Math.min(pageCount, p + 1))
+                        listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+                      }}
+                    />
                   ) : null}
-                  <span className="tabular-nums text-black/65 dark:text-white/70">
-                    {locale === 'en' ? '6 per page' : 'Sayfa başına 6'}
-                  </span>
                 </div>
               </div>
             </div>
@@ -663,9 +629,6 @@ export function ProjectDetailPieceCodesPanel() {
                     'Sonuç yok'
                   )}
                 </p>
-                <p className="shrink-0 tabular-nums text-slate-600 dark:text-slate-300">
-                  {locale === 'en' ? '4 per page' : 'Sayfa başına 4'}
-                </p>
               </div>
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                 <p className="text-slate-500 dark:text-slate-400">
@@ -674,34 +637,21 @@ export function ProjectDetailPieceCodesPanel() {
                   <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-100">{pageCount}</span>
                 </p>
                 {pageCount > 1 ? (
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      disabled={safePage <= 1}
-                      onClick={() => {
-                        setPage((p) => Math.max(1, p - 1))
-                        listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                      }}
-                      className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                      aria-label={locale === 'en' ? 'Previous page' : 'Önceki sayfa'}
-                    >
-                      <ChevronLeft className="size-4 shrink-0" aria-hidden />
-                      {locale === 'en' ? 'Prev' : 'Önceki'}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={safePage >= pageCount}
-                      onClick={() => {
-                        setPage((p) => Math.min(pageCount, p + 1))
-                        listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                      }}
-                      className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                      aria-label={locale === 'en' ? 'Next page' : 'Sonraki sayfa'}
-                    >
-                      {locale === 'en' ? 'Next' : 'Sonraki'}
-                      <ChevronRight className="size-4 shrink-0" aria-hidden />
-                    </button>
-                  </div>
+                  <SplitListPaginationNav
+                    safePage={safePage}
+                    pageCount={pageCount}
+                    locale={locale}
+                    showPageIndicator={false}
+                    buttonStyle="legacy-slate"
+                    onPrev={() => {
+                      setPage((p) => Math.max(1, p - 1))
+                      listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+                    }}
+                    onNext={() => {
+                      setPage((p) => Math.min(pageCount, p + 1))
+                      listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+                    }}
+                  />
                 ) : null}
               </div>
             </div>

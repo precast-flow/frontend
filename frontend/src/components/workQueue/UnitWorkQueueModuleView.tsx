@@ -6,6 +6,7 @@ import { useFactoryContext } from '../../context/FactoryContext'
 import { useI18n } from '../../i18n/I18nProvider'
 import { useThemeMode } from '../../theme/ThemeProvider'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
+import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
 import {
   splitDetailHeaderClass,
   splitListCardClass,
@@ -60,32 +61,14 @@ function unitLabel(orgId: WorkQueueOrgUnit, t: (k: string) => string) {
   return hit ? t(hit.labelKey) : orgId
 }
 
-const UNIT_WORK_QUEUE_LIST_STATE_KEY = 'unit-work-queue:list-state'
 const UNIT_WORK_QUEUE_DEFAULT_PAGE_SIZE = 4
-const UNIT_WORK_QUEUE_PAGE_SIZE_OPTIONS = [4, 6, 8, 10, 12, 15] as const
-
-function readStoredWorkQueuePageSize(): number {
-  try {
-    const raw = sessionStorage.getItem(UNIT_WORK_QUEUE_LIST_STATE_KEY)
-    if (!raw) return UNIT_WORK_QUEUE_DEFAULT_PAGE_SIZE
-    const parsed = JSON.parse(raw) as { pageSize?: number }
-    const n = parsed.pageSize
-    if (typeof n !== 'number' || !Number.isFinite(n)) return UNIT_WORK_QUEUE_DEFAULT_PAGE_SIZE
-    return UNIT_WORK_QUEUE_PAGE_SIZE_OPTIONS.includes(n as (typeof UNIT_WORK_QUEUE_PAGE_SIZE_OPTIONS)[number])
-      ? n
-      : UNIT_WORK_QUEUE_DEFAULT_PAGE_SIZE
-  } catch {
-    return UNIT_WORK_QUEUE_DEFAULT_PAGE_SIZE
-  }
-}
-
 type Props = {
   onNavigate?: (moduleId: string) => void
 }
 
 export function UnitWorkQueueModuleView(_props: Props) {
   void _props.onNavigate
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const baseId = useId()
   const { isFactoryInScope } = useFactoryContext()
   const rightRef = useRef<HTMLDivElement | null>(null)
@@ -99,7 +82,7 @@ export function UnitWorkQueueModuleView(_props: Props) {
   const [selectedId, setSelectedId] = useState<string>(WORK_QUEUE_ITEMS[0]!.id)
   const [detailTab, setDetailTab] = useState<'summary' | 'project' | 'history'>('summary')
   const [listPage, setListPage] = useState(1)
-  const [pageSize, setPageSize] = useState(readStoredWorkQueuePageSize)
+  const pageSize = UNIT_WORK_QUEUE_DEFAULT_PAGE_SIZE
 
   const filtered = useMemo(
     () =>
@@ -130,14 +113,6 @@ export function UnitWorkQueueModuleView(_props: Props) {
   useEffect(() => {
     setListPage((p) => Math.min(p, listTotalPages))
   }, [listTotalPages])
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(UNIT_WORK_QUEUE_LIST_STATE_KEY, JSON.stringify({ pageSize }))
-    } catch {
-      /* ignore */
-    }
-  }, [pageSize])
 
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -422,89 +397,18 @@ export function UnitWorkQueueModuleView(_props: Props) {
                 <div className="flex flex-wrap items-center gap-2">
                   {filtered.length > 0 ? (
                     <>
-                      <div className="flex items-center gap-1">
-                        {gl ? (
-                          <>
-                            <button
-                              type="button"
-                              disabled={safeListPage <= 1}
-                              onClick={() => setListPage((p) => Math.max(1, p - 1))}
-                              className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
-                                ' ',
-                              )}
-                            >
-                              {t('unitWorkQueue.pagination.prev')}
-                            </button>
-                            <span className="tabular-nums text-black/80 dark:text-white/75">
-                              {t('unitWorkQueue.pagination.pageOf', {
-                                current: String(safeListPage),
-                                total: String(listTotalPages),
-                              })}
-                            </span>
-                            <button
-                              type="button"
-                              disabled={safeListPage >= listTotalPages}
-                              onClick={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
-                              className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
-                                ' ',
-                              )}
-                            >
-                              {t('unitWorkQueue.pagination.next')}
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              type="button"
-                              disabled={safeListPage <= 1}
-                              onClick={() => setListPage((p) => Math.max(1, p - 1))}
-                              className="rounded-md border border-slate-300/90 bg-white px-2 py-1 text-[11px] font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-35 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-                            >
-                              {t('unitWorkQueue.pagination.prev')}
-                            </button>
-                            <span className="tabular-nums text-slate-600 dark:text-slate-300">
-                              {t('unitWorkQueue.pagination.pageOf', {
-                                current: String(safeListPage),
-                                total: String(listTotalPages),
-                              })}
-                            </span>
-                            <button
-                              type="button"
-                              disabled={safeListPage >= listTotalPages}
-                              onClick={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
-                              className="rounded-md border border-slate-300/90 bg-white px-2 py-1 text-[11px] font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-35 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-                            >
-                              {t('unitWorkQueue.pagination.next')}
-                            </button>
-                          </>
-                        )}
-                      </div>
-                      <label
-                        className={
-                          gl
-                            ? 'flex items-center gap-1 text-black/80 dark:text-white/75'
-                            : 'flex items-center gap-1 text-slate-600 dark:text-slate-300'
+                      <SplitListPaginationNav
+                        safePage={safeListPage}
+                        pageCount={listTotalPages}
+                        onPrev={() => setListPage((p) => Math.max(1, p - 1))}
+                        onNext={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
+                        gl={gl}
+                        locale={locale}
+                        buttonStyle={gl ? 'glass' : 'legacy-slate'}
+                        pageIndicatorClassName={
+                          gl ? 'tabular-nums text-black/80 dark:text-white/75' : 'tabular-nums text-slate-600 dark:text-slate-300'
                         }
-                      >
-                        <span>{t('unitWorkQueue.pagination.pageSize')}</span>
-                        <select
-                          value={pageSize}
-                          onChange={(e) => {
-                            setPageSize(Number(e.target.value))
-                            setListPage(1)
-                            requestAnimationFrame(() => {
-                              listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                            })
-                          }}
-                          className={gl ? 'glass-input px-2 py-1 text-xs' : `${selectCls} py-1 text-xs`}
-                        >
-                          {UNIT_WORK_QUEUE_PAGE_SIZE_OPTIONS.map((n) => (
-                            <option key={n} value={n}>
-                              {n}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                      />
                     </>
                   ) : null}
                 </div>

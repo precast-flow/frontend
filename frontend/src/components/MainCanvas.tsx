@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { findNavItem } from '../data/navigation'
 import { useI18n } from '../i18n/I18nProvider'
 import { AppModuleBreadcrumb } from './shared/AppModuleBreadcrumb'
@@ -7,11 +6,9 @@ import { CrmModuleView } from './crm/CrmModuleView'
 import { ElementIdentityModuleView } from './elementIdentity/ElementIdentityModuleView'
 import { ProjectManagementModuleView } from './proje/ProjectManagementModuleView'
 import { PlanningHubView } from './planlama/PlanningHubView'
-import { PlanningDesignView } from './planlama/PlanningDesignView'
 import { GeneralPlanningView } from './planlama/GeneralPlanningView'
 import { ProductionPlanningView } from './planlama/ProductionPlanningView'
 import { DispatchPlanningView } from './planlama/DispatchPlanningView'
-import { AssemblyPlanningView } from './planlama/AssemblyPlanningView'
 import { StartWorkWizardView } from './satis/StartWorkWizardView'
 import { ApprovalFlowDesignerView } from './onay/ApprovalFlowDesignerView'
 import { RolesAndPermissionsView } from './rbac/RolesAndPermissionsView'
@@ -42,21 +39,17 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
   const isElementIdentityAdmin = activeId === 'element-identity-admin'
   const isMaterialCatalog = activeId === 'material-catalog'
   const isStandardSeriesCatalog = activeId === 'standard-series-catalog'
-  const isPlanningDesign = activeId === 'planning-design'
   const isGeneralPlanning = activeId === 'general-planning'
   const isProductionPlanning = activeId === 'production-planning'
   const isDispatchPlanning = activeId === 'dispatch-planning'
-  const isAssemblyPlanning = activeId === 'assembly-planning'
   const isApprovalFlow = activeId === 'approval-flow'
   const isRolesPermissions = activeId === 'roles-permissions'
   const isUserManagement = activeId === 'user-management'
 
   const fullBleedInMainModule =
-    isPlanningDesign ||
     isGeneralPlanning ||
     isProductionPlanning ||
-    isDispatchPlanning ||
-    isAssemblyPlanning
+    isDispatchPlanning
   /** `GlassAppShell` zaten `--gm-footer-clear` veriyor; sabit `100dvh-12.5rem` ile çift kısaltmayı önle. */
   const fillsMainCanvasViewportHeight =
     isUserManagement ||
@@ -72,11 +65,9 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
   const okanSplitHeadingAlign =
     isProject ||
     isCrm ||
-    isPlanningDesign ||
     isGeneralPlanning ||
     isProductionPlanning ||
     isDispatchPlanning ||
-    isAssemblyPlanning ||
     isMaterialCatalog ||
     isStandardSeriesCatalog ||
     isApprovalFlow ||
@@ -193,15 +184,6 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
             <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{t('definitions.hub.standardSeriesTitle')}</p>
             <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{t('definitions.hub.standardSeriesDesc')}</p>
           </button>
-          <div className="flex flex-col justify-between gap-2 rounded-2xl border border-dashed border-slate-300/60 bg-white/40 p-4 dark:border-slate-600/50 dark:bg-slate-900/25">
-            <p className="text-xs text-slate-600 dark:text-slate-400">{t('definitions.hub.legacyLink')}</p>
-            <Link
-              to="/eleman-kimlik?legacy=1"
-              className="text-sm font-semibold text-sky-700 underline-offset-2 hover:underline dark:text-sky-300"
-            >
-              /eleman-kimlik?legacy=1
-            </Link>
-          </div>
         </div>
       ) : isElementIdentity ? (
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -219,16 +201,12 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <StandardSeriesCatalogModuleView />
         </div>
-      ) : isPlanningDesign ? (
-        <PlanningDesignView />
       ) : isGeneralPlanning ? (
         <GeneralPlanningView />
       ) : isProductionPlanning ? (
         <ProductionPlanningView />
       ) : isDispatchPlanning ? (
         <DispatchPlanningView />
-      ) : isAssemblyPlanning ? (
-        <AssemblyPlanningView />
       ) : isApprovalFlow ? (
         <ApprovalFlowDesignerView />
       ) : isRolesPermissions ? (

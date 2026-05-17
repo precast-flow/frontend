@@ -20,6 +20,8 @@ import {
 } from '../../data/projectManagementCardsMock'
 import { useThemeMode } from '../../theme/ThemeProvider'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
+import { eiSplitFilterToggleClass } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
 
 const projectStatusLabel: Record<ProjectStatus, string> = {
   planlama: 'Planlama',
@@ -89,7 +91,7 @@ type CommercialTabId = 'ozet' | 'butce' | 'faturalar' | 'riskler'
 type ProjectSortMode = 'updated-desc' | 'due-asc' | 'progress-desc' | 'name-asc'
 
 const DEFAULT_SPLIT = 40
-const PAGE_SIZE_OPTIONS = [4, 6, 8, 10, 15] as const
+const COMMERCIAL_LIST_PAGE_SIZE = 6
 
 export function CustomerProjectsCommercialPanel({ customerId }: { customerId: string }) {
   const { mode } = useThemeMode()
@@ -115,7 +117,7 @@ export function CustomerProjectsCommercialPanel({ customerId }: { customerId: st
   const [statusFilter, setStatusFilter] = useState<ProjectStatus[]>([])
   const [sortMode, setSortMode] = useState<ProjectSortMode>('updated-desc')
   const [listPage, setListPage] = useState(1)
-  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(6)
+  const pageSize = COMMERCIAL_LIST_PAGE_SIZE
 
   const [selectedProjectCardId, setSelectedProjectCardId] = useState(() => rows[0]?.card.id ?? '')
   const [detailTab, setDetailTab] = useState<CommercialTabId>('ozet')
@@ -276,25 +278,7 @@ export function CustomerProjectsCommercialPanel({ customerId }: { customerId: st
                 type="button"
                 onClick={() => setFiltersOpen((v) => !v)}
                 aria-expanded={filtersOpen}
-                className={
-                  gl
-                    ? [
-                        'glass-btn',
-                        'small',
-                        'inline-flex',
-                        'items-center',
-                        'gap-1.5',
-                        filtersOpen ? 'outline' : 'secondary',
-                      ].join(' ')
-                    : [
-                        'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25',
-                        filtersOpen
-                          ? neutralShell
-                            ? 'border-black/35 bg-black/10 text-black dark:border-white/20 dark:bg-black/50 dark:text-white'
-                            : 'border-black/25 bg-black/8 text-black dark:border-white/20 dark:bg-black/45 dark:text-white'
-                          : 'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
-                      ].join(' ')
-                }
+                className={eiSplitFilterToggleClass(filtersOpen)}
               >
                 <Filter className="size-3.5 shrink-0" aria-hidden />
                 Filtrele
@@ -587,52 +571,14 @@ export function CustomerProjectsCommercialPanel({ customerId }: { customerId: st
               </p>
               <div className="flex flex-wrap items-center gap-2">
                 {filteredRows.length > 0 ? (
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      disabled={safeListPage <= 1}
-                      onClick={() => setListPage((p) => Math.max(1, p - 1))}
-                      className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
-                        ' ',
-                      )}
-                    >
-                      Önceki
-                    </button>
-                    <span className="tabular-nums text-black/80 dark:text-white/75">
-                      Sayfa {safeListPage}/{listPageCount}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={safeListPage >= listPageCount}
-                      onClick={() => setListPage((p) => Math.min(listPageCount, p + 1))}
-                      className={['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
-                        ' ',
-                      )}
-                    >
-                      Sonraki
-                    </button>
-                  </div>
+                  <SplitListPaginationNav
+                    safePage={safeListPage}
+                    pageCount={listPageCount}
+                    onPrev={() => setListPage((p) => Math.max(1, p - 1))}
+                    onNext={() => setListPage((p) => Math.min(listPageCount, p + 1))}
+                    gl
+                  />
                 ) : null}
-                <label className="flex items-center gap-1 text-black dark:text-white/80">
-                  <span>Sayfa boyutu</span>
-                  <select
-                    value={pageSize}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])
-                      setListPage(1)
-                      requestAnimationFrame(() => {
-                        listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                      })
-                    }}
-                    className="glass-input px-2 py-1 text-xs"
-                  >
-                    {PAGE_SIZE_OPTIONS.map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
-                </label>
               </div>
             </div>
           </div>
@@ -653,48 +599,15 @@ export function CustomerProjectsCommercialPanel({ customerId }: { customerId: st
               </p>
               <div className="flex flex-wrap items-center gap-2">
                 {filteredRows.length > 0 ? (
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      disabled={safeListPage <= 1}
-                      onClick={() => setListPage((p) => Math.max(1, p - 1))}
-                      className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
-                    >
-                      Önceki
-                    </button>
-                    <span className="tabular-nums text-black/70 dark:text-white/75">
-                      Sayfa {safeListPage}/{listPageCount}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={safeListPage >= listPageCount}
-                      onClick={() => setListPage((p) => Math.min(listPageCount, p + 1))}
-                      className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
-                    >
-                      Sonraki
-                    </button>
-                  </div>
+                  <SplitListPaginationNav
+                    safePage={safeListPage}
+                    pageCount={listPageCount}
+                    onPrev={() => setListPage((p) => Math.max(1, p - 1))}
+                    onNext={() => setListPage((p) => Math.min(listPageCount, p + 1))}
+                    buttonStyle="legacy"
+                    pageIndicatorClassName="tabular-nums text-black/70 dark:text-white/75"
+                  />
                 ) : null}
-                <label className="flex items-center gap-1 text-black/75 dark:text-white/80">
-                  <span>Sayfa boyutu</span>
-                  <select
-                    value={pageSize}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])
-                      setListPage(1)
-                      requestAnimationFrame(() => {
-                        listRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                      })
-                    }}
-                    className="rounded-md border border-black/22 bg-white px-1.5 py-1 text-xs text-black dark:border-white/15 dark:bg-black/80 dark:text-white"
-                  >
-                    {PAGE_SIZE_OPTIONS.map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
-                </label>
               </div>
             </div>
           </div>

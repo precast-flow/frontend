@@ -7,6 +7,8 @@ import { useThemeMode } from '../../theme/ThemeProvider'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 import './projectManagementGlassLight.css'
+import { eiSplitFilterToggleClass } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
 import { ProjectDetailPieceCodesPanel } from './ProjectDetailPieceCodesPanel'
 
 type ProjectDetailTabId =
@@ -144,16 +146,7 @@ export function ProjectManagementDetailPage() {
       return 1
     }
   })
-  const [docPageSize, setDocPageSize] = useState(() => {
-    try {
-      const raw = sessionStorage.getItem(detailStateKey)
-      if (!raw) return 6
-      const parsed = JSON.parse(raw) as { docPageSize?: number }
-      return typeof parsed.docPageSize === 'number' && parsed.docPageSize > 0 ? parsed.docPageSize : 6
-    } catch {
-      return 6
-    }
-  })
+  const docPageSize = 6
   const [docSplitRatio, setDocSplitRatio] = useState(() => {
     try {
       const raw = sessionStorage.getItem(detailStateKey)
@@ -442,7 +435,6 @@ export function ProjectManagementDetailPage() {
       docExtFilter,
       docSort,
       docPage: safeDocPage,
-      docPageSize,
       docSplitRatio,
     }
     sessionStorage.setItem(detailStateKey, JSON.stringify(next))
@@ -451,7 +443,6 @@ export function ProjectManagementDetailPage() {
     detailStateKey,
     docDetailTab,
     docExtFilter,
-    docPageSize,
     docQuery,
     docSort,
     docSplitRatio,
@@ -812,23 +803,7 @@ export function ProjectManagementDetailPage() {
                             type="button"
                             onClick={() => setTakipFiltersOpen((v) => !v)}
                             aria-expanded={takipFiltersOpen}
-                            className={
-                              gl
-                                ? [
-                                    'glass-btn',
-                                    'small',
-                                    'inline-flex',
-                                    'items-center',
-                                    'gap-1.5',
-                                    takipFiltersOpen ? 'outline' : 'secondary',
-                                  ].join(' ')
-                                : [
-                                    'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25',
-                                    takipFiltersOpen
-                                      ? 'border-black/35 bg-black/10 text-black dark:border-white/20 dark:bg-black/50 dark:text-white'
-                                      : 'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
-                                  ].join(' ')
-                            }
+                            className={eiSplitFilterToggleClass(takipFiltersOpen)}
                           >
                             <Filter className="size-3.5 shrink-0" aria-hidden />
                             <span>Filtrele</span>
@@ -1141,23 +1116,7 @@ export function ProjectManagementDetailPage() {
                             type="button"
                             onClick={() => setMesajFiltersOpen((v) => !v)}
                             aria-expanded={mesajFiltersOpen}
-                            className={
-                              gl
-                                ? [
-                                    'glass-btn',
-                                    'small',
-                                    'inline-flex',
-                                    'items-center',
-                                    'gap-1.5',
-                                    mesajFiltersOpen ? 'outline' : 'secondary',
-                                  ].join(' ')
-                                : [
-                                    'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25',
-                                    mesajFiltersOpen
-                                      ? 'border-black/35 bg-black/10 text-black dark:border-white/20 dark:bg-black/50 dark:text-white'
-                                      : 'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
-                                  ].join(' ')
-                            }
+                            className={eiSplitFilterToggleClass(mesajFiltersOpen)}
                           >
                             <Filter className="size-3.5 shrink-0" aria-hidden />
                             <span>Filtrele</span>
@@ -1478,23 +1437,7 @@ export function ProjectManagementDetailPage() {
                             type="button"
                             onClick={() => setIsDocFilterOpen((prev) => !prev)}
                             aria-expanded={isDocFilterOpen}
-                            className={
-                              gl
-                                ? [
-                                    'glass-btn',
-                                    'small',
-                                    'inline-flex',
-                                    'items-center',
-                                    'gap-1.5',
-                                    isDocFilterOpen ? 'outline' : 'secondary',
-                                  ].join(' ')
-                                : [
-                                    'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25',
-                                    isDocFilterOpen
-                                      ? 'border-black/35 bg-black/10 text-black dark:border-white/20 dark:bg-black/50 dark:text-white'
-                                      : 'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
-                                  ].join(' ')
-                            }
+                            className={eiSplitFilterToggleClass(isDocFilterOpen)}
                           >
                             <Filter className="size-3.5 shrink-0" aria-hidden />
                             <span>Filtrele</span>
@@ -1759,58 +1702,14 @@ export function ProjectManagementDetailPage() {
                           </p>
                           <div className="flex flex-wrap items-center gap-2">
                             {filteredDocuments.length > 0 ? (
-                              <div className="flex items-center gap-1">
-                                <button
-                                  type="button"
-                                  disabled={safeDocPage <= 1}
-                                  onClick={() => setDocPage((p) => Math.max(1, p - 1))}
-                                  className={[
-                                    'glass-btn',
-                                    'secondary',
-                                    'small',
-                                    'disabled:pointer-events-none disabled:opacity-35',
-                                  ].join(' ')}
-                                >
-                                  Önceki
-                                </button>
-                                <span className="tabular-nums text-black/80 dark:text-white/75">
-                                  Sayfa {safeDocPage}/{docPageCount}
-                                </span>
-                                <button
-                                  type="button"
-                                  disabled={safeDocPage >= docPageCount}
-                                  onClick={() => setDocPage((p) => Math.min(docPageCount, p + 1))}
-                                  className={[
-                                    'glass-btn',
-                                    'secondary',
-                                    'small',
-                                    'disabled:pointer-events-none disabled:opacity-35',
-                                  ].join(' ')}
-                                >
-                                  Sonraki
-                                </button>
-                              </div>
+                              <SplitListPaginationNav
+                                safePage={safeDocPage}
+                                pageCount={docPageCount}
+                                onPrev={() => setDocPage((p) => Math.max(1, p - 1))}
+                                onNext={() => setDocPage((p) => Math.min(docPageCount, p + 1))}
+                                gl
+                              />
                             ) : null}
-                            <label className="flex items-center gap-1 text-black dark:text-white/80">
-                              <span>Sayfa boyutu</span>
-                              <select
-                                value={docPageSize}
-                                onChange={(event) => {
-                                  setDocPageSize(Number(event.target.value))
-                                  setDocPage(1)
-                                  requestAnimationFrame(() => {
-                                    docListRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                                  })
-                                }}
-                                className="glass-input px-2 py-1 text-xs"
-                              >
-                                {[4, 6, 8, 12].map((size) => (
-                                  <option key={size} value={size}>
-                                    {size}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
                           </div>
                         </div>
                       </div>
@@ -1833,48 +1732,15 @@ export function ProjectManagementDetailPage() {
                           </p>
                           <div className="flex flex-wrap items-center gap-2">
                             {filteredDocuments.length > 0 ? (
-                              <div className="flex items-center gap-1">
-                                <button
-                                  type="button"
-                                  disabled={safeDocPage <= 1}
-                                  onClick={() => setDocPage((p) => Math.max(1, p - 1))}
-                                  className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
-                                >
-                                  Önceki
-                                </button>
-                                <span className="tabular-nums text-black/70 dark:text-white/75">
-                                  Sayfa {safeDocPage}/{docPageCount}
-                                </span>
-                                <button
-                                  type="button"
-                                  disabled={safeDocPage >= docPageCount}
-                                  onClick={() => setDocPage((p) => Math.min(docPageCount, p + 1))}
-                                  className="rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10"
-                                >
-                                  Sonraki
-                                </button>
-                              </div>
+                              <SplitListPaginationNav
+                                safePage={safeDocPage}
+                                pageCount={docPageCount}
+                                onPrev={() => setDocPage((p) => Math.max(1, p - 1))}
+                                onNext={() => setDocPage((p) => Math.min(docPageCount, p + 1))}
+                                buttonStyle="legacy"
+                                pageIndicatorClassName="tabular-nums text-black/70 dark:text-white/75"
+                              />
                             ) : null}
-                            <label className="flex items-center gap-1 text-black/75 dark:text-white/80">
-                              <span>Sayfa boyutu</span>
-                              <select
-                                value={docPageSize}
-                                onChange={(event) => {
-                                  setDocPageSize(Number(event.target.value))
-                                  setDocPage(1)
-                                  requestAnimationFrame(() => {
-                                    docListRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                                  })
-                                }}
-                                className="rounded-md border border-black/22 bg-white px-1.5 py-1 text-xs text-black dark:border-white/15 dark:bg-black/80 dark:text-white"
-                              >
-                                {[4, 6, 8, 12].map((size) => (
-                                  <option key={size} value={size}>
-                                    {size}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
                           </div>
                         </div>
                       </div>

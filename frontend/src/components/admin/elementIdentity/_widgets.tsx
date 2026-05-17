@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { eiSplitHeaderButtonPassive } from '../../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import { SplitListPaginationNav } from '../../shared/SplitListPaginationNav'
 import { PmStyleDialog } from '../../shared/PmStyleDialog'
+
+export { eiSplitHeaderButtonPassive }
 
 export function Field({
   label,
@@ -154,7 +158,7 @@ export function AddButton({
         type="button"
         onClick={onClick}
         disabled={disabled}
-        className="rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-neo-out transition hover:bg-slate-700 disabled:opacity-50 dark:bg-slate-200 dark:text-slate-900"
+        className={`${eiSplitHeaderButtonPassive} disabled:opacity-50`}
       >
         {label}
       </button>
@@ -245,24 +249,14 @@ export function Pagination({
       <span>
         Toplam {totalCount} kayıt · Sayfa {page}/{totalPages}
       </span>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => onPageChange(Math.max(1, page - 1))}
-          disabled={page <= 1}
-          className="rounded-md border border-slate-300/70 px-2 py-1 disabled:opacity-50 dark:border-slate-600/70"
-        >
-          Önceki
-        </button>
-        <button
-          type="button"
-          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-          disabled={page >= totalPages}
-          className="rounded-md border border-slate-300/70 px-2 py-1 disabled:opacity-50 dark:border-slate-600/70"
-        >
-          Sonraki
-        </button>
-      </div>
+      <SplitListPaginationNav
+        safePage={page}
+        pageCount={totalPages}
+        onPrev={() => onPageChange(Math.max(1, page - 1))}
+        onNext={() => onPageChange(Math.min(totalPages, page + 1))}
+        showPageIndicator={false}
+        buttonStyle="passive"
+      />
     </div>
   )
 }
@@ -306,7 +300,7 @@ export function AdminFormModal({
             type="button"
             onClick={onSubmit}
             disabled={submitDisabled}
-            className="rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-neo-out transition hover:bg-slate-700 disabled:opacity-50 dark:bg-slate-200 dark:text-slate-900"
+            className={`${eiSplitHeaderButtonPassive} disabled:opacity-50`}
           >
             Kaydet
           </button>

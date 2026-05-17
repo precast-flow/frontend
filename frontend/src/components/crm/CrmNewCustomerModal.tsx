@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import { MapPin, Trash2, X } from 'lucide-react'
 import type { CrmCustomer, CrmLocationRow } from '../../data/crmCustomers'
+import { eiSplitHeaderButtonPassive } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 
 type Props = {
   open: boolean
@@ -258,7 +259,7 @@ export function CrmNewCustomerModal({
               <button
                 type="button"
                 onClick={addLocation}
-                className="shrink-0 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white sm:mb-px"
+                className={`${eiSplitHeaderButtonPassive} shrink-0 px-4 py-2 text-sm sm:mb-px`}
               >
                 Ekle
               </button>
@@ -319,7 +320,7 @@ export function CrmNewCustomerModal({
           <button
             type="button"
             onClick={save}
-            className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+            className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm`}
           >
             {mode === 'edit' ? 'Değişiklikleri kaydet' : 'Müşteriyi oluştur'}
           </button>

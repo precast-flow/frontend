@@ -28,6 +28,7 @@ import {
   ElementIdentityFilterSheetHeader,
   ElementIdentityPieceCodesLikeSplit,
 } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
 import { eiSplitListRowButton, eiTabPill } from '../elementIdentity/elementIdentitySplitUi'
 import { StandardSeriesAssemblyTab } from './StandardSeriesAssemblyTab'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
@@ -327,11 +328,7 @@ export function StandardSeriesCatalogModuleView() {
                   <button
                     type="button"
                     onClick={handleNewTemplate}
-                    className={
-                      gl
-                        ? ['glass-btn', 'primary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
-                        : 'inline-flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800 dark:border-slate-600 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'
-                    }
+                    className={eiSplitHeaderButtonPassive}
                   >
                     <Plus className="size-3.5 shrink-0" aria-hidden />
                     {t('standardSeries.newTemplate')}
@@ -340,11 +337,7 @@ export function StandardSeriesCatalogModuleView() {
                     type="button"
                     disabled={!selected}
                     onClick={openAddToProject}
-                    className={
-                      gl
-                        ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
-                        : eiSplitHeaderButtonPassive
-                    }
+                    className={`${eiSplitHeaderButtonPassive} inline-flex items-center gap-1.5 disabled:pointer-events-none disabled:opacity-40`}
                   >
                     <Package className="size-3.5 shrink-0" aria-hidden />
                     {t('standardSeries.addToProject')}
@@ -497,45 +490,18 @@ export function StandardSeriesCatalogModuleView() {
                   </p>
                   <div className="flex flex-wrap items-center gap-2">
                     {filtered.length > 0 ? (
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          disabled={safeListPage <= 1}
-                          onClick={() => setListPage((p) => Math.max(1, p - 1))}
-                          className={
-                            gl
-                              ? ['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
-                                  ' ',
-                                )
-                              : 'rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10'
-                          }
-                        >
-                          Önceki
-                        </button>
-                        <span
-                          className={
-                            gl
-                              ? 'tabular-nums text-black/80 dark:text-white/75'
-                              : 'tabular-nums text-black/70 dark:text-white/75'
-                          }
-                        >
-                          Sayfa {safeListPage}/{listPageCount}
-                        </span>
-                        <button
-                          type="button"
-                          disabled={safeListPage >= listPageCount}
-                          onClick={() => setListPage((p) => Math.min(listPageCount, p + 1))}
-                          className={
-                            gl
-                              ? ['glass-btn', 'secondary', 'small', 'disabled:pointer-events-none disabled:opacity-35'].join(
-                                  ' ',
-                                )
-                              : 'rounded-md border border-black/22 bg-white px-2 py-1 text-[11px] font-semibold text-black transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/15 dark:bg-black/80 dark:text-white dark:hover:bg-white/10'
-                          }
-                        >
-                          Sonraki
-                        </button>
-                      </div>
+                      <SplitListPaginationNav
+                        safePage={safeListPage}
+                        pageCount={listPageCount}
+                        onPrev={() => setListPage((p) => Math.max(1, p - 1))}
+                        onNext={() => setListPage((p) => Math.min(listPageCount, p + 1))}
+                        gl={gl}
+                        locale={locale}
+                        buttonStyle={gl ? 'glass' : 'passive'}
+                        pageIndicatorClassName={
+                          gl ? 'tabular-nums text-black/80 dark:text-white/75' : 'tabular-nums text-black/70 dark:text-white/75'
+                        }
+                      />
                     ) : null}
                   </div>
                 </div>
@@ -558,11 +524,7 @@ export function StandardSeriesCatalogModuleView() {
                           <button
                             type="button"
                             onClick={openAddToProject}
-                            className={
-                              gl
-                                ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
-                                : eiSplitHeaderButtonPassive
-                            }
+                            className={`${eiSplitHeaderButtonPassive} inline-flex items-center gap-1.5`}
                           >
                             <Package className="size-3.5 shrink-0" aria-hidden />
                             {t('standardSeries.addToProject')}
@@ -813,7 +775,7 @@ export function StandardSeriesCatalogModuleView() {
                 type="button"
                 disabled={!addProjectId}
                 onClick={confirmAddToProject}
-                className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900"
+                className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm disabled:opacity-40`}
               >
                 {t('standardSeries.addConfirm')}
               </button>

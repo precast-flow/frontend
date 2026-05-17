@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import {
   Briefcase,
   ChevronsLeftRight,
@@ -17,6 +16,10 @@ import { useI18n } from '../../i18n/I18nProvider'
 import { useThemeMode } from '../../theme/ThemeProvider'
 import type { AppShellOutletContext } from '../../appShellOutletContext'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
+import {
+  eiSplitFilterToggleClass,
+  eiSplitHeaderButtonPassive,
+} from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 import '../proje/projectManagementGlassLight.css'
 import type { ProfilePageState, ProfileSectionId } from './useProfilePageState'
@@ -87,18 +90,9 @@ export function ProfileModuleView(props: Props) {
     ? 'glass-input mt-1 w-full'
     : 'mt-1 w-full rounded-lg border border-black/22 bg-white px-3 py-2 text-sm text-black dark:border-white/15 dark:bg-black/80 dark:text-white'
 
-  const headerBtnCls = gl
-    ? 'glass-btn small secondary inline-flex items-center gap-1.5'
-    : 'inline-flex items-center gap-1.5 rounded-lg border border-black/18 bg-white/70 px-2 py-1.5 text-xs font-semibold text-black transition hover:bg-white dark:border-white/12 dark:bg-black/40 dark:text-white/90 dark:hover:bg-black/55'
+  const headerBtnCls = `${eiSplitHeaderButtonPassive} inline-flex items-center gap-1.5`
 
-  const filterBtnCls = gl
-    ? ['glass-btn', 'small', 'inline-flex', 'items-center', 'gap-1.5', filterOpen ? 'outline' : 'secondary'].join(' ')
-    : [
-        'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25',
-        filterOpen
-          ? 'border-black/35 bg-black/10 text-black dark:border-white/20 dark:bg-black/50 dark:text-white'
-          : 'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
-      ].join(' ')
+  const filterBtnCls = eiSplitFilterToggleClass(filterOpen)
 
   const scrollPanelTop = () => {
     requestAnimationFrame(() => rightPanelRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
@@ -219,9 +213,6 @@ export function ProfileModuleView(props: Props) {
                     >
                       {t('profile.gotoSettings')}
                     </button>
-                    <Link to="/profile?legacy=1" className={`${headerBtnCls} no-underline`}>
-                      {t('profileModule.legacyLink')}
-                    </Link>
                     <button
                       type="button"
                       onClick={() => setFilterOpen((v) => !v)}
@@ -603,7 +594,7 @@ export function ProfileModuleView(props: Props) {
                       className={
                         gl
                           ? 'glass-btn small primary'
-                          : 'rounded-lg bg-black px-3 py-2 text-xs font-semibold text-white hover:bg-neutral-900 dark:bg-white dark:text-black dark:hover:bg-white/90'
+                          : `${eiSplitHeaderButtonPassive} px-3 py-2 text-xs`
                       }
                     >
                       {t('profile.save')}

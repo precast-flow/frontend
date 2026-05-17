@@ -12,6 +12,19 @@ export const eiSplitHeaderButtonPassive =
 export const eiSplitHeaderButtonActive =
   'inline-flex items-center gap-1.5 rounded-lg border border-sky-300/70 bg-sky-100/70 px-2 py-1.5 text-xs font-semibold text-sky-900 transition hover:bg-sky-100 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100 dark:hover:bg-sky-900/45'
 
+/** Filtre çipi — seçili. */
+export const eiSplitFilterPillActive =
+  'border border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
+
+/** Filtre çipi — seçili değil. */
+export const eiSplitFilterPillIdle =
+  'bg-white text-slate-700 ring-1 ring-slate-300/70 dark:bg-slate-900/50 dark:text-slate-200 dark:ring-slate-600/60'
+
+/** «Filtrele» açık/kapalı — kapalıyken Detay ile aynı; açıkken sky vurgusu. */
+export function eiSplitFilterToggleClass(isOpen: boolean): string {
+  return isOpen ? eiSplitHeaderButtonActive : eiSplitHeaderButtonPassive
+}
+
 export type ElementIdentityPieceCodesLikeSplitProps = {
   persistKey: string
   listTitle: string
@@ -163,30 +176,7 @@ export function ElementIdentityPieceCodesLikeSplit({
     }
   }, [isResizing, persistKey, splitRatio])
 
-  const filterBtnClass =
-    isPm && gl
-      ? [
-          'glass-btn',
-          'small',
-          'inline-flex',
-          'items-center',
-          'gap-1.5',
-          'self-center',
-          'shrink-0',
-          isFilterOpen ? 'outline' : 'secondary',
-        ].join(' ')
-      : isPm && !gl
-        ? [
-            'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25',
-            isFilterOpen
-              ? neutralChrome
-                ? 'border-black/35 bg-black/10 text-black dark:border-white/20 dark:bg-black/50 dark:text-white'
-                : 'border-black/25 bg-black/8 text-black dark:border-white/20 dark:bg-black/45 dark:text-white'
-              : 'border-black/18 bg-white/70 text-black dark:border-white/12 dark:bg-black/40 dark:text-white/90',
-          ].join(' ')
-        : isFilterOpen
-          ? eiSplitHeaderButtonActive
-          : eiSplitHeaderButtonPassive
+  const filterBtnClass = eiSplitFilterToggleClass(isFilterOpen)
 
   const sectionClass = !isPm
     ? 'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden p-3'
@@ -420,11 +410,7 @@ export function ElementIdentityFilterSheetHeader({
       <button
         type="button"
         onClick={onClose}
-        className={
-          glass
-            ? 'card-button inline-flex size-7 items-center justify-center p-0'
-            : 'inline-flex size-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
-        }
+        className={`${eiSplitHeaderButtonPassive} inline-flex size-7 items-center justify-center p-0`}
         aria-label="Filtreyi kapat"
       >
         <X className="size-3.5" aria-hidden />

@@ -141,18 +141,17 @@ const shell: Record<string, string> = {
   'definitions.hub.elementIdentityTitle': 'Eleman Kimlik ve İsimlendirme',
   'definitions.hub.elementIdentityDesc':
     'Firma kodları, tipoloji eşleme, IFC içe alma ve isimlendirme şablonlarını yönetin.',
-  'definitions.hub.legacyLink': 'Eski sürüm (referans)',
   'nav.productionPlanning': 'Üretim planlama',
   'nav.productionSummary': 'Üretim özeti',
   'nav.mes': 'Üretim (MES)',
   'nav.planningDesign': 'Üretim planlama',
   'nav.generalPlanning': 'Genel planlama',
   'main.desc.generalPlanning':
-    'Planlama, üretim ve sevkiyat için ortak takvim; Montaj sekmesinde proje seçerek proje bazlı montaj planı yönetin.',
+    'Planlama, üretim ve sevkiyat&montaj için ortak takvim ve birim sekmeleri.',
   'generalPlanning.unitPickerAria': 'Planlama birimi seçimi',
   'generalPlanning.unit.planning': 'Planlama',
   'generalPlanning.unit.production': 'Üretim',
-  'generalPlanning.unit.dispatch': 'Sevkiyat',
+  'generalPlanning.unit.dispatch': 'Sevkiyat&Montaj',
   'generalPlanning.unit.assembly': 'Montaj',
   'generalPlanning.column.mold': 'Kalıp',
   'generalPlanning.column.vehicle': 'Araç / ramp',
@@ -160,6 +159,8 @@ const shell: Record<string, string> = {
   'generalPlanning.filter.mold': 'Kalıp',
   'generalPlanning.filter.vehicle': 'Araç',
   'generalPlanning.filter.line': 'Hat / ekip',
+  'generalPlanning.filter.project': 'Proje',
+  'dispatchPlanning.filtersDrawerHint': 'Arama, proje, araç, durum ve iş günü',
   'generalPlanning.detail.linkedPlans': 'Bağlı birim planları',
   'generalPlanning.detail.resource': 'Kaynak',
   'planningDesign.toolbarSearchAria': 'Plan öğelerinde ara',
@@ -172,7 +173,8 @@ const shell: Record<string, string> = {
   'nav.quality': 'Kalite',
   'nav.yard': 'Yard / Sahası',
   'nav.dispatch': 'Sevkiyat',
-  'nav.dispatchPlanning': 'Sevkiyat planlama',
+  'nav.dispatchPlanning': 'Sevkiyat&Montaj Planlama',
+  'dispatchPlanning.noAccess': 'Sevkiyat&Montaj planlama için yetkiniz bulunmuyor.',
   'nav.assemblyPlanning': 'Montaj planlama',
   'nav.field': 'Saha (Şantiye)',
   'nav.reporting': 'Raporlama',
@@ -214,7 +216,7 @@ const shell: Record<string, string> = {
   'main.desc.productionPlanning':
     'Üretim birimi takvimi — filtreler, iş kuyruğu, geri al/yinele ve plan geçmişi (genel planlamadaki Üretim sekmesi ile aynı görünüm).',
   'main.desc.dispatchPlanning':
-    'Sevkiyat birimi takvimi — filtreler, iş kuyruğu, geri al/yinele ve plan geçmişi (genel planlamadaki Sevkiyat sekmesi ile aynı görünüm).',
+    'Sevkiyat&montaj birimi takvimi — filtreler, iş kuyruğu, geri al/yinele ve plan geçmişi (genel planlamadaki Sevkiyat&Montaj sekmesi ile aynı görünüm).',
   'main.desc.assemblyPlanning':
     'Proje bazlı montaj takvimi — proje seçerek montaj hatları, iş kuyruğu ve plan geçmişini yönetin.',
   'assemblyPlanning.projectPickerLabel': 'Montaj planı için proje seçin',
@@ -1803,7 +1805,6 @@ const shell: Record<string, string> = {
   'profileModule.listSearchLabel': 'Bölümde ara',
   'profileModule.listSearchPh': 'Bölüm adı…',
   'profileModule.listSearchAria': 'Profil bölümlerinde ara',
-  'profileModule.legacyLink': 'Eski görünüm (?legacy=1)',
   'profileModule.intro':
     'Soldan bölüm seçin; kişisel ve iş alanları aynı prototip durumunu paylaşır (sunucuya gitmez).',
   'profileModule.filtersTitle': 'Yardım',
@@ -1821,7 +1822,6 @@ const shell: Record<string, string> = {
   'settingsModule.listSearchLabel': 'Sekmede ara',
   'settingsModule.listSearchPh': 'Başlık veya kısayol metni…',
   'settingsModule.listSearchAria': 'Ayar sekmelerinde ara',
-  'settingsModule.legacyLink': 'Eski görünüm (?legacy=1)',
   'settingsModule.intro':
     'Soldan sekme seçin. Modül simülasyonu ve senaryo kısayolları önceki ayarlar sayfasıyla aynı davranır (yerel / mock).',
   'settingsModule.filtersTitle': 'Yardım',
@@ -1831,7 +1831,6 @@ const shell: Record<string, string> = {
   'settingsModule.footerHint': 'Varsayılanlara dön ve Kaydet bu prototipte sunucuya gitmez.',
 
   'approvalFlowDesigner.listTitle': 'Kayıtlı akışlar',
-  'approvalFlowDesigner.legacyLink': 'Eski görünüm (?legacy=1)',
   'approvalFlowDesigner.filtersTitle': 'Yardım',
   'approvalFlowDesigner.filtersSubtitle': 'Onay akışı tasarımcısı',
   'approvalFlowDesigner.filterBody':
@@ -1951,7 +1950,7 @@ const shell: Record<string, string> = {
 
   'elementIdentity.list.title': 'Projeler',
   'elementIdentity.list.searchAria': 'Projelerde ara',
-  'elementIdentity.list.detailCta': 'Detay gör',
+  'elementIdentity.list.detailCta': 'Detay',
   'elementIdentity.list.selectHint': 'Soldan proje seçin veya detay sayfasına gidin.',
   'elementIdentity.list.summaryTitle': 'Özet',
   'elementIdentity.list.elementsCount': 'Kayıtlı eleman',
@@ -2197,7 +2196,6 @@ const shell: Record<string, string> = {
 
   'userManagement.listTitle': 'Kullanıcılar',
   'userManagement.newUser': 'Yeni kullanıcı (mock)',
-  'userManagement.legacyLink': 'Eski görünüm (?legacy=1)',
   'userManagement.filtersTitle': 'Filtreler',
   'userManagement.filtersSubtitle': 'Arama, rol, durum ve fabrika',
   'userManagement.filterSearch': 'Ara',
@@ -2262,7 +2260,6 @@ const shell: Record<string, string> = {
   'userManagement.toastSaved': 'Değişiklikler kaydedildi (mock).',
 
   'rolesPermissions.listTitle': 'Roller',
-  'rolesPermissions.legacyLink': 'Eski görünüm (?legacy=1)',
   'rolesPermissions.filtersTitle': 'Filtreler',
   'rolesPermissions.filtersSubtitle': 'Rol listesi, modül ve izin araması',
   'rolesPermissions.roleListSearch': 'Rol listesinde ara',

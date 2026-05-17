@@ -53,16 +53,16 @@ function GlassAppShellInner() {
     location.pathname.startsWith('/roller-izinler') ||
     location.pathname.startsWith('/onay-akisi') ||
     location.pathname.startsWith('/birim-is-kuyrugu') ||
+    location.pathname.startsWith('/planlama') ||
+    location.pathname.startsWith('/genel-planlama') ||
     location.pathname.startsWith('/uretim-planlama') ||
     location.pathname.startsWith('/sevkiyat-planlama') ||
-    location.pathname.startsWith('/montaj-planlama') ||
     location.pathname === '/profile' ||
     location.pathname === '/settings' ||
     effectiveActiveId === 'planning-design' ||
     effectiveActiveId === 'general-planning' ||
     effectiveActiveId === 'production-planning' ||
-    effectiveActiveId === 'dispatch-planning' ||
-    effectiveActiveId === 'assembly-planning'
+    effectiveActiveId === 'dispatch-planning'
 
   /** Proje liste (`/`, `/proje`) ve birim iş kuyruğu: üst `padding` / dış `gap` proje ile aynı (navbar altı hizası). */
   const isProjectListRoute =
@@ -124,7 +124,7 @@ function GlassAppShellInner() {
         </div>
       </div>
 
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-[95] pt-[env(safe-area-inset-top,0px)]">
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-[180] pt-[env(safe-area-inset-top,0px)]">
         <div className="w-full min-w-0">
           <div
             className="hidden md:block motion-reduce:transition-none transition-[padding-left] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"

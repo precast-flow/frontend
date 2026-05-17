@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import {
   AlertTriangle,
   Factory,
@@ -118,27 +118,11 @@ export function UserManagementModuleView(props: UserManagementState) {
                 <button
                   type="button"
                   onClick={addMockUser}
-                  className={
-                    gl
-                      ? ['glass-btn', 'primary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
-                      : eiSplitHeaderButtonPassive
-                  }
+                  className={eiSplitHeaderButtonPassive}
                 >
                   <UserPlus className="size-3.5 shrink-0" aria-hidden />
                   {t('userManagement.newUser')}
                 </button>
-                <Link
-                  to="/kullanicilar?legacy=1"
-                  className={
-                    gl
-                      ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5', 'no-underline'].join(
-                          ' ',
-                        )
-                      : `${eiSplitHeaderButtonPassive} no-underline`
-                  }
-                >
-                  {t('userManagement.legacyLink')}
-                </Link>
               </>
             }
         isFilterOpen={filterOpen}
@@ -649,7 +633,7 @@ export function UserManagementModuleView(props: UserManagementState) {
                     type="button"
                     disabled={!selected.active}
                     onClick={() => mockSave(t('userManagement.toastSaved'))}
-                    className="w-full rounded-lg bg-slate-900 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+                    className={`${eiSplitHeaderButtonPassive} w-full justify-center py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-40`}
                   >
                     {t('userManagement.save')}
                   </button>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { Plus, Trash2 } from 'lucide-react'
 import { PROCESS_TYPES } from '../../data/mockApprovalFlow'
 import { activeModuleIdFromPathname } from '../../data/navigation'
@@ -131,27 +131,11 @@ export function ApprovalFlowDesignerModuleView(props: ApprovalFlowDesignerState)
                       setRightDetailTab('tasarim')
                       scrollPanelTop()
                     }}
-                    className={
-                      gl
-                        ? ['glass-btn', 'primary', 'small', 'inline-flex', 'items-center', 'gap-1.5'].join(' ')
-                        : 'inline-flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800 dark:border-slate-600 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'
-                    }
+                    className={eiSplitHeaderButtonPassive}
                   >
                     <Plus className="size-3.5 shrink-0" aria-hidden />
                     {t('approvalFlowDesigner.newTemplate')}
                   </button>
-                  <Link
-                    to="/onay-akisi?legacy=1"
-                    className={
-                      gl
-                        ? ['glass-btn', 'secondary', 'small', 'inline-flex', 'items-center', 'gap-1.5', 'no-underline'].join(
-                            ' ',
-                          )
-                        : `${eiSplitHeaderButtonPassive} no-underline`
-                    }
-                  >
-                    {t('approvalFlowDesigner.legacyLink')}
-                  </Link>
                 </>
               }
               isFilterOpen={filterOpen}

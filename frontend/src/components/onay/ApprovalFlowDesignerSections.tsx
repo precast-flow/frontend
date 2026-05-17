@@ -7,6 +7,7 @@ import {
   type ProcessTypeId,
 } from '../../data/mockApprovalFlow'
 import type { ApprovalFlowDesignerState } from './useApprovalFlowDesignerState'
+import { eiSplitHeaderButtonPassive } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 
 type Variant = 'neo' | 'liquid' | 'glass'
 
@@ -22,7 +23,7 @@ function editorStyles(v: Variant) {
       slaBox:
         'mt-3 rounded-xl border border-dashed border-black/20 bg-white/30 p-3 dark:border-white/15 dark:bg-white/[0.06]',
       stepCard: 'glass-card glass-card--static rounded-xl p-3',
-      btnPrimary: ['glass-btn', 'primary', 'small'].join(' '),
+      btnPrimary: eiSplitHeaderButtonPassive,
       btnSecondary: ['glass-btn', 'secondary', 'small'].join(' '),
       badge:
         'inline-flex rounded-full border border-black/15 bg-black/8 px-2.5 py-0.5 text-[11px] font-medium text-black dark:border-white/15 dark:bg-white/10 dark:text-white',
@@ -67,8 +68,7 @@ function editorStyles(v: Variant) {
     thresholdBox: 'mt-3 rounded-lg border border-slate-200/70 bg-slate-50/80 p-3 dark:border-slate-600/50 dark:bg-slate-900/40',
     slaBox: 'mt-3 rounded-lg border border-dashed border-slate-300/80 bg-white/40 p-3 dark:border-slate-600 dark:bg-slate-900/30',
     stepCard: 'rounded-xl border border-slate-200/60 bg-white/50 p-3 dark:border-slate-600/50 dark:bg-slate-900/40',
-    btnPrimary:
-      'rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:border-slate-600 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white',
+    btnPrimary: `${eiSplitHeaderButtonPassive} px-3 py-2 text-sm`,
     btnSecondary:
       'rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700',
     badge: 'rounded-full border border-slate-200/80 bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300',
