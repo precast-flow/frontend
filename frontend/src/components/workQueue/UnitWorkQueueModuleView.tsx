@@ -20,16 +20,24 @@ import {
 } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 import '../proje/projectManagementGlassLight.css'
+import { useWorkQueue } from '../../context/WorkQueueContext'
+import {
+  childOrderRoleLabelKey,
+  isProductionChildOrder,
+  isProductionParentOrder,
+} from '../../data/productionWorkOrderFlow'
 import {
   filterWorkQueueItems,
   MOCK_WORK_QUEUE_VIEWER_ID,
   resolveWorkQueueName,
-  WORK_QUEUE_ITEMS,
   WORK_QUEUE_ORG_SEQUENCE,
   type WorkQueueItem,
   type WorkQueueOrgUnit,
   type WorkQueuePerspective,
 } from '../../data/workQueueMock'
+import { CuringWorkOrderDetailPanel } from './CuringWorkOrderDetailPanel'
+import { ProductionChildOrderDetailPanel } from './ProductionChildOrderDetailPanel'
+import { ProductionWorkOrderDetailPanel } from './ProductionWorkOrderDetailPanel'
 
 const selectCls =
   'rounded-lg border border-slate-200/80 bg-white/90 px-2.5 py-1.5 text-xs font-semibold text-slate-900 shadow-sm outline-none focus:border-sky-400/60 focus:ring-2 focus:ring-sky-400/25 dark:border-slate-600/70 dark:bg-slate-900/60 dark:text-slate-50 sm:text-sm'
@@ -69,6 +77,7 @@ type Props = {
 export function UnitWorkQueueModuleView(_props: Props) {
   void _props.onNavigate
   const { t, locale } = useI18n()
+  const { items: workQueueItems } = useWorkQueue()
   const baseId = useId()
   const { isFactoryInScope } = useFactoryContext()
   const rightRef = useRef<HTMLDivElement | null>(null)
@@ -79,14 +88,14 @@ export function UnitWorkQueueModuleView(_props: Props) {
   const [filterOpen, setFilterOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [factoryRestricted, setFactoryRestricted] = useState(true)
-  const [selectedId, setSelectedId] = useState<string>(WORK_QUEUE_ITEMS[0]!.id)
+  const [selectedId, setSelectedId] = useState<string>(() => workQueueItems[0]?.id ?? '')
   const [detailTab, setDetailTab] = useState<'summary' | 'project' | 'history'>('summary')
   const [listPage, setListPage] = useState(1)
   const pageSize = UNIT_WORK_QUEUE_DEFAULT_PAGE_SIZE
 
   const filtered = useMemo(
     () =>
-      filterWorkQueueItems(WORK_QUEUE_ITEMS, {
+      filterWorkQueueItems(workQueueItems, {
         perspective,
         unit,
         viewerId: MOCK_WORK_QUEUE_VIEWER_ID,
@@ -94,8 +103,15 @@ export function UnitWorkQueueModuleView(_props: Props) {
         factoryRestricted,
         factoryAllows: isFactoryInScope,
       }),
-    [perspective, unit, search, factoryRestricted, isFactoryInScope],
+    [perspective, unit, search, factoryRestricted, isFactoryInScope, workQueueItems],
   )
+
+  useEffect(() => {
+    if (filtered.length === 0) return
+    if (!filtered.some((r) => r.id === selectedId)) {
+      setSelectedId(filtered[0]!.id)
+    }
+  }, [filtered, selectedId])
 
   const listTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const safeListPage = Math.min(listPage, listTotalPages)
@@ -129,12 +145,28 @@ export function UnitWorkQueueModuleView(_props: Props) {
     setSelectedId(pagedItems[0]?.id ?? filtered[0]!.id)
   }, [filtered, pagedItems, selectedId])
 
-  useEffect(() => {
-    setDetailTab('summary')
-    requestAnimationFrame(() => rightRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
-  }, [selectedId])
-
   const selected = filtered.find((r) => r.id === selectedId)
+  const productionParentDetail = selected != null && isProductionParentOrder(selected)
+  const productionChildDetail = selected != null && isProductionChildOrder(selected)
+
+  const openWorkOrderInList = (
+    workQueueId: string,
+    opts: { perspective: WorkQueuePerspective; unit: WorkQueueOrgUnit | 'all' },
+  ) => {
+    setPerspective(opts.perspective)
+    setUnit(opts.unit)
+    setSelectedId(workQueueId)
+    setListPage(1)
+    setFilterOpen(false)
+    requestAnimationFrame(() => rightRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
+  }
+
+  useEffect(() => {
+    if (!productionParentDetail && !productionChildDetail) {
+      setDetailTab('summary')
+    }
+    requestAnimationFrame(() => rightRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
+  }, [selectedId, productionParentDetail, productionChildDetail])
 
   const kpis = useMemo(() => {
     const open = filtered.filter((r) => r.status !== 'tamamlandi').length
@@ -331,6 +363,15 @@ export function UnitWorkQueueModuleView(_props: Props) {
                 >
                   {t('unitWorkQueue.trackingHint')}
                 </p>
+                <p
+                  className={
+                    gl
+                      ? 'text-[11px] leading-relaxed text-sky-900/80 dark:text-sky-100/85'
+                      : 'text-[11px] leading-relaxed text-sky-800 dark:text-sky-200/90'
+                  }
+                >
+                  {t('unitWorkQueue.productionFlow.dailyOrderHint')}
+                </p>
               </div>
             }
             listBody={
@@ -356,6 +397,12 @@ export function UnitWorkQueueModuleView(_props: Props) {
                       </p>
                       <p className="mt-0.5 truncate text-xs text-black/70 dark:text-white/70">
                         {row.orderNo} · {unitLabel(row.targetUnit, t)}
+                        {row.parentWorkQueueId ? (
+                          <span className="text-black/50 dark:text-white/55">
+                            {' '}
+                            · {t(childOrderRoleLabelKey(row.kind))}
+                          </span>
+                        ) : null}
                       </p>
                       <p className="mt-0.5 flex flex-wrap items-center gap-1.5">
                         <span className={statusClass(row.status)}>{t(`unitWorkQueue.status.${row.status}`)}</span>
@@ -418,7 +465,13 @@ export function UnitWorkQueueModuleView(_props: Props) {
             rightAside={
               selected ? (
                 <div key={selected.id} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
-                  <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 lg:max-w-3xl">
+                  <div
+                    className={
+                      productionParentDetail || productionChildDetail
+                        ? 'flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4'
+                        : 'mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 lg:max-w-3xl'
+                    }
+                  >
                     <header className={splitDetailHeaderClass}>
                       <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
                         {t('unitWorkQueue.selectedWorkEyebrow')}
@@ -464,6 +517,7 @@ export function UnitWorkQueueModuleView(_props: Props) {
                       </div>
                     </header>
 
+                    {!productionParentDetail && !productionChildDetail ? (
                     <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-3">
                       <div
                         className="flex max-w-full gap-1 overflow-x-auto"
@@ -494,15 +548,43 @@ export function UnitWorkQueueModuleView(_props: Props) {
                         ))}
                       </div>
                     </div>
+                    ) : null}
 
                     <div
-                      key={detailTab}
+                      key={
+                        productionParentDetail || productionChildDetail
+                          ? `production-flow-${selected.id}`
+                          : detailTab
+                      }
                       id="unit-work-queue-detail-panel"
                       role="tabpanel"
-                      aria-labelledby={`unit-work-queue-tab-${detailTab}`}
-                      className="okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 text-center sm:px-1"
+                      aria-labelledby={
+                        productionParentDetail || productionChildDetail
+                          ? undefined
+                          : `unit-work-queue-tab-${detailTab}`
+                      }
+                      className={[
+                        'okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden',
+                        productionParentDetail || productionChildDetail
+                          ? 'w-full text-left'
+                          : 'px-0.5 text-center sm:px-1',
+                      ].join(' ')}
                     >
-                      {detailTab === 'summary' ? (
+                      {productionParentDetail ? (
+                        <ProductionWorkOrderDetailPanel
+                          item={selected}
+                          gl={gl}
+                          onOpenInList={openWorkOrderInList}
+                        />
+                      ) : null}
+                      {productionChildDetail && selected.kind === 'curing_order' ? (
+                        <CuringWorkOrderDetailPanel item={selected} gl={gl} />
+                      ) : null}
+                      {productionChildDetail &&
+                      (selected.kind === 'pour_order' || selected.kind === 'sample_order') ? (
+                        <ProductionChildOrderDetailPanel item={selected} gl={gl} />
+                      ) : null}
+                      {!productionParentDetail && !productionChildDetail && detailTab === 'summary' ? (
                         <div className="flex flex-col divide-y divide-slate-200/25 dark:divide-white/10">
                           <div className="pb-4 pt-0">
                             <p className="mx-auto max-w-lg text-sm leading-relaxed text-black/80 dark:text-white/85">
@@ -589,7 +671,7 @@ export function UnitWorkQueueModuleView(_props: Props) {
                           </div>
                         </div>
                       ) : null}
-                      {detailTab === 'project' ? (
+                      {!productionParentDetail && !productionChildDetail && detailTab === 'project' ? (
                         <div className="mx-auto max-w-lg rounded-xl border border-dashed border-black/18 p-4 text-left text-sm text-black/75 dark:border-white/15 dark:text-white/80 sm:text-center">
                           <p className="font-semibold text-black dark:text-white">
                             {selected.projectCode} — {selected.projectName}
@@ -597,7 +679,7 @@ export function UnitWorkQueueModuleView(_props: Props) {
                           <p className="mt-2">{t('unitWorkQueue.panelProjectPlaceholder')}</p>
                         </div>
                       ) : null}
-                      {detailTab === 'history' ? (
+                      {!productionParentDetail && !productionChildDetail && detailTab === 'history' ? (
                         <ul className="mx-auto max-w-lg space-y-3 text-left text-sm text-black/75 dark:text-white/80 sm:text-center">
                           <li>{t('unitWorkQueue.historyMock1')}</li>
                           <li>{t('unitWorkQueue.historyMock2')}</li>

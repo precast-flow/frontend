@@ -26,3 +26,6 @@ export const splitListEmptyClass =
 
 export const splitDetailHeaderClass =
   'shrink-0 border-b border-slate-200/25 pb-3 text-center dark:border-white/10'
+
+/** Sağ detay gövdesi — üst kartın tam genişliğini kullanır. */
+export const splitDetailPanelBodyClass = 'w-full min-w-0'

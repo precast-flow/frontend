@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
   FileText,
   Filter,
   GripVertical,
@@ -32,6 +33,8 @@ import {
   eiSplitHeaderButtonPassive,
 } from '../../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import { useGeneralPlanningOptional } from '../GeneralPlanningContext'
+import { DailyProductionWorkOrderDialog } from '../DailyProductionWorkOrderDialog'
+import { resolveDefaultProductionDayIso } from '../../../planlama/productionDailyWorkOrder'
 import { useGeneralPlanningAccess } from '../../../hooks/useGeneralPlanningAccess'
 import {
   GENERAL_PLAN_QUEUE,
@@ -258,6 +261,8 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
     !isGeneral || !unitConfig ? true : unitConfig.timelineUsesShifts !== false
   const isDispatchTimeline =
     variant === 'dispatch' || (isGeneral && gp?.activeUnit === 'dispatch')
+  const isProductionTimeline =
+    variant === 'production' || (isGeneral && gp?.activeUnit === 'production')
   const slotsPerDay = PLANNING_SHIFTS.length
   const PLANNING_RESOURCES: TimelineResourceRow[] = isGeneral && gp
     ? resourcesForUnit(gp.activeUnit).map((r) => ({
@@ -296,6 +301,8 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   const [zoom, setZoom] = useState(55)
   const [workdaysOnly, setWorkdaysOnly] = useState(false)
   const [search, setSearch] = useState('')
+  const [dailyWorkOrderOpen, setDailyWorkOrderOpen] = useState(false)
+  const [dailyWorkOrderToast, setDailyWorkOrderToast] = useState<string | null>(null)
   const [draftStateLocal, setDraftStateLocal] = useState<'draft' | 'published'>('draft')
   const draftState = isGeneral && gp ? gp.draftState : draftStateLocal
   const setDraftState = isGeneral && gp ? gp.setDraftState : setDraftStateLocal
@@ -614,6 +621,34 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   }, [PLANNING_RESOURCES])
 
   const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), [])
+
+  const moldNameById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const m of PLANNING_RESOURCES) map.set(m.moldId, m.name)
+    return map
+  }, [PLANNING_RESOURCES])
+
+  useEffect(() => {
+    if (!dailyWorkOrderToast) return
+    const timer = window.setTimeout(() => setDailyWorkOrderToast(null), 5000)
+    return () => window.clearTimeout(timer)
+  }, [dailyWorkOrderToast])
+
+  const dailyWorkOrderDefaultDay = useMemo(
+    () =>
+      resolveDefaultProductionDayIso(
+        items,
+        visibleDays.map((d) => d.date),
+        todayIso,
+        dayDetailDate,
+      ),
+    [items, visibleDays, todayIso, dayDetailDate],
+  )
+
+  const dailyWorkOrderVisibleRange = useMemo(() => {
+    if (visibleDays.length === 0) return undefined
+    return { min: visibleDays[0]!.date, max: visibleDays[visibleDays.length - 1]!.date }
+  }, [visibleDays])
 
   const dailyTotals = useMemo(() => {
     return visibleDays.map((d) => {
@@ -1265,6 +1300,17 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                   </button>
                 </div>
                 <div className="flex min-w-0 flex-wrap items-center justify-end justify-self-end gap-1.5 md:gap-2">
+                  {isProductionTimeline ? (
+                    <button
+                      type="button"
+                      onClick={() => setDailyWorkOrderOpen(true)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-sky-300/70 bg-sky-600 px-2 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:border-sky-500/60 dark:bg-sky-500 dark:hover:bg-sky-600 md:py-2 md:text-sm"
+                    >
+                      <ClipboardList className="size-3.5 shrink-0" aria-hidden />
+                      <span className="hidden lg:inline">{t('productionPlanning.dailyOrder.cta')}</span>
+                      <span className="lg:hidden">{t('productionPlanning.dailyOrder.ctaShort')}</span>
+                    </button>
+                  ) : null}
                   {showToolbarAction('undo') ? (
                   <button
                     type="button"
@@ -1346,6 +1392,12 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
               {!canEdit ? (
                 <div className="shrink-0 border-b border-amber-200/60 bg-amber-50/90 px-3 py-2 text-xs font-medium text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
                   Salt okunur: sürükle-bırak ve yeniden boyutlandırma kapalı.
+                </div>
+              ) : null}
+
+              {dailyWorkOrderToast ? (
+                <div className="shrink-0 border-b border-emerald-200/70 bg-emerald-50/95 px-3 py-2 text-xs font-medium text-emerald-950 dark:border-emerald-900/40 dark:bg-emerald-950/35 dark:text-emerald-100">
+                  {dailyWorkOrderToast}
                 </div>
               ) : null}
 
@@ -2409,6 +2461,22 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
         </div>
       </div>
     </div>
+
+      {isProductionTimeline ? (
+        <DailyProductionWorkOrderDialog
+          open={dailyWorkOrderOpen}
+          onClose={() => setDailyWorkOrderOpen(false)}
+          planItems={items}
+          moldNameById={moldNameById}
+          defaultDayIso={dailyWorkOrderDefaultDay}
+          visibleDayRange={dailyWorkOrderVisibleRange}
+          onConfirmed={(count) =>
+            setDailyWorkOrderToast(
+              t('productionPlanning.dailyOrder.toast', { count: String(count) }),
+            )
+          }
+        />
+      ) : null}
 
       {typeof document !== 'undefined'
         ? createPortal(
