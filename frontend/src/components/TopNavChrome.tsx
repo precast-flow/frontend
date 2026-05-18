@@ -4,7 +4,7 @@ import { Bell, ChevronDown, Moon, Sun, User } from 'lucide-react'
 import { useThemeMode } from '../theme/ThemeProvider'
 import { useFactoryContext } from '../context/FactoryContext'
 import { useI18n } from '../i18n/I18nProvider'
-import { notificationFeedItems } from '../data/dashboardMock'
+import { useNotificationFeed } from '../context/NotificationFeedContext'
 import { TopNavMenuPortal } from './TopNavMenuPortal'
 
 export type ChromeMenu = null | 'notif' | 'user'
@@ -21,6 +21,7 @@ export function TopNavChrome({ chromeMenu, setChromeMenu, onModuleNavigate }: Pr
   const navigate = useNavigate()
   const { mode, toggle: toggleTheme } = useThemeMode()
   const { selectedCodes } = useFactoryContext()
+  const { items: notificationFeedItems } = useNotificationFeed()
 
   const notifTriggerRef = useRef<HTMLButtonElement>(null)
   const notifPanelRef = useRef<HTMLDivElement>(null)

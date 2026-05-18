@@ -1,0 +1,245 @@
+/* Teknik rapor yazdırma — body portalı, A4 tam genişlik */
+
+.printable-report-portal {
+  display: none;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 12mm 14mm;
+}
+
+@media print {
+  html,
+  body {
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Uygulama kökünü gizle; yalnızca aktif rapor portalı */
+  body.print-report-active #root {
+    display: none !important;
+  }
+
+  body.print-report-active .printable-report-portal[data-print-active='true'] {
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  body.print-report-active
+    .printable-report-portal:not([data-print-active='true']) {
+    display: none !important;
+  }
+
+  .printable-report-sheet {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    color: #0f172a;
+    font-family:
+      system-ui,
+      -apple-system,
+      'Segoe UI',
+      Roboto,
+      'Helvetica Neue',
+      Arial,
+      sans-serif;
+    font-size: 10pt;
+    line-height: 1.45;
+  }
+
+  .printable-report-sheet * {
+    box-sizing: border-box;
+  }
+
+  .printable-report-header {
+    margin: 0 0 10pt;
+    padding: 0 0 8pt;
+    border-bottom: 1.5pt solid #1e293b;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .printable-report-brand {
+    margin: 0 0 3pt;
+    font-size: 7.5pt;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #64748b;
+  }
+
+  .printable-report-title {
+    margin: 0 0 4pt;
+    font-size: 15pt;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #0f172a;
+  }
+
+  .printable-report-subtitle {
+    margin: 0 0 6pt;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 11pt;
+    font-weight: 600;
+    color: #334155;
+  }
+
+  .printable-report-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4pt 16pt;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .printable-report-meta-row li {
+    margin: 0;
+    padding: 0;
+    font-size: 9pt;
+    color: #475569;
+  }
+
+  .printable-report-meta-row strong {
+    font-weight: 600;
+    color: #334155;
+  }
+
+  .printable-report-banner {
+    margin: 0 0 10pt;
+    padding: 7pt 10pt;
+    border: 0.75pt solid #cbd5e1;
+    border-radius: 2pt;
+    font-size: 9pt;
+    font-weight: 600;
+    text-align: center;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .printable-report-banner--ok {
+    border-color: #16a34a;
+    background: #f0fdf4;
+    color: #166534;
+  }
+
+  .printable-report-banner--delay {
+    border-color: #b91c1c;
+    background: #fef2f2;
+    color: #991b1b;
+  }
+
+  .printable-report-card {
+    width: 100%;
+    margin: 0 0 10pt;
+    padding: 8pt 10pt;
+    border: 0.75pt solid #cbd5e1;
+    border-radius: 2pt;
+    background: #fff;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .printable-report-card--breakable {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .printable-report-card-title {
+    margin: 0 0 7pt;
+    padding: 0 0 4pt;
+    border-bottom: 0.5pt solid #e2e8f0;
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #475569;
+  }
+
+  .printable-report-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5pt 18pt;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  .printable-report-field {
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .printable-report-field dt {
+    margin: 0 0 1pt;
+    font-size: 7pt;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #64748b;
+  }
+
+  .printable-report-field dd {
+    margin: 0;
+    padding: 0;
+    font-size: 9.5pt;
+    font-weight: 500;
+    color: #0f172a;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .printable-report-field dd.is-mono {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  .printable-report-field dd.is-warn {
+    color: #b91c1c;
+    font-weight: 700;
+  }
+
+  .printable-report-field--full {
+    grid-column: 1 / -1;
+  }
+
+  .printable-report-notes {
+    margin: 0;
+    padding: 0;
+    font-size: 9.5pt;
+    line-height: 1.55;
+    color: #334155;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .printable-report-footer {
+    margin-top: 8pt;
+    padding-top: 6pt;
+    border-top: 0.5pt solid #e2e8f0;
+    font-size: 7pt;
+    color: #94a3b8;
+    text-align: center;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

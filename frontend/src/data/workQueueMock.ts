@@ -13,6 +13,8 @@ export type WorkQueueOrgUnit =
   | 'quality'
   | 'logistics_field'
   | 'crm'
+  | 'batch_plant'
+  | 'curing'
 
 export type WorkQueueKind =
   | 'metraj'
@@ -23,6 +25,9 @@ export type WorkQueueKind =
   | 'logistics'
   | 'field'
   | 'procurement'
+  | 'pour_order'
+  | 'sample_order'
+  | 'curing_order'
 
 export type WorkQueueStatus = 'beklemede' | 'islemde' | 'bloke' | 'tamamlandi'
 
@@ -51,6 +56,19 @@ export type WorkQueueItem = {
   daysOnDesk: number
   lastUpdatedLabel: string
   dueToday?: boolean
+  /** Üretim akışı: ana emirden türeyen alt iş emri */
+  parentWorkQueueId?: string
+  sourceProductionOrderNo?: string
+  productCode?: string
+  productName?: string
+  moldId?: string
+  moldName?: string
+  shiftLabel?: string
+  volumeM3?: number
+  steelKg?: number
+  recipeId?: string
+  planDayIso?: string
+  fieldNotes?: string
 }
 
 /** Sol üst birim seçicide sıra — tüm birimleri demoda kapsamak için. */
@@ -59,6 +77,8 @@ export const WORK_QUEUE_ORG_SEQUENCE: readonly { id: WorkQueueOrgUnit; labelKey:
   { id: 'procurement', labelKey: 'unitWorkQueue.org.procurement' },
   { id: 'drawing', labelKey: 'unitWorkQueue.org.drawing' },
   { id: 'production', labelKey: 'unitWorkQueue.org.production' },
+  { id: 'batch_plant', labelKey: 'unitWorkQueue.org.batch_plant' },
+  { id: 'curing', labelKey: 'unitWorkQueue.org.curing' },
   { id: 'quality', labelKey: 'unitWorkQueue.org.quality' },
   { id: 'logistics_field', labelKey: 'unitWorkQueue.org.logisticsField' },
   { id: 'crm', labelKey: 'unitWorkQueue.org.crm' },
@@ -132,6 +152,16 @@ export const WORK_QUEUE_ITEMS: WorkQueueItem[] = [
     daysOnDesk: 0,
     lastUpdatedLabel: 'Bugün 06:10',
     dueToday: true,
+    productCode: 'PRD-ATL-D01',
+    productName: 'Çiftlik öncülü döküş',
+    moldId: 'MOLD-D14',
+    moldName: 'Hat D — öğleden sonra kalıbı',
+    shiftLabel: 'Öğle',
+    volumeM3: 12.4,
+    steelKg: 1840,
+    recipeId: 'R-884',
+    planDayIso: '2025-05-06',
+    fieldNotes: 'Ön germe blokları ve bağlantılar; mikser reçete R-884 ile bağlantılı.',
   },
   {
     id: 'wq-04',
@@ -288,6 +318,15 @@ export const WORK_QUEUE_ITEMS: WorkQueueItem[] = [
     factoryCode: 'IST-HAD',
     daysOnDesk: 1,
     lastUpdatedLabel: '05.05.2025 07:05',
+    productCode: 'PRD-ATL-MNT',
+    productName: 'Kalıp yüzey bakım rutini',
+    moldId: 'MOLD-C12',
+    moldName: 'C hattı kalıbı',
+    shiftLabel: 'Sabah',
+    volumeM3: 0,
+    recipeId: 'R-MAINT',
+    planDayIso: '2025-05-05',
+    fieldNotes: 'Rutin liste MES günlük temizlik kayıtlarına yazılır.',
   },
   {
     id: 'wq-11',

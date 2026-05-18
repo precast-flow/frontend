@@ -7,23 +7,15 @@ import '../proje/projectManagementGlassLight.css'
 type PmStyleDialogProps = {
   title: string
   subtitle?: string
-  /** Kapat arka planı için (aria) */
   closeLabel: string
   onClose: () => void
   children: ReactNode
   footer?: ReactNode
-  /** Örn. max-w-2xl, max-w-3xl */
   maxWidthClass?: string
-  /** aria-label; yoksa title kullanılır */
   ariaLabel?: string
-  /** Proje yönetimi glass-card kabuğu (project-mgmt-glass-light) */
-  variant?: 'default' | 'glass'
+  variant?: 'default' | 'glass' | 'planning'
 }
 
-/**
- * Proje yönetimi modülündeki proje oluştur / düzenle diyalogları ile aynı kabuk:
- * backdrop, kart, başlık satırı, X, gövde kaydırma, isteğe bağlı alt çubuk.
- */
 export function PmStyleDialog({
   title,
   subtitle,
@@ -44,6 +36,7 @@ export function PmStyleDialog({
   }, [onClose])
 
   const glass = variant === 'glass'
+  const planning = variant === 'planning'
 
   const dialog = glass ? (
     <div className="fixed inset-0 z-[110] flex items-end justify-center p-3 sm:items-center sm:p-6">
@@ -77,6 +70,40 @@ export function PmStyleDialog({
           <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-5 sm:pb-5">{children}</div>
           {footer ? <div className="shrink-0 px-4 pb-4 pt-0 sm:px-5 sm:pb-5">{footer}</div> : null}
         </div>
+      </div>
+    </div>
+  ) : planning ? (
+    <div className="fixed inset-0 z-[110] flex items-end justify-center p-3 sm:items-center sm:p-6">
+      <button
+        type="button"
+        className="absolute inset-0 z-0 bg-slate-950/30 backdrop-blur-[2px] dark:bg-slate-950/50"
+        aria-label={closeLabel}
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={ariaLabel ?? title}
+        className={`relative z-10 flex max-h-[min(90vh,calc(100vh-2rem))] w-full ${maxWidthClass} flex-col overflow-hidden rounded-2xl border border-slate-200/60 bg-white/45 shadow-xl backdrop-blur-2xl dark:border-slate-700/50 dark:bg-slate-950/35`}
+      >
+        <div className="flex shrink-0 items-start justify-between gap-2 border-b border-slate-200/50 p-4 dark:border-slate-700/50 sm:p-5">
+          <div className="min-w-0 pr-2">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-50">{title}</h3>
+            {subtitle ? <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{subtitle}</p> : null}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={closeLabel}
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-slate-200/50 bg-transparent text-slate-600 backdrop-blur-sm transition hover:bg-black/[0.04] dark:border-slate-600/50 dark:text-slate-300 dark:hover:bg-white/[0.06]"
+          >
+            <X className="size-4 shrink-0" aria-hidden />
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">{children}</div>
+        {footer ? (
+          <div className="shrink-0 border-t border-slate-200/50 p-4 dark:border-slate-700/50 sm:p-5">{footer}</div>
+        ) : null}
       </div>
     </div>
   ) : (
@@ -115,7 +142,7 @@ export function PmStyleDialog({
     </div>
   )
 
-  if (glass) {
+  if (glass || planning) {
     return createPortal(dialog, document.body)
   }
 
