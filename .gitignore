@@ -19,6 +19,8 @@ lerna-debug.log*
 .idea
 .vscode/*
 !.vscode/extensions.json
+.cursor/*
+!.cursor/plans/
 
 # Node / frontend app artifacts
 frontend/node_modules/
