@@ -23,6 +23,7 @@ import { ElementIdentityProjectDetailPage } from './components/elementIdentity/E
 import { ProjectManagementDetailPage } from './components/proje/ProjectManagementDetailPage'
 import { CrmCustomerDetailPage } from './components/crm/CrmCustomerDetailPage'
 import { QuoteDetailPage } from './components/teklif/QuoteDetailPage'
+import { QualityControlReportDetailPage } from './components/workQueue/QualityControlReportDetailPage'
 
 function App() {
   return (
@@ -58,6 +59,10 @@ function App() {
             <Route path="teklif" element={<Navigate to="/crm" replace />} />
             <Route path="teklif-detay/:quoteId" element={<QuoteDetailPage />} />
             <Route path="musteri-detay/:customerId" element={<CrmCustomerDetailPage />} />
+            <Route
+              path="kalite-kontrol-raporu/:productionWorkQueueId"
+              element={<QualityControlReportDetailPage />}
+            />
             <Route path="muhendislik-okan" element={<Navigate to="/tanimlar" replace />} />
             <Route path="parca-sablon-studyosu/*" element={<Navigate to="/tanimlar" replace />} />
             <Route path=":moduleSlug/*" element={<MainCanvasOutlet />} />

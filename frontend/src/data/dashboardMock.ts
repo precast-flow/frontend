@@ -8,6 +8,12 @@ export type NotificationFeedItem = {
   time: string
   /** MainCanvas modül id */
   moduleId: string
+  /** Görev panosunda seçilecek iş emri */
+  workQueueId?: string
+  /** Uygunsuzluk raporu açılışı */
+  nonconformanceId?: string
+  /** Birleşik kalite kontrol raporu */
+  openQualityReportProductionId?: string
 }
 
 export const notificationFeedItems: NotificationFeedItem[] = [

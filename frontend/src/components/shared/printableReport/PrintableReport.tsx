@@ -11,10 +11,17 @@ export type PrintableReportField = {
   warn?: boolean
 }
 
+export type PrintableReportImage = {
+  src: string
+  alt?: string
+  caption?: string
+}
+
 export type PrintableReportSection = {
   title: string
   fields?: PrintableReportField[]
   notes?: string
+  images?: PrintableReportImage[]
   /** Uzun metin bölümlerinde sayfa kırılmasına izin ver */
   allowBreak?: boolean
 }
@@ -105,6 +112,18 @@ export function PrintableReportDocument({
             ) : null}
             {section.notes != null ? (
               <p className="printable-report-notes">{section.notes}</p>
+            ) : null}
+            {section.images && section.images.length > 0 ? (
+              <div className="printable-report-images">
+                {section.images.map((image) => (
+                  <figure key={`${section.title}-${image.src.slice(0, 32)}`} className="printable-report-figure">
+                    <img src={image.src} alt={image.alt ?? ''} className="printable-report-image" />
+                    {image.caption ? (
+                      <figcaption className="printable-report-figure-caption">{image.caption}</figcaption>
+                    ) : null}
+                  </figure>
+                ))}
+              </div>
             ) : null}
           </section>
         ))}

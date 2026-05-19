@@ -17,10 +17,36 @@ export const PRE_POUR_CHECKS = [
 
 export type PrePourCheckId = (typeof PRE_POUR_CHECKS)[number]['id']
 
+export type WarehouseTransferRecord = {
+  warehouseId: string
+  warehouseLabel: string
+  approvedAt: string
+  approvedByUserId: string
+}
+
+export type PostPourFlowState = {
+  labelingDone: boolean
+  surfaceCleaningDone: boolean
+  warehouseTransfer: WarehouseTransferRecord | null
+  productionCompletedAt: string | null
+}
+
 export type ProductionWorkOrderFlowState = {
   checklist: Record<PrePourCheckId, boolean>
   pourApprovedAt: string | null
   spawnedChildIds: string[]
+  postPour: PostPourFlowState
+}
+
+export type PostPourMissingStep = 'labeling' | 'surface_cleaning' | 'curing_report'
+
+export function createInitialPostPourState(): PostPourFlowState {
+  return {
+    labelingDone: false,
+    surfaceCleaningDone: false,
+    warehouseTransfer: null,
+    productionCompletedAt: null,
+  }
 }
 
 export type CuringFlowStatus =
@@ -49,7 +75,45 @@ export function createInitialProductionFlowState(): ProductionWorkOrderFlowState
     >,
     pourApprovedAt: null,
     spawnedChildIds: [],
+    postPour: createInitialPostPourState(),
   }
+}
+
+export function canInteractPostPour(state: ProductionWorkOrderFlowState): boolean {
+  return alreadyPourApproved(state)
+}
+
+export function hasCuringReportForFlow(hasReport: boolean): boolean {
+  return hasReport
+}
+
+export function canApproveWarehouseTransfer(
+  state: ProductionWorkOrderFlowState,
+  hasCuringReport: boolean,
+): boolean {
+  if (!canInteractPostPour(state)) return false
+  if (state.postPour.warehouseTransfer !== null) return false
+  if (!state.postPour.labelingDone || !state.postPour.surfaceCleaningDone) return false
+  return hasCuringReport
+}
+
+export function missingPostPourSteps(
+  state: ProductionWorkOrderFlowState,
+  hasCuringReport: boolean,
+): PostPourMissingStep[] {
+  const missing: PostPourMissingStep[] = []
+  if (!state.postPour.labelingDone) missing.push('labeling')
+  if (!state.postPour.surfaceCleaningDone) missing.push('surface_cleaning')
+  if (!hasCuringReport) missing.push('curing_report')
+  return missing
+}
+
+export function isProductionFlowComplete(state: ProductionWorkOrderFlowState): boolean {
+  return state.postPour.productionCompletedAt !== null
+}
+
+export function alreadyWarehouseApproved(state: ProductionWorkOrderFlowState): boolean {
+  return state.postPour.warehouseTransfer !== null
 }
 
 export function createInitialCuringFlowState(): CuringFlowState {
@@ -238,5 +302,6 @@ export function childOrderRoleLabelKey(kind: WorkQueueItem['kind']): string {
   if (kind === 'pour_order') return 'unitWorkQueue.productionFlow.spawn.pour'
   if (kind === 'sample_order') return 'unitWorkQueue.productionFlow.spawn.sample'
   if (kind === 'curing_order') return 'unitWorkQueue.productionFlow.spawn.curing'
+  if (kind === 'nonconformance') return 'unitWorkQueue.kind.nonconformance'
   return 'unitWorkQueue.kind.production'
 }

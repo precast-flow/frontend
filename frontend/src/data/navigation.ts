@@ -144,6 +144,7 @@ export function activeModuleIdFromPathname(pathname: string): string {
   if (pathname === '/settings') return 'settings'
   if (pathname === '/') return DEFAULT_MODULE_ID
   if (pathname.startsWith('/musteri-detay/')) return 'crm'
+  if (pathname.startsWith('/kalite-kontrol-raporu/')) return 'unit-work-queue'
   if (pathname === '/teklif' || pathname.startsWith('/teklif/')) return 'crm'
   if (pathname.startsWith('/admin/eleman-kimlik')) return 'element-identity-admin'
   if (pathname.startsWith('/eleman-kimlik')) return 'element-identity'

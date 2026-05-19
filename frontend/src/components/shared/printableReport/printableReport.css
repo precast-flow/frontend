@@ -232,6 +232,37 @@
     overflow-wrap: anywhere;
   }
 
+  .printable-report-images {
+    display: flex;
+    flex-direction: column;
+    gap: 8pt;
+    margin-top: 7pt;
+  }
+
+  .printable-report-figure {
+    margin: 0;
+    padding: 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .printable-report-image {
+    display: block;
+    width: 100%;
+    max-height: 220pt;
+    object-fit: contain;
+    border: 0.75pt solid #cbd5e1;
+    border-radius: 2pt;
+    background: #f8fafc;
+  }
+
+  .printable-report-figure-caption {
+    margin: 3pt 0 0;
+    font-size: 8pt;
+    color: #64748b;
+    text-align: center;
+  }
+
   .printable-report-footer {
     margin-top: 8pt;
     padding-top: 6pt;

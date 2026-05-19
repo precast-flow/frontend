@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { ChevronRight, Factory } from 'lucide-react'
 import { activeModuleIdFromPathname } from '../../data/navigation'
@@ -21,6 +21,7 @@ import {
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 import '../proje/projectManagementGlassLight.css'
 import { useWorkQueue } from '../../context/WorkQueueContext'
+import { qualityControlReportDetailPath } from '../../data/qualityControlReportPaths'
 import {
   childOrderRoleLabelKey,
   isProductionChildOrder,
@@ -37,7 +38,10 @@ import {
 } from '../../data/workQueueMock'
 import { CuringWorkOrderDetailPanel } from './CuringWorkOrderDetailPanel'
 import { ProductionChildOrderDetailPanel } from './ProductionChildOrderDetailPanel'
+import { NonconformanceWorkOrderDetailPanel } from './NonconformanceWorkOrderDetailPanel'
 import { ProductionWorkOrderDetailPanel } from './ProductionWorkOrderDetailPanel'
+import { isNonconformanceOrder } from '../../data/productionQualityControl'
+import { QUALITY_CONTROL_DEMO_PRODUCTION_ID } from '../../data/productionQualityControlDemoMock'
 
 const selectCls =
   'rounded-lg border border-slate-200/80 bg-white/90 px-2.5 py-1.5 text-xs font-semibold text-slate-900 shadow-sm outline-none focus:border-sky-400/60 focus:ring-2 focus:ring-sky-400/25 dark:border-slate-600/70 dark:bg-slate-900/60 dark:text-slate-50 sm:text-sm'
@@ -77,7 +81,14 @@ type Props = {
 export function UnitWorkQueueModuleView(_props: Props) {
   void _props.onNavigate
   const { t, locale } = useI18n()
-  const { items: workQueueItems } = useWorkQueue()
+  const {
+    items: workQueueItems,
+    workQueueNavRequest,
+    requestWorkQueueNav,
+    getNonconformance,
+  } = useWorkQueue()
+  const navigate = useNavigate()
+  const location = useLocation()
   const baseId = useId()
   const { isFactoryInScope } = useFactoryContext()
   const rightRef = useRef<HTMLDivElement | null>(null)
@@ -88,7 +99,7 @@ export function UnitWorkQueueModuleView(_props: Props) {
   const [filterOpen, setFilterOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [factoryRestricted, setFactoryRestricted] = useState(true)
-  const [selectedId, setSelectedId] = useState<string>(() => workQueueItems[0]?.id ?? '')
+  const [selectedId, setSelectedId] = useState<string>(QUALITY_CONTROL_DEMO_PRODUCTION_ID)
   const [detailTab, setDetailTab] = useState<'summary' | 'project' | 'history'>('summary')
   const [listPage, setListPage] = useState(1)
   const pageSize = UNIT_WORK_QUEUE_DEFAULT_PAGE_SIZE
@@ -141,13 +152,15 @@ export function UnitWorkQueueModuleView(_props: Props) {
       setSelectedId('')
       return
     }
-    if (pagedItems.some((r) => r.id === selectedId)) return
-    setSelectedId(pagedItems[0]?.id ?? filtered[0]!.id)
-  }, [filtered, pagedItems, selectedId])
+    if (filtered.some((r) => r.id === selectedId)) return
+    setSelectedId(filtered[0]!.id)
+  }, [filtered, selectedId])
 
   const selected = filtered.find((r) => r.id === selectedId)
   const productionParentDetail = selected != null && isProductionParentOrder(selected)
   const productionChildDetail = selected != null && isProductionChildOrder(selected)
+  const nonconformanceDetail = selected != null && isNonconformanceOrder(selected)
+  const flowDetailPanel = productionParentDetail || productionChildDetail || nonconformanceDetail
 
   const openWorkOrderInList = (
     workQueueId: string,
@@ -162,11 +175,41 @@ export function UnitWorkQueueModuleView(_props: Props) {
   }
 
   useEffect(() => {
-    if (!productionParentDetail && !productionChildDetail) {
+    if (!productionParentDetail && !productionChildDetail && !nonconformanceDetail) {
       setDetailTab('summary')
     }
     requestAnimationFrame(() => rightRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
-  }, [selectedId, productionParentDetail, productionChildDetail])
+  }, [selectedId, productionParentDetail, productionChildDetail, nonconformanceDetail])
+
+  useEffect(() => {
+    const workQueueIdFromNav = (location.state as { workQueueId?: string } | null)?.workQueueId
+    if (workQueueIdFromNav) {
+      setSelectedId(workQueueIdFromNav)
+    }
+  }, [location.state])
+
+  useEffect(() => {
+    if (!workQueueNavRequest) return
+    const { workQueueId, openNcReportId } = workQueueNavRequest
+    const openQcProductionId =
+      workQueueNavRequest.openQualityReportProductionId ??
+      (openNcReportId ? getNonconformance(openNcReportId)?.productionWorkQueueId : undefined)
+
+    if (openQcProductionId) {
+      navigate(qualityControlReportDetailPath(openQcProductionId), {
+        state: {
+          fromUnitWorkQueue: true,
+          returnWorkQueueId: workQueueId ?? openQcProductionId,
+        },
+      })
+      requestWorkQueueNav(null)
+      return
+    }
+    if (workQueueId) {
+      setSelectedId(workQueueId)
+    }
+    requestWorkQueueNav(null)
+  }, [workQueueNavRequest, getNonconformance, requestWorkQueueNav, navigate])
 
   const kpis = useMemo(() => {
     const open = filtered.filter((r) => r.status !== 'tamamlandi').length
@@ -175,7 +218,6 @@ export function UnitWorkQueueModuleView(_props: Props) {
     return { open, due, blocked }
   }, [filtered])
 
-  const location = useLocation()
   const { mode } = useThemeMode()
   const gl = mode === 'light'
   const neutralShell = activeModuleIdFromPathname(location.pathname) === 'unit-work-queue'
@@ -467,7 +509,7 @@ export function UnitWorkQueueModuleView(_props: Props) {
                 <div key={selected.id} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
                   <div
                     className={
-                      productionParentDetail || productionChildDetail
+                      flowDetailPanel
                         ? 'flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4'
                         : 'mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 lg:max-w-3xl'
                     }
@@ -517,7 +559,7 @@ export function UnitWorkQueueModuleView(_props: Props) {
                       </div>
                     </header>
 
-                    {!productionParentDetail && !productionChildDetail ? (
+                    {!flowDetailPanel ? (
                     <div className="sticky top-0 z-10 flex w-full shrink-0 justify-center pt-3">
                       <div
                         className="flex max-w-full gap-1 overflow-x-auto"
@@ -552,22 +594,18 @@ export function UnitWorkQueueModuleView(_props: Props) {
 
                     <div
                       key={
-                        productionParentDetail || productionChildDetail
+                        flowDetailPanel
                           ? `production-flow-${selected.id}`
                           : detailTab
                       }
                       id="unit-work-queue-detail-panel"
                       role="tabpanel"
                       aria-labelledby={
-                        productionParentDetail || productionChildDetail
-                          ? undefined
-                          : `unit-work-queue-tab-${detailTab}`
+                        flowDetailPanel ? undefined : `unit-work-queue-tab-${detailTab}`
                       }
                       className={[
                         'okan-project-tab-panel min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden',
-                        productionParentDetail || productionChildDetail
-                          ? 'w-full text-left'
-                          : 'px-0.5 text-center sm:px-1',
+                        flowDetailPanel ? 'w-full text-left' : 'px-0.5 text-center sm:px-1',
                       ].join(' ')}
                     >
                       {productionParentDetail ? (
@@ -584,7 +622,10 @@ export function UnitWorkQueueModuleView(_props: Props) {
                       (selected.kind === 'pour_order' || selected.kind === 'sample_order') ? (
                         <ProductionChildOrderDetailPanel item={selected} gl={gl} />
                       ) : null}
-                      {!productionParentDetail && !productionChildDetail && detailTab === 'summary' ? (
+                      {nonconformanceDetail ? (
+                        <NonconformanceWorkOrderDetailPanel item={selected} gl={gl} />
+                      ) : null}
+                      {!flowDetailPanel && detailTab === 'summary' ? (
                         <div className="flex flex-col divide-y divide-slate-200/25 dark:divide-white/10">
                           <div className="pb-4 pt-0">
                             <p className="mx-auto max-w-lg text-sm leading-relaxed text-black/80 dark:text-white/85">
@@ -671,7 +712,7 @@ export function UnitWorkQueueModuleView(_props: Props) {
                           </div>
                         </div>
                       ) : null}
-                      {!productionParentDetail && !productionChildDetail && detailTab === 'project' ? (
+                      {!flowDetailPanel && detailTab === 'project' ? (
                         <div className="mx-auto max-w-lg rounded-xl border border-dashed border-black/18 p-4 text-left text-sm text-black/75 dark:border-white/15 dark:text-white/80 sm:text-center">
                           <p className="font-semibold text-black dark:text-white">
                             {selected.projectCode} — {selected.projectName}
@@ -679,7 +720,7 @@ export function UnitWorkQueueModuleView(_props: Props) {
                           <p className="mt-2">{t('unitWorkQueue.panelProjectPlaceholder')}</p>
                         </div>
                       ) : null}
-                      {!productionParentDetail && !productionChildDetail && detailTab === 'history' ? (
+                      {!flowDetailPanel && detailTab === 'history' ? (
                         <ul className="mx-auto max-w-lg space-y-3 text-left text-sm text-black/75 dark:text-white/80 sm:text-center">
                           <li>{t('unitWorkQueue.historyMock1')}</li>
                           <li>{t('unitWorkQueue.historyMock2')}</li>

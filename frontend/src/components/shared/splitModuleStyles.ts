@@ -9,6 +9,15 @@ export function splitTabPill(active: boolean) {
   ].join(' ')
 }
 
+export function splitTabPillLocked(active: boolean, locked: boolean) {
+  return [
+    splitTabPill(active),
+    locked ? 'opacity-80' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
 export function splitListCardClass(active: boolean, extra = '') {
   return [
     'rounded-lg border text-left transition',

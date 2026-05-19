@@ -213,3 +213,64 @@ body {
   break-inside: avoid;
   page-break-inside: avoid;
 }
+
+.printable-report-sheet--label {
+  width: 72mm;
+  max-width: 72mm;
+}
+
+.printable-label {
+  display: flex;
+  flex-direction: column;
+  gap: 3pt;
+  padding: 2pt;
+}
+
+.printable-label__brand {
+  margin: 0;
+  font-size: 6pt;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.printable-label__code {
+  margin: 0;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11pt;
+  font-weight: 700;
+}
+
+.printable-label__name {
+  margin: 0;
+  font-size: 8pt;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.printable-label__meta {
+  margin: 0;
+  padding: 0;
+  font-size: 6.5pt;
+}
+
+.printable-label__meta div {
+  margin: 0 0 2pt;
+}
+
+.printable-label__meta dt {
+  display: inline;
+  font-weight: 700;
+  margin-right: 2pt;
+}
+
+.printable-label__meta dd {
+  display: inline;
+  margin: 0;
+}
+
+.printable-label__qr {
+  align-self: flex-start;
+  margin-top: 4pt;
+}
