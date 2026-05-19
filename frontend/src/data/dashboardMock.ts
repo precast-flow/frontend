@@ -14,6 +14,8 @@ export type NotificationFeedItem = {
   nonconformanceId?: string
   /** Birleşik kalite kontrol raporu */
   openQualityReportProductionId?: string
+  /** Günlük üretim raporu */
+  openDailyReportId?: string
 }
 
 export const notificationFeedItems: NotificationFeedItem[] = [

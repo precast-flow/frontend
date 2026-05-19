@@ -54,6 +54,7 @@ function GlassAppShellInner() {
     location.pathname.startsWith('/onay-akisi') ||
     location.pathname.startsWith('/birim-is-kuyrugu') ||
     location.pathname.startsWith('/kalite-kontrol-raporu') ||
+    location.pathname.startsWith('/gunluk-uretim-raporu') ||
     location.pathname.startsWith('/planlama') ||
     location.pathname.startsWith('/genel-planlama') ||
     location.pathname.startsWith('/uretim-planlama') ||
@@ -75,7 +76,9 @@ function GlassAppShellInner() {
    * Tam sayfa detay (kalite raporu): kabuk viewport’ta sabit, kaydırma üst sütunda;
    * main/outlet flex-1 ile içeriği kırpmaz — başlık + kart birlikte kayar.
    */
-  const isPageScrollDetailRoute = location.pathname.startsWith('/kalite-kontrol-raporu')
+  const isPageScrollDetailRoute =
+    location.pathname.startsWith('/kalite-kontrol-raporu') ||
+    location.pathname.startsWith('/gunluk-uretim-raporu')
 
   const shellPadding =
     isTightListShellRoute && isOkanPlanSplitPage

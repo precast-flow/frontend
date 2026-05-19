@@ -1,9 +1,12 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight, Sparkles } from 'lucide-react'
 import { moduleIdToPath, navGroups } from '../../data/navigation'
 import { useI18n } from '../../i18n/I18nProvider'
 import { NavItemIcon } from '../sidebarNavIcons'
+import { eiSplitHeaderButtonPassive } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import { usePlanningWizard } from './PlanningWizardContext'
+import { PlanningActionsHost } from './shared/actions/PlanningActionsHost'
 
 const DESC_KEY_BY_MODULE: Record<string, string> = {
   'unit-work-queue': 'main.desc.unitWorkQueue',
@@ -14,6 +17,7 @@ const DESC_KEY_BY_MODULE: Record<string, string> = {
 
 export function PlanningHubView() {
   const { t } = useI18n()
+  const planningWizard = usePlanningWizard()
 
   const cards = useMemo(() => {
     const group = navGroups.find((g) => g.id === 'planning')
@@ -21,10 +25,21 @@ export function PlanningHubView() {
   }, [])
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-5">
-      <p className="max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-        {t('main.desc.planningHub')}
-      </p>
+    <div className="relative flex min-h-0 flex-1 flex-col gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+          {t('main.desc.planningHub')}
+        </p>
+        <button
+          type="button"
+          onClick={() => planningWizard.setActionsDrawerOpen(!planningWizard.actionsDrawerOpen)}
+          className={eiSplitHeaderButtonPassive}
+        >
+          <Sparkles className="size-3.5 shrink-0" aria-hidden />
+          {t('planningActions.cta')}
+        </button>
+      </div>
+      <PlanningActionsHost onTimelinePage={false} />
 
       <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {cards.map((item) => {

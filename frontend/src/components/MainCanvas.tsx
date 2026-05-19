@@ -6,6 +6,7 @@ import { CrmModuleView } from './crm/CrmModuleView'
 import { ElementIdentityModuleView } from './elementIdentity/ElementIdentityModuleView'
 import { ProjectManagementModuleView } from './proje/ProjectManagementModuleView'
 import { PlanningHubView } from './planlama/PlanningHubView'
+import { PlanningModulesShell } from './planlama/PlanningModulesShell'
 import { GeneralPlanningView } from './planlama/GeneralPlanningView'
 import { ProductionPlanningView } from './planlama/ProductionPlanningView'
 import { DispatchPlanningView } from './planlama/DispatchPlanningView'
@@ -147,7 +148,9 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
           <CrmModuleView onNavigate={onNavigate} />
         </div>
       ) : isPlanningHub ? (
-        <PlanningHubView />
+        <PlanningModulesShell>
+          <PlanningHubView />
+        </PlanningModulesShell>
       ) : isUnitWorkQueue ? (
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <UnitWorkQueueModuleView onNavigate={onNavigate} />
@@ -202,11 +205,17 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
           <StandardSeriesCatalogModuleView />
         </div>
       ) : isGeneralPlanning ? (
-        <GeneralPlanningView />
+        <PlanningModulesShell>
+          <GeneralPlanningView />
+        </PlanningModulesShell>
       ) : isProductionPlanning ? (
-        <ProductionPlanningView />
+        <PlanningModulesShell>
+          <ProductionPlanningView />
+        </PlanningModulesShell>
       ) : isDispatchPlanning ? (
-        <DispatchPlanningView />
+        <PlanningModulesShell>
+          <DispatchPlanningView />
+        </PlanningModulesShell>
       ) : isApprovalFlow ? (
         <ApprovalFlowDesignerView />
       ) : isRolesPermissions ? (

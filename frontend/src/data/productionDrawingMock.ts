@@ -9,6 +9,7 @@ const FALLBACK_PDF_URL =
 
 const PRODUCT_DRAWING_URLS: Record<string, string> = {
   'PRD-ATL-D01': DEFAULT_DRAWING_ASSET,
+  'PRD-SANDBOX-01': DEFAULT_DRAWING_ASSET,
 }
 
 export type ProductionDrawingSource =

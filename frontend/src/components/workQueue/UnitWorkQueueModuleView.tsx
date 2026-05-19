@@ -41,7 +41,7 @@ import { ProductionChildOrderDetailPanel } from './ProductionChildOrderDetailPan
 import { NonconformanceWorkOrderDetailPanel } from './NonconformanceWorkOrderDetailPanel'
 import { ProductionWorkOrderDetailPanel } from './ProductionWorkOrderDetailPanel'
 import { isNonconformanceOrder } from '../../data/productionQualityControl'
-import { QUALITY_CONTROL_DEMO_PRODUCTION_ID } from '../../data/productionQualityControlDemoMock'
+import { BLANK_PRODUCTION_WORK_ORDER_ID } from '../../data/productionWorkOrderBlankDemo'
 
 const selectCls =
   'rounded-lg border border-slate-200/80 bg-white/90 px-2.5 py-1.5 text-xs font-semibold text-slate-900 shadow-sm outline-none focus:border-sky-400/60 focus:ring-2 focus:ring-sky-400/25 dark:border-slate-600/70 dark:bg-slate-900/60 dark:text-slate-50 sm:text-sm'
@@ -99,7 +99,7 @@ export function UnitWorkQueueModuleView(_props: Props) {
   const [filterOpen, setFilterOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [factoryRestricted, setFactoryRestricted] = useState(true)
-  const [selectedId, setSelectedId] = useState<string>(QUALITY_CONTROL_DEMO_PRODUCTION_ID)
+  const [selectedId, setSelectedId] = useState<string>(BLANK_PRODUCTION_WORK_ORDER_ID)
   const [detailTab, setDetailTab] = useState<'summary' | 'project' | 'history'>('summary')
   const [listPage, setListPage] = useState(1)
   const pageSize = UNIT_WORK_QUEUE_DEFAULT_PAGE_SIZE

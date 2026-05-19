@@ -9,6 +9,7 @@ import {
   ClipboardList,
   FileText,
   Filter,
+  Lock,
   GripVertical,
   Layers,
   ListOrdered,
@@ -21,6 +22,7 @@ import {
   Send,
   Trash2,
   Undo2,
+  Sparkles,
   Wrench,
   X,
   XCircle,
@@ -32,9 +34,30 @@ import {
   eiSplitFilterToggleClass,
   eiSplitHeaderButtonPassive,
 } from '../../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import {
+  previewItemsForUnit,
+  usePlanningWizardOptional,
+} from '../PlanningWizardContext'
+import { PlanningActionsHost } from './actions/PlanningActionsHost'
+import {
+  planCardToneClasses,
+  type PlanCardDisplayMode,
+  type TimelineDisplayItem,
+} from './planningTimelineTypes'
+import type { PlanVisualTone } from '../../../data/generalPlanningMock'
 import { useGeneralPlanningOptional } from '../GeneralPlanningContext'
+import { DailyProductionReportDialog } from '../DailyProductionReportDialog'
 import { DailyProductionWorkOrderDialog } from '../DailyProductionWorkOrderDialog'
+import { previousBusinessDayIso } from '../../../planlama/previousBusinessDay'
 import { resolveDefaultProductionDayIso } from '../../../planlama/productionDailyWorkOrder'
+import { useFactoryContext } from '../../../context/FactoryContext'
+import { useWorkQueue } from '../../../context/WorkQueueContext'
+import { formatDailyReportDateTime } from '../../../data/dailyProductionReport'
+import {
+  isManufacturedProductReady,
+  manufacturedProductToQueueItem,
+  parseManufacturedQueueId,
+} from '../../../data/manufacturedProduct'
 import { useGeneralPlanningAccess } from '../../../hooks/useGeneralPlanningAccess'
 import {
   GENERAL_PLAN_QUEUE,
@@ -200,7 +223,8 @@ export type PlanningTimelineProps = {
   variant: PlanningTimelineVariant
 }
 
-function generalToPlanItem(g: GeneralPlanItem): PlanItem {
+function generalToPlanItem(g: GeneralPlanItem): TimelineDisplayItem {
+  const tone: PlanVisualTone = g.visualTone ?? 'committed'
   return {
     id: g.id,
     title: g.title,
@@ -219,6 +243,8 @@ function generalToPlanItem(g: GeneralPlanItem): PlanItem {
     orderId: g.orderId,
     tags: g.tags,
     warnings: g.warnings,
+    visualTone: tone,
+    isPreview: tone === 'preview',
   }
 }
 
@@ -251,10 +277,17 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   const lockedPageMeta = LOCKED_UNIT_PAGE_META[variant]
   const isLockedUnitPage = lockedPageMeta != null
   const isGeneral = (variant === 'general' || isLockedUnitPage) && gp != null
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
+  const loc = locale === 'en' ? 'en-GB' : 'tr-TR'
   const access = useGeneralPlanningAccess()
+  const { selectedFactory } = useFactoryContext()
+  const workQueue = useWorkQueue()
+  const planningWizard = usePlanningWizardOptional()
 
   const crossUnitPlanItems: GeneralPlanItem[] = gp?.items ?? []
+
+  const cardDisplayMode: PlanCardDisplayMode =
+    isGeneral && gp?.activeUnit === 'planning' ? 'coordinator' : 'ops'
 
   const unitConfig = isGeneral && gp ? getUnitConfig(gp.activeUnit) : null
   const timelineUsesShifts =
@@ -303,6 +336,9 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   const [search, setSearch] = useState('')
   const [dailyWorkOrderOpen, setDailyWorkOrderOpen] = useState(false)
   const [dailyWorkOrderToast, setDailyWorkOrderToast] = useState<string | null>(null)
+  const [dailyReportOpen, setDailyReportOpen] = useState(false)
+  const [dailyReportToast, setDailyReportToast] = useState<string | null>(null)
+  const [planningQueueToast, setPlanningQueueToast] = useState<string | null>(null)
   const [draftStateLocal, setDraftStateLocal] = useState<'draft' | 'published'>('draft')
   const draftState = isGeneral && gp ? gp.draftState : draftStateLocal
   const setDraftState = isGeneral && gp ? gp.setDraftState : setDraftStateLocal
@@ -315,6 +351,20 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   }, [allGeneralItems, gp, isGeneral])
 
   const items: PlanItem[] = isGeneral && gp ? unitFilteredGeneral : itemsLocal
+
+  const displayItems: TimelineDisplayItem[] = useMemo(() => {
+    const committed: TimelineDisplayItem[] = items.map((it) => ({
+      ...it,
+      visualTone: 'committed' as const,
+      isPreview: false,
+    }))
+    if (!isGeneral || !gp || !planningWizard) return committed
+    const previews = previewItemsForUnit(planningWizard.previewItems, gp.activeUnit).map(
+      (g) => generalToPlanItem(g),
+    )
+    return [...committed, ...previews]
+  }, [items, isGeneral, gp, planningWizard?.previewItems])
+
   const setItems = useCallback(
     (action: React.SetStateAction<PlanItem[]>) => {
       if (!isGeneral || !gp) {
@@ -350,10 +400,27 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
 
   const planHistory = isGeneral && gp ? gp.planHistory : planHistoryLocal
 
+  const manufacturedQueueItems = useMemo(() => {
+    if (!isGeneral || !gp) return []
+    if (gp.activeUnit !== 'dispatch' && gp.activeUnit !== 'assembly') return []
+    return workQueue
+      .getManufacturedProducts(selectedFactory.code)
+      .map((mp) =>
+        manufacturedProductToQueueItem(
+          mp,
+          gp.activeUnit === 'assembly' ? 'assembly' : 'dispatch',
+        ),
+      )
+  }, [gp, isGeneral, selectedFactory.code, workQueue])
+
   const queueItems = useMemo(() => {
     if (!isGeneral || !gp) return QUEUE_MOCK
-    return GENERAL_PLAN_QUEUE[gp.activeUnit]
-  }, [gp, isGeneral])
+    const base = GENERAL_PLAN_QUEUE[gp.activeUnit]
+    if (gp.activeUnit === 'dispatch' || gp.activeUnit === 'assembly') {
+      return [...manufacturedQueueItems, ...base]
+    }
+    return base
+  }, [gp, isGeneral, manufacturedQueueItems])
 
   const resourceColumnLabel = isGeneral && unitConfig
     ? t(unitConfig.resourceColumnLabelKey)
@@ -531,7 +598,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
       string,
       { slotStart: number; span: number; moldId: string; visible: boolean }
     >()
-    for (const it of items) {
+    for (const it of displayItems) {
       const slotStart = slotIndexForItem(it.startAt)
       const span = Math.min(
         spanSlotsFromDurationForMode(it.durationHours, timelineUsesShifts),
@@ -546,12 +613,12 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
       })
     }
     return map
-  }, [items, slotIndexForItem, totalSlots])
+  }, [displayItems, slotIndexForItem, totalSlots, timelineUsesShifts])
 
   const capacityIssue = useMemo(() => {
     const bad = new Set<string>()
     const mold = new Map(PLANNING_RESOURCES.map((m) => [m.moldId, m]))
-    for (const it of items) {
+    for (const it of displayItems) {
       const meta = mold.get(it.moldId)
       if (!meta) continue
       const slotStart = slotIndexForItem(it.startAt)
@@ -560,7 +627,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
         totalSlots,
       )
       if (slotStart < 0) continue
-      const concurrent = items.filter((o) => {
+      const concurrent = displayItems.filter((o) => {
         if (o.moldId !== it.moldId || o.id === it.id) return false
         const oStart = slotIndexForItem(o.startAt)
         const oSpan = Math.min(
@@ -573,10 +640,10 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
       if (concurrent + 1 > meta.maxConcurrent) bad.add(it.id)
     }
     return bad
-  }, [items, slotIndexForItem, totalSlots])
+  }, [displayItems, slotIndexForItem, totalSlots, timelineUsesShifts, PLANNING_RESOURCES])
 
   const filteredItems = useMemo(() => {
-    let list = items
+    let list = displayItems
     const q = search.trim().toLowerCase()
     if (q) {
       list = list.filter(
@@ -592,17 +659,22 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
       list = list.filter((it) => it.projectId != null && projectFilter.includes(it.projectId))
     }
     return list
-  }, [items, search, moldFilter, statusFilter, projectFilter])
+  }, [displayItems, search, moldFilter, statusFilter, projectFilter])
 
   /** Sevkiyat: kamyon + gün hücresindeki ürün grupları (sayfa uzamasın diye tek kart). */
   const dispatchTripGroups = useMemo(() => {
-    const groups = new Map<string, PlanItem[]>()
+    const groups = new Map<string, TimelineDisplayItem[]>()
     if (!isDispatchTimeline) return groups
 
     const assigned = new Set<string>()
     for (const it of filteredItems) {
       if (assigned.has(it.id)) continue
-      const peers = planItemsOnSameVehicleTrip(items, it, slotIndexForItem, timelineUsesShifts)
+      const peers = planItemsOnSameVehicleTrip(
+        displayItems,
+        it,
+        slotIndexForItem,
+        timelineUsesShifts,
+      ) as TimelineDisplayItem[]
       peers.forEach((p) => assigned.add(p.id))
       const slotStart = slotIndexForItem(it.startAt)
       if (slotStart < 0) continue
@@ -610,7 +682,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
       groups.set(`${it.moldId}:${snapped}`, peers)
     }
     return groups
-  }, [filteredItems, isDispatchTimeline, items, slotIndexForItem, timelineUsesShifts])
+  }, [filteredItems, isDispatchTimeline, displayItems, slotIndexForItem, timelineUsesShifts])
 
   const moldRowHeights = useMemo(() => {
     const heights: Record<string, number> = {}
@@ -634,6 +706,18 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
     return () => window.clearTimeout(timer)
   }, [dailyWorkOrderToast])
 
+  useEffect(() => {
+    if (!dailyReportToast) return
+    const timer = window.setTimeout(() => setDailyReportToast(null), 5000)
+    return () => window.clearTimeout(timer)
+  }, [dailyReportToast])
+
+  useEffect(() => {
+    if (!planningQueueToast) return
+    const timer = window.setTimeout(() => setPlanningQueueToast(null), 4500)
+    return () => window.clearTimeout(timer)
+  }, [planningQueueToast])
+
   const dailyWorkOrderDefaultDay = useMemo(
     () =>
       resolveDefaultProductionDayIso(
@@ -649,6 +733,15 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
     if (visibleDays.length === 0) return undefined
     return { min: visibleDays[0]!.date, max: visibleDays[visibleDays.length - 1]!.date }
   }, [visibleDays])
+
+  const dailyReportDefaultDay = useMemo(
+    () =>
+      previousBusinessDayIso(new Date(), {
+        skipNonProductionDays: (iso) =>
+          visibleDays.some((d) => d.date === iso && d.isNonProduction),
+      }),
+    [visibleDays],
+  )
 
   const dailyTotals = useMemo(() => {
     return visibleDays.map((d) => {
@@ -1042,11 +1135,11 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
     setWeekStartMonday(d)
   }
 
-  const selected = items.find((i) => i.id === selectedId) ?? null
+  const selected = displayItems.find((i) => i.id === selectedId) ?? null
 
   const selectedTruckLoad = useMemo(() => {
     if (!selected || !isDispatchTimeline) return []
-    return planItemsOnSameVehicleTrip(items, selected, slotIndexForItem, timelineUsesShifts)
+    return planItemsOnSameVehicleTrip(displayItems, selected, slotIndexForItem, timelineUsesShifts)
   }, [items, isDispatchTimeline, selected, slotIndexForItem, timelineUsesShifts])
 
   const assignTruckLoad = useMemo(() => {
@@ -1169,10 +1262,29 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                       ))}
                     </div>
                   ) : null}
+                  {planningWizard ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !planningWizard.actionsDrawerOpen
+                        planningWizard.setActionsDrawerOpen(next)
+                        if (next) closeLeftDrawer()
+                      }}
+                      aria-expanded={planningWizard.actionsDrawerOpen}
+                      aria-controls="gm-planning-actions-drawer"
+                      className={eiSplitFilterToggleClass(planningWizard.actionsDrawerOpen)}
+                    >
+                      <Sparkles className="size-3.5 shrink-0" aria-hidden />
+                      {t('planningActions.cta')}
+                    </button>
+                  ) : null}
                   {showToolbarAction('filters') ? (
                   <button
                     type="button"
                     onClick={() => {
+                      if (planningWizard?.actionsDrawerOpen) {
+                        planningWizard.setActionsDrawerOpen(false)
+                      }
                       if (leftDrawerOpen && leftDrawerTab === 'filters') closeLeftDrawer()
                       else openLeftDrawerTab('filters')
                     }}
@@ -1301,15 +1413,26 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                 </div>
                 <div className="flex min-w-0 flex-wrap items-center justify-end justify-self-end gap-1.5 md:gap-2">
                   {isProductionTimeline ? (
-                    <button
-                      type="button"
-                      onClick={() => setDailyWorkOrderOpen(true)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-sky-300/70 bg-sky-600 px-2 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:border-sky-500/60 dark:bg-sky-500 dark:hover:bg-sky-600 md:py-2 md:text-sm"
-                    >
-                      <ClipboardList className="size-3.5 shrink-0" aria-hidden />
-                      <span className="hidden lg:inline">{t('productionPlanning.dailyOrder.cta')}</span>
-                      <span className="lg:hidden">{t('productionPlanning.dailyOrder.ctaShort')}</span>
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setDailyWorkOrderOpen(true)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-sky-300/70 bg-sky-600 px-2 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:border-sky-500/60 dark:bg-sky-500 dark:hover:bg-sky-600 md:py-2 md:text-sm"
+                      >
+                        <ClipboardList className="size-3.5 shrink-0" aria-hidden />
+                        <span className="hidden lg:inline">{t('productionPlanning.dailyOrder.cta')}</span>
+                        <span className="lg:hidden">{t('productionPlanning.dailyOrder.ctaShort')}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDailyReportOpen(true)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/70 bg-white/80 px-2 py-1.5 text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:border-slate-600/60 dark:bg-slate-900/50 dark:text-slate-100 dark:hover:bg-slate-800/80 md:py-2 md:text-sm"
+                      >
+                        <FileText className="size-3.5 shrink-0 text-sky-600 dark:text-sky-400" aria-hidden />
+                        <span className="hidden lg:inline">{t('productionPlanning.dailyReport.cta')}</span>
+                        <span className="lg:hidden">{t('productionPlanning.dailyReport.ctaShort')}</span>
+                      </button>
+                    </>
                   ) : null}
                   {showToolbarAction('undo') ? (
                   <button
@@ -1401,7 +1524,20 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                 </div>
               ) : null}
 
+              {dailyReportToast ? (
+                <div className="shrink-0 border-b border-sky-200/70 bg-sky-50/95 px-3 py-2 text-xs font-medium text-sky-950 dark:border-sky-900/40 dark:bg-sky-950/35 dark:text-sky-100">
+                  {dailyReportToast}
+                </div>
+              ) : null}
+
+              {planningQueueToast ? (
+                <div className="shrink-0 border-b border-amber-200/70 bg-amber-50/95 px-3 py-2 text-xs font-medium text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/35 dark:text-amber-100">
+                  {planningQueueToast}
+                </div>
+              ) : null}
+
               <div className="relative z-0 min-h-0 flex-1 overflow-hidden">
+                {planningWizard ? <PlanningActionsHost onTimelinePage /> : null}
                 <aside
                   id="gm-planning-left-drawer"
                   className={[
@@ -1579,28 +1715,58 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                       className="divide-y divide-slate-200/50 dark:divide-slate-700/50"
                       role="list"
                     >
-                      {queueItems.map((q) => (
-                        <li
-                          key={q.queueId}
-                          draggable={canEdit}
-                          onDragStart={(e) => {
-                            e.dataTransfer.setData('text/plain', `queue:${q.queueId}`)
-                            e.dataTransfer.setData('text/plan-queue-id', q.queueId)
-                            e.dataTransfer.effectAllowed = 'copy'
-                            setDragId(`queue:${q.queueId}`)
-                          }}
-                          onDragEnd={() => {
-                            setDragId(null)
-                            setDropTarget(null)
-                          }}
-                          className="cursor-grab py-3 text-xs first:pt-0 active:cursor-grabbing"
-                        >
-                          <div className="font-medium text-slate-900 dark:text-slate-50">{q.title}</div>
-                          <div className="mt-1 text-slate-500 dark:text-slate-400">
-                            Öncelik {q.priority} · risk {q.risk}
-                          </div>
-                        </li>
-                      ))}
+                      {queueItems.map((q) => {
+                        const mfgRow = q as {
+                          ready?: boolean
+                          eligibleShipAt?: string
+                          reportNo?: string
+                        }
+                        const mfgReady = mfgRow.ready ?? true
+                        return (
+                          <li
+                            key={q.queueId}
+                            draggable={canEdit && mfgReady}
+                            onDragStart={(e) => {
+                              if (!mfgReady) {
+                                e.preventDefault()
+                                return
+                              }
+                              e.dataTransfer.setData('text/plain', `queue:${q.queueId}`)
+                              e.dataTransfer.setData('text/plan-queue-id', q.queueId)
+                              e.dataTransfer.effectAllowed = 'copy'
+                              setDragId(`queue:${q.queueId}`)
+                            }}
+                            onDragEnd={() => {
+                              setDragId(null)
+                              setDropTarget(null)
+                            }}
+                            className={`py-3 text-xs first:pt-0 ${mfgReady ? 'cursor-grab active:cursor-grabbing' : 'cursor-not-allowed opacity-80'}`}
+                          >
+                            <div className="flex items-start gap-1.5 font-medium text-slate-900 dark:text-slate-50">
+                              {!mfgReady ? (
+                                <Lock className="mt-0.5 size-3 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
+                              ) : null}
+                              <span>{q.title}</span>
+                            </div>
+                            <div className="mt-1 text-slate-500 dark:text-slate-400">
+                              Öncelik {q.priority} · risk {q.risk}
+                              {mfgRow.reportNo ? (
+                                <span className="mt-0.5 block">
+                                  {t('productionPlanning.dailyReport.queueSourceReport', {
+                                    reportNo: mfgRow.reportNo,
+                                  })}
+                                </span>
+                              ) : null}
+                              {mfgRow.eligibleShipAt && !mfgReady ? (
+                                <span className="mt-0.5 block tabular-nums">
+                                  {t('productionPlanning.dailyReport.colMovableDate')}:{' '}
+                                  {formatDailyReportDateTime(mfgRow.eligibleShipAt, loc)}
+                                </span>
+                              ) : null}
+                            </div>
+                          </li>
+                        )
+                      })}
                     </ul>
                   ) : (
                     <ol
@@ -2050,7 +2216,8 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                   ref={gridScrollRef}
                   className="gm-planning-scroll-host box-border h-full min-h-0 min-w-0 overflow-auto"
                   style={{
-                    paddingLeft: leftDrawerOpen ? '20rem' : 0,
+                    paddingLeft:
+                      leftDrawerOpen || planningWizard?.actionsDrawerOpen ? '20rem' : 0,
                     paddingRight: rightInsightOpen ? 'min(22rem, calc(100vw - 2rem))' : 0,
                   }}
                   title="Ctrl/⌘ + fare tekerleği: yakınlaştır / uzaklaştır"
@@ -2190,6 +2357,18 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                               setDropTarget(null)
                               const qid = readQueueIdFromDrop(e)
                               if (qid) {
+                                const mfgKey = parseManufacturedQueueId(qid)
+                                if (mfgKey) {
+                                  const mp = workQueue.getManufacturedProductById(mfgKey)
+                                  if (mp && !isManufacturedProductReady(mp)) {
+                                    setPlanningQueueToast(
+                                      t('productionPlanning.dailyReport.notReadyForDispatch', {
+                                        date: formatDailyReportDateTime(mp.eligibleShipAt, loc),
+                                      }),
+                                    )
+                                    return
+                                  }
+                                }
                                 const q = queueItems.find((x) => x.queueId === qid)
                                 if (!q) return
                                 const snapped = snapTimelineSlot(slot, timelineUsesShifts)
@@ -2284,7 +2463,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                             summaryTone
                               ? summaryTone.card
                               : `${st.borderClass} border-l-4 ${st.bgClass}`
-                          } shadow-neo-out-sm dark:border-slate-600/45 ${
+                          } shadow-neo-out-sm dark:border-slate-600/45 ${planCardToneClasses(it.visualTone)} ${
                             cap ? 'ring-2 ring-red-500/70' : ''
                           } ${passThroughDrag ? 'pointer-events-none' : 'pointer-events-auto'}`}
                           style={{
@@ -2319,7 +2498,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                               moldId: it.moldId,
                             })
                           }}
-                          draggable={canEdit && !isMultiTrip}
+                          draggable={canEdit && !isMultiTrip && !it.isPreview}
                           onDragStart={(e) => {
                             if (isMultiTrip) return
                             e.dataTransfer.setData('text/plain', it.id)
@@ -2376,14 +2555,23 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                               ) : (
                                 <>
                                   <div className="flex items-center gap-1">
-                                    {statusIcon(it.status)}
+                                    {!it.isPreview ? statusIcon(it.status) : null}
                                     <span className="truncate text-[11px] font-semibold leading-tight text-gray-900 dark:text-gray-50">
                                       {it.title}
                                     </span>
+                                    {it.isPreview ? (
+                                      <span className="shrink-0 rounded bg-sky-500/20 px-1 py-0.5 text-[9px] font-bold uppercase text-sky-800 dark:text-sky-100">
+                                        {t('planningActions.previewBadge')}
+                                      </span>
+                                    ) : null}
                                   </div>
-                                  {it.orderId ? (
+                                  {cardDisplayMode === 'ops' && it.orderId ? (
                                     <div className="truncate text-[10px] text-gray-500 dark:text-gray-400">
                                       {it.orderId}
+                                    </div>
+                                  ) : cardDisplayMode === 'coordinator' && it.projectId ? (
+                                    <div className="truncate text-[10px] text-gray-500 dark:text-gray-400">
+                                      {it.projectId}
                                     </div>
                                   ) : null}
                                 </>
@@ -2463,19 +2651,32 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
     </div>
 
       {isProductionTimeline ? (
-        <DailyProductionWorkOrderDialog
-          open={dailyWorkOrderOpen}
-          onClose={() => setDailyWorkOrderOpen(false)}
-          planItems={items}
-          moldNameById={moldNameById}
-          defaultDayIso={dailyWorkOrderDefaultDay}
-          visibleDayRange={dailyWorkOrderVisibleRange}
-          onConfirmed={(count) =>
-            setDailyWorkOrderToast(
-              t('productionPlanning.dailyOrder.toast', { count: String(count) }),
-            )
-          }
-        />
+        <>
+          <DailyProductionWorkOrderDialog
+            open={dailyWorkOrderOpen}
+            onClose={() => setDailyWorkOrderOpen(false)}
+            planItems={items}
+            moldNameById={moldNameById}
+            defaultDayIso={dailyWorkOrderDefaultDay}
+            visibleDayRange={dailyWorkOrderVisibleRange}
+            onConfirmed={(count) =>
+              setDailyWorkOrderToast(
+                t('productionPlanning.dailyOrder.toast', { count: String(count) }),
+              )
+            }
+          />
+          <DailyProductionReportDialog
+            open={dailyReportOpen}
+            onClose={() => setDailyReportOpen(false)}
+            defaultDayIso={dailyReportDefaultDay}
+            visibleDayRange={dailyWorkOrderVisibleRange}
+            onConfirmed={(reportNo) =>
+              setDailyReportToast(
+                t('productionPlanning.dailyReport.toast', { reportNo }),
+              )
+            }
+          />
+        </>
       ) : null}
 
       {typeof document !== 'undefined'
@@ -2628,6 +2829,18 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                     type="button"
                     className="gm-glass-card-inset w-full px-2 py-2 text-left text-sm text-gray-800 transition hover:opacity-95 dark:text-gray-100"
                     onClick={() => {
+                      const mfgKey = parseManufacturedQueueId(q.queueId)
+                      if (mfgKey) {
+                        const mp = workQueue.getManufacturedProductById(mfgKey)
+                        if (mp && !isManufacturedProductReady(mp)) {
+                          setPlanningQueueToast(
+                            t('productionPlanning.dailyReport.notReadyForDispatch', {
+                              date: formatDailyReportDateTime(mp.eligibleShipAt, loc),
+                            }),
+                          )
+                          return
+                        }
+                      }
                       const { startAt, endAt, durationHours } = isoFromSlotVisibleForMode(
                         visibleDays,
                         assignOpen.slot,

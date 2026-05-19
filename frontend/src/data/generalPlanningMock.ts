@@ -22,6 +22,8 @@ export type PlanningResource = {
   vehicleType?: DispatchVehicleType
 }
 
+export type PlanVisualTone = 'committed' | 'preview'
+
 export type GeneralPlanItem = {
   id: string
   unit: PlanningUnitKey
@@ -42,6 +44,7 @@ export type GeneralPlanItem = {
   orderId?: string
   tags: string[]
   warnings: string[]
+  visualTone?: PlanVisualTone
 }
 
 /** Aynı kamyon + gün hücresinde üst üste planlanabilecek ürün sayısı üst sınırı. */

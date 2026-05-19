@@ -29,6 +29,8 @@ export type PostPourFlowState = {
   surfaceCleaningDone: boolean
   warehouseTransfer: WarehouseTransferRecord | null
   productionCompletedAt: string | null
+  /** Günlük üretim raporuna dahil edildiyse rapor kimliği */
+  dailyProductionReportId: string | null
 }
 
 export type ProductionWorkOrderFlowState = {
@@ -46,6 +48,7 @@ export function createInitialPostPourState(): PostPourFlowState {
     surfaceCleaningDone: false,
     warehouseTransfer: null,
     productionCompletedAt: null,
+    dailyProductionReportId: null,
   }
 }
 

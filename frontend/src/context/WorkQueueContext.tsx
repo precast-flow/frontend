@@ -46,6 +46,16 @@ import { getWarehouseById } from '../data/productionWarehouseMock'
 import { enrichMarkersWithSpotSnapshots } from '../utils/enrichMarkersWithSpotSnapshots'
 import { captureMarkerSpotSnapshot } from '../utils/drawingMarkerSnapshot'
 import { resolveProductionDrawingUrl } from '../data/productionDrawingMock'
+import {
+  buildDailyProductionReport,
+  findDailyReportForDay,
+  listEligibleProductionOrders,
+  type DailyProductionReport,
+  type GenerateDailyReportResult,
+} from '../data/dailyProductionReport'
+import { buildDailyProductionReportDemoSeed } from '../data/dailyProductionReportDemoMock'
+import { BLANK_PRODUCTION_WORK_ORDER } from '../data/productionWorkOrderBlankDemo'
+import type { ManufacturedProduct } from '../data/manufacturedProduct'
 import { buildQualityControlDemoSeed } from '../data/productionQualityControlDemoMock'
 import {
   MOCK_WORK_QUEUE_VIEWER_ID,
@@ -117,16 +127,31 @@ type WorkQueueContextValue = {
     parent: WorkQueueItem,
     include: QualityReportIncludeKinds,
   ) => Promise<QualityControlReport | null>
+  listEligibleForDailyReport: (reportDayIso: string, factoryCode: string) => ReturnType<
+    typeof listEligibleProductionOrders
+  >
+  getDailyReportForDay: (factoryCode: string, reportDayIso: string) => DailyProductionReport | undefined
+  getDailyProductionReport: (reportId: string) => DailyProductionReport | undefined
+  listDailyReports: (factoryCode?: string) => DailyProductionReport[]
+  generateDailyProductionReport: (
+    reportDayIso: string,
+    factoryCode: string,
+  ) => GenerateDailyReportResult
+  getManufacturedProducts: (factoryCode?: string) => ManufacturedProduct[]
+  getManufacturedProductById: (id: string) => ManufacturedProduct | undefined
+  isProductionOrderReported: (productionWorkQueueId: string) => boolean
   workQueueNavRequest: {
     workQueueId?: string
     openNcReportId?: string
     openQualityReportProductionId?: string
+    openDailyReportId?: string
   } | null
   requestWorkQueueNav: (
     req: {
       workQueueId?: string
       openNcReportId?: string
       openQualityReportProductionId?: string
+      openDailyReportId?: string
     } | null,
   ) => void
   routeNonconformance: (
@@ -151,16 +176,20 @@ function normalizeFlowState(state: ProductionWorkOrderFlowState): ProductionWork
 }
 
 const QUALITY_CONTROL_DEMO_SEED = buildQualityControlDemoSeed()
+const DAILY_REPORT_DEMO_SEED = buildDailyProductionReportDemoSeed()
 
 function WorkQueueProviderInner({ children }: { children: ReactNode }) {
   const { prependNotification } = useNotificationFeed()
   const [items, setItems] = useState<WorkQueueItem[]>(() => [
+    BLANK_PRODUCTION_WORK_ORDER,
     QUALITY_CONTROL_DEMO_SEED.productionItem,
     ...QUALITY_CONTROL_DEMO_SEED.extraItems,
+    ...DAILY_REPORT_DEMO_SEED.items,
     ...WORK_QUEUE_ITEMS,
   ])
   const [flowById, setFlowById] = useState<Record<string, ProductionWorkOrderFlowState>>(() => ({
     ...QUALITY_CONTROL_DEMO_SEED.flowById,
+    ...DAILY_REPORT_DEMO_SEED.flowById,
   }))
   const [curingById, setCuringById] = useState<Record<string, CuringFlowState>>(() => ({
     ...QUALITY_CONTROL_DEMO_SEED.curingById,
@@ -181,10 +210,17 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
   const [qualityReportsByProductionId, setQualityReportsByProductionId] = useState<
     Record<string, QualityControlReport>
   >(() => ({ ...QUALITY_CONTROL_DEMO_SEED.qualityReportsByProductionId }))
+  const [dailyReportsById, setDailyReportsById] = useState<Record<string, DailyProductionReport>>(
+    () => ({}),
+  )
+  const [manufacturedByProductionId, setManufacturedByProductionId] = useState<
+    Record<string, ManufacturedProduct>
+  >(() => ({}))
   const [workQueueNavRequest, setWorkQueueNavRequest] = useState<{
     workQueueId?: string
     openNcReportId?: string
     openQualityReportProductionId?: string
+    openDailyReportId?: string
   } | null>(null)
 
   const requestWorkQueueNav = useCallback(
@@ -193,11 +229,131 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
         workQueueId?: string
         openNcReportId?: string
         openQualityReportProductionId?: string
+        openDailyReportId?: string
       } | null,
     ) => {
       setWorkQueueNavRequest(req)
     },
     [],
+  )
+
+  const listEligibleForDailyReport = useCallback(
+    (reportDayIso: string, factoryCode: string) => {
+      return listEligibleProductionOrders(items, flowById, factoryCode, reportDayIso)
+    },
+    [items, flowById],
+  )
+
+  const getDailyReportForDay = useCallback(
+    (factoryCode: string, reportDayIso: string) => {
+      return findDailyReportForDay(dailyReportsById, factoryCode, reportDayIso)
+    },
+    [dailyReportsById],
+  )
+
+  const getDailyProductionReport = useCallback(
+    (reportId: string) => dailyReportsById[reportId],
+    [dailyReportsById],
+  )
+
+  const listDailyReports = useCallback(
+    (factoryCode?: string) => {
+      let reports = Object.values(dailyReportsById)
+      if (factoryCode) {
+        reports = reports.filter((r) => r.factoryCode === factoryCode)
+      }
+      return reports.sort((a, b) => {
+        const dayCmp = b.reportDayIso.localeCompare(a.reportDayIso)
+        if (dayCmp !== 0) return dayCmp
+        return b.createdAt.localeCompare(a.createdAt)
+      })
+    },
+    [dailyReportsById],
+  )
+
+  const getManufacturedProducts = useCallback(
+    (factoryCode?: string) => {
+      const all = Object.values(manufacturedByProductionId)
+      if (!factoryCode) return all
+      return all.filter((p) => p.factoryCode === factoryCode)
+    },
+    [manufacturedByProductionId],
+  )
+
+  const getManufacturedProductById = useCallback(
+    (id: string) => {
+      const direct = Object.values(manufacturedByProductionId).find((p) => p.id === id)
+      if (direct) return direct
+      if (id.startsWith('mp-')) {
+        const productionId = id.slice('mp-'.length)
+        return manufacturedByProductionId[productionId]
+      }
+      return manufacturedByProductionId[id]
+    },
+    [manufacturedByProductionId],
+  )
+
+  const isProductionOrderReported = useCallback(
+    (productionWorkQueueId: string) => {
+      const flow = flowById[productionWorkQueueId]
+      return Boolean(flow?.postPour.dailyProductionReportId ?? manufacturedByProductionId[productionWorkQueueId])
+    },
+    [flowById, manufacturedByProductionId],
+  )
+
+  const generateDailyProductionReport = useCallback(
+    (reportDayIso: string, factoryCode: string): GenerateDailyReportResult => {
+      const existing = findDailyReportForDay(dailyReportsById, factoryCode, reportDayIso)
+      if (existing) {
+        return { ok: false, reason: 'duplicate_day', existingReportId: existing.id }
+      }
+
+      const eligible = listEligibleProductionOrders(items, flowById, factoryCode, reportDayIso)
+      if (eligible.length === 0) {
+        return { ok: false, reason: 'empty' }
+      }
+
+      const { report, manufactured } = buildDailyProductionReport(
+        eligible,
+        reportDayIso,
+        factoryCode,
+      )
+
+      setDailyReportsById((prev) => ({ ...prev, [report.id]: report }))
+      setManufacturedByProductionId((prev) => {
+        const next = { ...prev }
+        for (const mp of manufactured) {
+          next[mp.productionWorkQueueId] = mp
+        }
+        return next
+      })
+      setFlowById((prev) => {
+        const next = { ...prev }
+        for (const { item } of eligible) {
+          const current = normalizeFlowState(next[item.id] ?? createInitialProductionFlowState())
+          next[item.id] = {
+            ...current,
+            postPour: {
+              ...current.postPour,
+              dailyProductionReportId: report.id,
+            },
+          }
+        }
+        return next
+      })
+
+      prependNotification({
+        id: `n-dpr-${report.id}-${Date.now()}`,
+        title: 'Günlük üretim raporu oluşturuldu',
+        detail: `${report.reportNo} · ${report.lines.length} ürün`,
+        time: 'şimdi',
+        moduleId: 'production-planning',
+        openDailyReportId: report.id,
+      })
+
+      return { ok: true, report, manufactured }
+    },
+    [dailyReportsById, flowById, items, prependNotification],
   )
 
   const appendItems = useCallback((rows: WorkQueueItem[]) => {
@@ -922,6 +1078,14 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       getMarkerCountsForProduction,
       getQualityControlReport,
       generateQualityControlReport,
+      listEligibleForDailyReport,
+      getDailyReportForDay,
+      getDailyProductionReport,
+      listDailyReports,
+      generateDailyProductionReport,
+      getManufacturedProducts,
+      getManufacturedProductById,
+      isProductionOrderReported,
       workQueueNavRequest,
       requestWorkQueueNav,
       routeNonconformance,
@@ -958,6 +1122,14 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       getMarkerCountsForProduction,
       getQualityControlReport,
       generateQualityControlReport,
+      listEligibleForDailyReport,
+      getDailyReportForDay,
+      getDailyProductionReport,
+      listDailyReports,
+      generateDailyProductionReport,
+      getManufacturedProducts,
+      getManufacturedProductById,
+      isProductionOrderReported,
       workQueueNavRequest,
       requestWorkQueueNav,
       routeNonconformance,
