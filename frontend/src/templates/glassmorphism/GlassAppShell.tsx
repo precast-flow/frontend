@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import type { AppShellOutletContext } from '../../appShellOutletContext'
 import { activeModuleIdFromPathname, moduleIdToPath, navGroups, startNavItems } from '../../data/navigation'
@@ -53,6 +53,7 @@ function GlassAppShellInner() {
     location.pathname.startsWith('/roller-izinler') ||
     location.pathname.startsWith('/onay-akisi') ||
     location.pathname.startsWith('/birim-is-kuyrugu') ||
+    location.pathname.startsWith('/kalite-kontrol-raporu') ||
     location.pathname.startsWith('/planlama') ||
     location.pathname.startsWith('/genel-planlama') ||
     location.pathname.startsWith('/uretim-planlama') ||
@@ -70,42 +71,69 @@ function GlassAppShellInner() {
   const isWorkQueueListRoute =
     location.pathname === '/birim-is-kuyrugu' || location.pathname === '/birim-is-kuyrugu/'
   const isTightListShellRoute = isProjectListRoute || isWorkQueueListRoute
+  /**
+   * Tam sayfa detay (kalite raporu): kabuk viewport’ta sabit, kaydırma üst sütunda;
+   * main/outlet flex-1 ile içeriği kırpmaz — başlık + kart birlikte kayar.
+   */
+  const isPageScrollDetailRoute = location.pathname.startsWith('/kalite-kontrol-raporu')
+
+  const shellPadding =
+    isTightListShellRoute && isOkanPlanSplitPage
+      ? 'gap-1.5 px-3 pt-0 pb-3 md:gap-2 md:px-5 md:pt-0 md:pb-5'
+      : 'gap-3 p-3 md:gap-4 md:p-5'
+
+  const contentTopPadding = isOkanPlanSplitPage
+    ? isTightListShellRoute
+      ? 'pt-[calc(env(safe-area-inset-top,0px)+3.5rem+1rem)] md:pt-[calc(env(safe-area-inset-top,0px)+3.625rem+1.125rem)]'
+      : 'pt-14 md:pt-16'
+    : 'pt-20 md:pt-24'
+
+  const contentGap =
+    isTightListShellRoute && isOkanPlanSplitPage ? 'gap-1 md:gap-1.5' : 'gap-3 md:gap-4'
+
+  useEffect(() => {
+    const root = document.documentElement
+    if (isPageScrollDetailRoute) {
+      root.classList.add('gm-shell--document-scroll')
+    } else {
+      root.classList.remove('gm-shell--document-scroll')
+    }
+    return () => root.classList.remove('gm-shell--document-scroll')
+  }, [isPageScrollDetailRoute])
+
+  const shellOuterClass = isPageScrollDetailRoute
+    ? 'flex min-h-dvh w-full min-w-0 flex-col'
+    : 'flex h-dvh max-h-dvh min-h-0 w-full min-w-0 flex-col overflow-hidden'
+
+  const shellScrollClass = isPageScrollDetailRoute
+    ? 'relative z-0 flex w-full min-w-0 flex-col pb-[var(--gm-footer-clear)]'
+    : 'relative z-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain pb-[var(--gm-footer-clear)] md:min-h-0'
 
   return (
     <GlassLayout backdrop={useNeutralGlassBackdrop ? 'neutral-grid' : 'blobs'}>
       <div
-        className={[
-          'flex min-h-dvh w-full min-w-0 flex-col text-[var(--glass-text-primary)]',
-          isTightListShellRoute && isOkanPlanSplitPage
-            ? 'gap-1.5 px-3 pt-0 pb-3 md:gap-2 md:px-5 md:pt-0 md:pb-5'
-            : 'gap-3 p-3 md:gap-4 md:p-5',
-        ].join(' ')}
+        data-gm-shell-outer
+        className={[shellOuterClass, 'text-[var(--glass-text-primary)]', shellPadding].join(' ')}
       >
         <div
-          className={[
-            'relative z-0 flex min-h-0 min-w-0 flex-1 flex-col pb-[var(--gm-footer-clear)] md:min-h-0',
-            isTightListShellRoute && isOkanPlanSplitPage ? 'gap-1 md:gap-1.5' : 'gap-3 md:gap-4',
-            isOkanPlanSplitPage
-              ? isTightListShellRoute
-                ? 'pt-[calc(env(safe-area-inset-top,0px)+3.5rem+1rem)] md:pt-[calc(env(safe-area-inset-top,0px)+3.625rem+1.125rem)]'
-                : 'pt-14 md:pt-16'
-              : 'pt-20 md:pt-24',
-          ].join(' ')}
+          className={[shellScrollClass, contentGap, contentTopPadding].join(' ')}
+          data-gm-shell-scroll={isPageScrollDetailRoute ? 'page' : undefined}
         >
           <main
             id="main-module"
             className={[
-              `gm-motion relative z-0 flex min-h-0 flex-1 flex-col overflow-visible rounded-2xl ${
-                isOkanPlanSplitPage ? 'p-0 md:p-0' : 'p-1'
-              } md:min-h-0 md:rounded-3xl`,
+              'gm-motion relative z-0 w-full overflow-visible rounded-2xl md:rounded-3xl',
+              isOkanPlanSplitPage ? 'p-0 md:p-0' : 'p-1',
+              isPageScrollDetailRoute ? '' : 'flex min-h-0 flex-1 flex-col md:min-h-0',
             ].join(' ')}
             aria-label="Modül içeriği"
           >
             <div
               id="gm-glass-outlet"
               className={[
-                'gm-glass-outlet-scope flex min-h-0 flex-1 flex-col overflow-visible rounded-[1.25rem] md:rounded-[1.35rem]',
+                'gm-glass-outlet-scope w-full overflow-visible rounded-[1.25rem] md:rounded-[1.35rem]',
                 isOkanPlanSplitPage ? 'p-0 md:p-0' : 'p-2 md:p-3',
+                isPageScrollDetailRoute ? '' : 'flex min-h-0 flex-1 flex-col',
               ].join(' ')}
             >
               <ElementIdentityProvider>

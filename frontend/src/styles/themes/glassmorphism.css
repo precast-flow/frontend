@@ -1921,4 +1921,51 @@ html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-v
   html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-corner-cell {
     background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 72%, rgb(30 41 59 / 0.68)) !important;
   }
+
+  /*
+   * Kalite kontrol raporu tam sayfa: Chrome’da kabuk içi flex scroll güvenilir değil —
+   * viewport (html) kayar; başlık + kart birlikte hareket eder.
+   */
+  html[data-ui-template='glass'].gm-shell--document-scroll {
+    overflow-y: auto;
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  html[data-ui-template='glass'].gm-shell--document-scroll body {
+    overflow-y: visible;
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  html[data-ui-template='glass'].gm-shell--document-scroll #root {
+    min-height: 100dvh;
+    height: auto;
+  }
+
+  html[data-ui-template='glass'].gm-shell--document-scroll .gm-glass-page {
+    min-height: 100dvh;
+    height: auto;
+    overflow: visible;
+  }
+
+  html[data-ui-template='glass'].gm-shell--document-scroll .gm-glass-page > .relative {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  html[data-ui-template='glass'].gm-shell--document-scroll [data-gm-shell-outer] {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 100dvh;
+    overflow: visible !important;
+  }
+
+  html[data-ui-template='glass'].gm-shell--document-scroll [data-gm-shell-scroll='page'] {
+    overflow: visible !important;
+    flex: none !important;
+    height: auto !important;
+    max-height: none !important;
+  }
 }

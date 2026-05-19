@@ -1,3 +1,4 @@
+import type { ControlPhase } from './productionQualityControl'
 import { MOCK_MANAGED_USERS } from './mockUsers'
 
 /** Demo: oturumdaki kullanıcı — atanmış / verdiği işler buna göre filtrelenir. */
@@ -28,6 +29,7 @@ export type WorkQueueKind =
   | 'pour_order'
   | 'sample_order'
   | 'curing_order'
+  | 'nonconformance'
 
 export type WorkQueueStatus = 'beklemede' | 'islemde' | 'bloke' | 'tamamlandi'
 
@@ -69,6 +71,10 @@ export type WorkQueueItem = {
   recipeId?: string
   planDayIso?: string
   fieldNotes?: string
+  drawingPreviewUrl?: string
+  nonconformanceId?: string
+  controlPhase?: ControlPhase
+  sourceMarkerId?: string
 }
 
 /** Sol üst birim seçicide sıra — tüm birimleri demoda kapsamak için. */

@@ -568,3 +568,21 @@ html:not(.dark) .project-mgmt-glass-light .project-mgmt-toolbar-search svg {
   color: #000;
   opacity: 0.5;
 }
+
+/* Kalite kontrol raporu tam sayfa — kabuk sütununda kaydırma; kart içinde ayrı scroll yok */
+.project-mgmt-glass-light.project-mgmt-detail-page--scroll {
+  overflow: visible;
+  height: auto;
+  max-height: none;
+  min-height: 0;
+}
+
+.project-mgmt-glass-light .qc-report-detail-card {
+  overflow: visible;
+  height: auto;
+  max-height: none;
+}
+
+html[data-ui-template='glass'] [data-gm-shell-scroll='page'] {
+  -webkit-overflow-scrolling: touch;
+}

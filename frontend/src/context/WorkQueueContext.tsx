@@ -13,9 +13,11 @@ import {
   alreadyPourApproved,
   buildSpawnedWorkOrders,
   canApprovePour,
+  canApproveWarehouseTransfer,
   canCompleteCuring,
   completeCuringFlow,
   createInitialCuringFlowState,
+  createInitialPostPourState,
   createInitialProductionFlowState,
   startCuringFlow,
   type CuringFlowState,
@@ -23,6 +25,28 @@ import {
   type ProductionWorkOrderFlowState,
 } from '../data/productionWorkOrderFlow'
 import { buildCuringReport, type CuringReport } from '../data/curingReport'
+import { buildNcOrderNo, buildNonconformanceReportNo } from '../data/nonconformanceReport'
+import {
+  buildQualityControlReport,
+  type QualityControlReport,
+  type QualityReportIncludeKinds,
+} from '../data/qualityControlReport'
+import {
+  appendNonconformanceStatus,
+  buildNonconformanceWorkOrder,
+  createNonconformanceRecord,
+  ensureNonconformanceStatusHistory,
+  type ControlPhase,
+  type MarkerKind,
+  type NonconformanceRecord,
+  type QualityMarker,
+  type ResponsibleUnit,
+} from '../data/productionQualityControl'
+import { getWarehouseById } from '../data/productionWarehouseMock'
+import { enrichMarkersWithSpotSnapshots } from '../utils/enrichMarkersWithSpotSnapshots'
+import { captureMarkerSpotSnapshot } from '../utils/drawingMarkerSnapshot'
+import { resolveProductionDrawingUrl } from '../data/productionDrawingMock'
+import { buildQualityControlDemoSeed } from '../data/productionQualityControlDemoMock'
 import {
   MOCK_WORK_QUEUE_VIEWER_ID,
   WORK_QUEUE_ITEMS,
@@ -30,12 +54,25 @@ import {
 } from '../data/workQueueMock'
 import { NotificationFeedProvider, useNotificationFeed } from './NotificationFeedContext'
 
+type SaveNonconformanceInput = {
+  productionWorkQueueId: string
+  phase: ControlPhase
+  markerXPct: number
+  markerYPct: number
+  description: string
+  responsibleUnit: ResponsibleUnit
+  photos: { objectUrl: string; fileName: string }[]
+}
+
 type WorkQueueContextValue = {
   items: WorkQueueItem[]
   appendItems: (rows: WorkQueueItem[]) => void
   getProductionFlowState: (workQueueId: string) => ProductionWorkOrderFlowState
   togglePrePourCheck: (workQueueId: string, checkId: PrePourCheckId) => void
   approvePourSpawn: (parent: WorkQueueItem) => boolean
+  togglePostPourLabeling: (workQueueId: string) => void
+  togglePostPourSurfaceCleaning: (workQueueId: string) => void
+  approveWarehouseTransfer: (parent: WorkQueueItem, warehouseId: string) => boolean
   getCuringFlowState: (workQueueId: string) => CuringFlowState
   startCuring: (workQueueId: string) => void
   acknowledgeCuringSteamOff: (workQueueId: string) => void
@@ -44,16 +81,124 @@ type WorkQueueContextValue = {
   getCuringReportsForProductionOrder: (productionWorkQueueId: string) => CuringReport[]
   getCuringReportsForProduct: (productCode: string) => CuringReport[]
   getSpawnedChildren: (parentId: string) => WorkQueueItem[]
+  getMarkers: (productionWorkQueueId: string, phase: ControlPhase) => QualityMarker[]
+  addMarker: (
+    productionWorkQueueId: string,
+    phase: ControlPhase,
+    kind: MarkerKind,
+    xPct: number,
+    yPct: number,
+  ) => QualityMarker
+  saveWarningMarkerNote: (
+    productionWorkQueueId: string,
+    markerId: string,
+    input: { description: string; photos: { objectUrl: string; fileName: string }[] },
+  ) => void
+  saveNonconformanceFromMarker: (
+    parent: WorkQueueItem,
+    marker: QualityMarker,
+    input: Omit<SaveNonconformanceInput, 'productionWorkQueueId' | 'phase' | 'markerXPct' | 'markerYPct'>,
+  ) => NonconformanceRecord | null
+  getNonconformance: (id: string) => NonconformanceRecord | undefined
+  getNonconformanceByWorkQueueId: (workQueueId: string) => NonconformanceRecord | undefined
+  getNonconformanceByMarkerId: (
+    productionWorkQueueId: string,
+    markerId: string,
+  ) => NonconformanceRecord | undefined
+  getNonconformancesForProductionOrder: (productionWorkQueueId: string) => NonconformanceRecord[]
+  getAllMarkersForProduction: (productionWorkQueueId: string) => QualityMarker[]
+  getMarkerCountsForProduction: (productionWorkQueueId: string) => {
+    pass: number
+    warning: number
+    error: number
+  }
+  getQualityControlReport: (productionWorkQueueId: string) => QualityControlReport | undefined
+  generateQualityControlReport: (
+    parent: WorkQueueItem,
+    include: QualityReportIncludeKinds,
+  ) => Promise<QualityControlReport | null>
+  workQueueNavRequest: {
+    workQueueId?: string
+    openNcReportId?: string
+    openQualityReportProductionId?: string
+  } | null
+  requestWorkQueueNav: (
+    req: {
+      workQueueId?: string
+      openNcReportId?: string
+      openQualityReportProductionId?: string
+    } | null,
+  ) => void
+  routeNonconformance: (
+    nonconformanceId: string,
+    target: 'project' | 'production',
+    instruction: string,
+  ) => boolean
+  advanceNonconformanceToAwaitingResolution: (nonconformanceId: string) => boolean
+  resolveNonconformance: (nonconformanceId: string) => boolean
+  closeNonconformance: (nonconformanceId: string) => boolean
 }
 
 const WorkQueueContext = createContext<WorkQueueContextValue | null>(null)
 
+function normalizeFlowState(state: ProductionWorkOrderFlowState): ProductionWorkOrderFlowState {
+  return {
+    ...createInitialProductionFlowState(),
+    ...state,
+    checklist: { ...createInitialProductionFlowState().checklist, ...state.checklist },
+    postPour: { ...createInitialPostPourState(), ...state.postPour },
+  }
+}
+
+const QUALITY_CONTROL_DEMO_SEED = buildQualityControlDemoSeed()
+
 function WorkQueueProviderInner({ children }: { children: ReactNode }) {
   const { prependNotification } = useNotificationFeed()
-  const [items, setItems] = useState<WorkQueueItem[]>(() => [...WORK_QUEUE_ITEMS])
-  const [flowById, setFlowById] = useState<Record<string, ProductionWorkOrderFlowState>>({})
-  const [curingById, setCuringById] = useState<Record<string, CuringFlowState>>({})
-  const [reportsByCuringId, setReportsByCuringId] = useState<Record<string, CuringReport>>({})
+  const [items, setItems] = useState<WorkQueueItem[]>(() => [
+    QUALITY_CONTROL_DEMO_SEED.productionItem,
+    ...QUALITY_CONTROL_DEMO_SEED.extraItems,
+    ...WORK_QUEUE_ITEMS,
+  ])
+  const [flowById, setFlowById] = useState<Record<string, ProductionWorkOrderFlowState>>(() => ({
+    ...QUALITY_CONTROL_DEMO_SEED.flowById,
+  }))
+  const [curingById, setCuringById] = useState<Record<string, CuringFlowState>>(() => ({
+    ...QUALITY_CONTROL_DEMO_SEED.curingById,
+  }))
+  const [reportsByCuringId, setReportsByCuringId] = useState<Record<string, CuringReport>>(() => {
+    const next: Record<string, CuringReport> = {}
+    for (const [id, report] of Object.entries(QUALITY_CONTROL_DEMO_SEED.reportsByCuringId)) {
+      if (report) next[id] = report
+    }
+    return next
+  })
+  const [markersByProductionId, setMarkersByProductionId] = useState<
+    Record<string, QualityMarker[]>
+  >(() => ({ ...QUALITY_CONTROL_DEMO_SEED.markersByProductionId }))
+  const [nonconformancesById, setNonconformancesById] = useState<
+    Record<string, NonconformanceRecord>
+  >(() => ({ ...QUALITY_CONTROL_DEMO_SEED.nonconformancesById }))
+  const [qualityReportsByProductionId, setQualityReportsByProductionId] = useState<
+    Record<string, QualityControlReport>
+  >(() => ({ ...QUALITY_CONTROL_DEMO_SEED.qualityReportsByProductionId }))
+  const [workQueueNavRequest, setWorkQueueNavRequest] = useState<{
+    workQueueId?: string
+    openNcReportId?: string
+    openQualityReportProductionId?: string
+  } | null>(null)
+
+  const requestWorkQueueNav = useCallback(
+    (
+      req: {
+        workQueueId?: string
+        openNcReportId?: string
+        openQualityReportProductionId?: string
+      } | null,
+    ) => {
+      setWorkQueueNavRequest(req)
+    },
+    [],
+  )
 
   const appendItems = useCallback((rows: WorkQueueItem[]) => {
     if (rows.length === 0) return
@@ -71,31 +216,41 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
 
   const getProductionFlowState = useCallback(
     (workQueueId: string): ProductionWorkOrderFlowState => {
-      return flowById[workQueueId] ?? createInitialProductionFlowState()
+      const raw = flowById[workQueueId]
+      return raw ? normalizeFlowState(raw) : createInitialProductionFlowState()
     },
     [flowById],
   )
 
+  const updateFlow = useCallback(
+    (
+      workQueueId: string,
+      updater: (current: ProductionWorkOrderFlowState) => ProductionWorkOrderFlowState,
+    ) => {
+      setFlowById((prev) => {
+        const current = normalizeFlowState(prev[workQueueId] ?? createInitialProductionFlowState())
+        return { ...prev, [workQueueId]: updater(current) }
+      })
+    },
+    [],
+  )
+
   const togglePrePourCheck = useCallback((workQueueId: string, checkId: PrePourCheckId) => {
-    setFlowById((prev) => {
-      const current = prev[workQueueId] ?? createInitialProductionFlowState()
-      if (alreadyPourApproved(current)) return prev
+    updateFlow(workQueueId, (current) => {
+      if (alreadyPourApproved(current)) return current
       return {
-        ...prev,
-        [workQueueId]: {
-          ...current,
-          checklist: {
-            ...current.checklist,
-            [checkId]: !current.checklist[checkId],
-          },
+        ...current,
+        checklist: {
+          ...current.checklist,
+          [checkId]: !current.checklist[checkId],
         },
       }
     })
-  }, [])
+  }, [updateFlow])
 
   const approvePourSpawn = useCallback(
     (parent: WorkQueueItem): boolean => {
-      const current = flowById[parent.id] ?? createInitialProductionFlowState()
+      const current = normalizeFlowState(flowById[parent.id] ?? createInitialProductionFlowState())
       if (!canApprovePour(current)) return false
 
       const stamp = Date.now()
@@ -125,6 +280,101 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       return true
     },
     [flowById, appendItems, prependNotification],
+  )
+
+  const togglePostPourLabeling = useCallback(
+    (workQueueId: string) => {
+      updateFlow(workQueueId, (current) => {
+        if (!alreadyPourApproved(current) || current.postPour.warehouseTransfer) return current
+        return {
+          ...current,
+          postPour: {
+            ...current.postPour,
+            labelingDone: !current.postPour.labelingDone,
+          },
+        }
+      })
+    },
+    [updateFlow],
+  )
+
+  const togglePostPourSurfaceCleaning = useCallback(
+    (workQueueId: string) => {
+      updateFlow(workQueueId, (current) => {
+        if (!alreadyPourApproved(current) || current.postPour.warehouseTransfer) return current
+        return {
+          ...current,
+          postPour: {
+            ...current.postPour,
+            surfaceCleaningDone: !current.postPour.surfaceCleaningDone,
+          },
+        }
+      })
+    },
+    [updateFlow],
+  )
+
+  const getCuringReportsForProductionOrder = useCallback(
+    (productionWorkQueueId: string) => {
+      const childIds = new Set(
+        items
+          .filter((r) => r.parentWorkQueueId === productionWorkQueueId && r.kind === 'curing_order')
+          .map((r) => r.id),
+      )
+      return Object.values(reportsByCuringId).filter((r) => childIds.has(r.curingWorkQueueId))
+    },
+    [items, reportsByCuringId],
+  )
+
+  const approveWarehouseTransfer = useCallback(
+    (parent: WorkQueueItem, warehouseId: string): boolean => {
+      const warehouse = getWarehouseById(warehouseId)
+      if (!warehouse) return false
+
+      const reports = (() => {
+        const childIds = new Set(
+          items
+            .filter((r) => r.parentWorkQueueId === parent.id && r.kind === 'curing_order')
+            .map((r) => r.id),
+        )
+        return Object.values(reportsByCuringId).filter((r) => childIds.has(r.curingWorkQueueId))
+      })()
+
+      const current = normalizeFlowState(flowById[parent.id] ?? createInitialProductionFlowState())
+      if (!canApproveWarehouseTransfer(current, reports.length > 0)) return false
+
+      const approvedAt = new Date().toISOString()
+      setFlowById((prev) => ({
+        ...prev,
+        [parent.id]: {
+          ...current,
+          postPour: {
+            ...current.postPour,
+            warehouseTransfer: {
+              warehouseId: warehouse.id,
+              warehouseLabel: warehouse.label,
+              approvedAt,
+              approvedByUserId: MOCK_WORK_QUEUE_VIEWER_ID,
+            },
+            productionCompletedAt: approvedAt,
+          },
+        },
+      }))
+      setItems((prev) =>
+        prev.map((row) =>
+          row.id === parent.id ? { ...row, status: 'tamamlandi' as const } : row,
+        ),
+      )
+      prependNotification({
+        id: `n-warehouse-${parent.id}-${Date.now()}`,
+        title: 'Depoya taşıma onayı',
+        detail: `${parent.orderNo} → ${warehouse.label}`,
+        time: 'şimdi',
+        moduleId: 'unit-work-queue',
+      })
+      return true
+    },
+    [flowById, items, reportsByCuringId, prependNotification],
   )
 
   const getCuringFlowState = useCallback(
@@ -161,18 +411,6 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
   const getCuringReport = useCallback(
     (curingWorkQueueId: string) => reportsByCuringId[curingWorkQueueId],
     [reportsByCuringId],
-  )
-
-  const getCuringReportsForProductionOrder = useCallback(
-    (productionWorkQueueId: string) => {
-      const childIds = new Set(
-        items
-          .filter((r) => r.parentWorkQueueId === productionWorkQueueId && r.kind === 'curing_order')
-          .map((r) => r.id),
-      )
-      return Object.values(reportsByCuringId).filter((r) => childIds.has(r.curingWorkQueueId))
-    },
-    [items, reportsByCuringId],
   )
 
   const getCuringReportsForProduct = useCallback(
@@ -220,6 +458,408 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
     [items],
   )
 
+  const getMarkers = useCallback(
+    (productionWorkQueueId: string, phase: ControlPhase) => {
+      const all = markersByProductionId[productionWorkQueueId] ?? []
+      return all.filter((m) => m.phase === phase)
+    },
+    [markersByProductionId],
+  )
+
+  const attachMarkerSpotSnapshot = useCallback(
+    async (parent: WorkQueueItem, markerId: string) => {
+      const list = markersByProductionId[parent.id] ?? []
+      const marker = list.find((m) => m.id === markerId)
+      if (!marker || marker.spotSnapshotUrl) return
+      try {
+        const spotSnapshotUrl = await captureMarkerSpotSnapshot(
+          resolveProductionDrawingUrl(parent),
+          marker.xPct,
+          marker.yPct,
+          marker.kind,
+        )
+        setMarkersByProductionId((prev) => {
+          const current = prev[parent.id] ?? []
+          return {
+            ...prev,
+            [parent.id]: current.map((m) =>
+              m.id === markerId ? { ...m, spotSnapshotUrl } : m,
+            ),
+          }
+        })
+      } catch {
+        /* mock çizim yüklenemezse rapor oluşturma sırasında yeniden denenir */
+      }
+    },
+    [markersByProductionId],
+  )
+
+  const addMarker = useCallback(
+    (
+      productionWorkQueueId: string,
+      phase: ControlPhase,
+      kind: MarkerKind,
+      xPct: number,
+      yPct: number,
+    ): QualityMarker => {
+      const marker: QualityMarker = {
+        id: `mk-${productionWorkQueueId}-${Date.now()}`,
+        productionWorkQueueId,
+        phase,
+        kind,
+        xPct,
+        yPct,
+        createdAt: new Date().toISOString(),
+        createdByUserId: MOCK_WORK_QUEUE_VIEWER_ID,
+      }
+      setMarkersByProductionId((prev) => {
+        const list = prev[productionWorkQueueId] ?? []
+        return { ...prev, [productionWorkQueueId]: [...list, marker] }
+      })
+      const parent = items.find((row) => row.id === productionWorkQueueId)
+      if (parent) void attachMarkerSpotSnapshot(parent, marker.id)
+      return marker
+    },
+    [items, attachMarkerSpotSnapshot],
+  )
+
+  const saveWarningMarkerNote = useCallback(
+    (
+      productionWorkQueueId: string,
+      markerId: string,
+      input: { description: string; photos: { objectUrl: string; fileName: string }[] },
+    ) => {
+      const stamp = Date.now()
+      setMarkersByProductionId((prev) => {
+        const list = prev[productionWorkQueueId] ?? []
+        return {
+          ...prev,
+          [productionWorkQueueId]: list.map((m) =>
+            m.id === markerId
+              ? {
+                  ...m,
+                  note: input.description,
+                  notePhotos: input.photos.map((p, i) => ({
+                    id: `ph-w-${stamp}-${i}`,
+                    objectUrl: p.objectUrl,
+                    fileName: p.fileName,
+                  })),
+                }
+              : m,
+          ),
+        }
+      })
+    },
+    [],
+  )
+
+  const saveNonconformanceFromMarker = useCallback(
+    (
+      parent: WorkQueueItem,
+      marker: QualityMarker,
+      input: Omit<
+        SaveNonconformanceInput,
+        'productionWorkQueueId' | 'phase' | 'markerXPct' | 'markerYPct'
+      >,
+    ): NonconformanceRecord | null => {
+      if (marker.kind !== 'error') return null
+
+      if (marker.nonconformanceId) {
+        const existing = nonconformancesById[marker.nonconformanceId]
+        if (existing) return existing
+      }
+
+      const existingByMarker = Object.values(nonconformancesById).find(
+        (r) => r.productionWorkQueueId === parent.id && r.markerId === marker.id,
+      )
+      if (existingByMarker) return existingByMarker
+
+      const stamp = Date.now()
+      const ncId = `nc-${stamp}`
+      const wqId = `wq-nc-${parent.id}-${String(stamp).slice(-6)}`
+      const record = createNonconformanceRecord({
+        id: ncId,
+        reportNo: buildNonconformanceReportNo(parent.orderNo, stamp),
+        ncOrderNo: buildNcOrderNo(parent.orderNo, stamp),
+        workQueueId: wqId,
+        productionWorkQueueId: parent.id,
+        markerId: marker.id,
+        phase: marker.phase,
+        description: input.description,
+        responsibleUnit: input.responsibleUnit,
+        photos: input.photos.map((p, i) => ({
+          id: `ph-${stamp}-${i}`,
+          objectUrl: p.objectUrl,
+          fileName: p.fileName,
+        })),
+        markerXPct: marker.xPct,
+        markerYPct: marker.yPct,
+        parent,
+      })
+
+      const workOrder = buildNonconformanceWorkOrder(parent, record, stamp)
+
+      setMarkersByProductionId((prev) => {
+        const list = prev[parent.id] ?? []
+        return {
+          ...prev,
+          [parent.id]: list.map((m) =>
+            m.id === marker.id
+              ? {
+                  ...m,
+                  nonconformanceId: ncId,
+                  note: input.description,
+                  notePhotos: input.photos.map((p, i) => ({
+                    id: `ph-${stamp}-${i}`,
+                    objectUrl: p.objectUrl,
+                    fileName: p.fileName,
+                  })),
+                }
+              : m,
+          ),
+        }
+      })
+      setNonconformancesById((prev) => ({ ...prev, [ncId]: record }))
+      appendItems([workOrder])
+
+      prependNotification({
+        id: `n-nc-${ncId}`,
+        title: 'Uygunsuzluk tespiti',
+        detail: `${parent.orderNo} · üretim amiri incelemesinde`,
+        time: 'şimdi',
+        moduleId: 'unit-work-queue',
+        workQueueId: wqId,
+        nonconformanceId: ncId,
+      })
+
+      return record
+    },
+    [appendItems, prependNotification, nonconformancesById],
+  )
+
+  const getNonconformance = useCallback(
+    (id: string) => {
+      const row = nonconformancesById[id]
+      return row ? ensureNonconformanceStatusHistory(row) : undefined
+    },
+    [nonconformancesById],
+  )
+
+  const getNonconformanceByWorkQueueId = useCallback(
+    (workQueueId: string) => {
+      const row = Object.values(nonconformancesById).find((r) => r.workQueueId === workQueueId)
+      return row ? ensureNonconformanceStatusHistory(row) : undefined
+    },
+    [nonconformancesById],
+  )
+
+  const getNonconformanceByMarkerId = useCallback(
+    (productionWorkQueueId: string, markerId: string) =>
+      Object.values(nonconformancesById).find(
+        (r) => r.productionWorkQueueId === productionWorkQueueId && r.markerId === markerId,
+      ),
+    [nonconformancesById],
+  )
+
+  const getNonconformancesForProductionOrder = useCallback(
+    (productionWorkQueueId: string) =>
+      Object.values(nonconformancesById)
+        .filter((r) => r.productionWorkQueueId === productionWorkQueueId)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [nonconformancesById],
+  )
+
+  const getAllMarkersForProduction = useCallback(
+    (productionWorkQueueId: string) => markersByProductionId[productionWorkQueueId] ?? [],
+    [markersByProductionId],
+  )
+
+  const getMarkerCountsForProduction = useCallback(
+    (productionWorkQueueId: string) => {
+      const list = markersByProductionId[productionWorkQueueId] ?? []
+      return {
+        pass: list.filter((m) => m.kind === 'pass').length,
+        warning: list.filter((m) => m.kind === 'warning').length,
+        error: list.filter((m) => m.kind === 'error').length,
+      }
+    },
+    [markersByProductionId],
+  )
+
+  const getQualityControlReport = useCallback(
+    (productionWorkQueueId: string) => qualityReportsByProductionId[productionWorkQueueId],
+    [qualityReportsByProductionId],
+  )
+
+  const generateQualityControlReport = useCallback(
+    async (
+      parent: WorkQueueItem,
+      include: QualityReportIncludeKinds,
+    ): Promise<QualityControlReport | null> => {
+      const rawMarkers = markersByProductionId[parent.id] ?? []
+      const includedIds = new Set(
+        rawMarkers
+          .filter((m) => {
+            if (m.kind === 'pass') return include.pass
+            if (m.kind === 'warning') return include.warning
+            return include.error
+          })
+          .map((m) => m.id),
+      )
+      const enriched = await enrichMarkersWithSpotSnapshots(parent, rawMarkers, includedIds)
+      setMarkersByProductionId((prev) => ({ ...prev, [parent.id]: enriched }))
+
+      const report = buildQualityControlReport(
+        parent,
+        enriched,
+        include,
+        MOCK_WORK_QUEUE_VIEWER_ID,
+        (marker) => {
+          if (marker.kind !== 'error' || !marker.nonconformanceId) return undefined
+          return nonconformancesById[marker.nonconformanceId]?.responsibleUnit
+        },
+      )
+      if (!report) return null
+
+      setQualityReportsByProductionId((prev) => ({ ...prev, [parent.id]: report }))
+
+      prependNotification({
+        id: `n-qcr-${parent.id}-${Date.now()}`,
+        title: 'Kalite kontrol raporu',
+        detail: `${report.reportNo} · ${report.entries.length} işaret`,
+        time: 'şimdi',
+        moduleId: 'unit-work-queue',
+        workQueueId: parent.id,
+        openQualityReportProductionId: parent.id,
+      })
+
+      return report
+    },
+    [markersByProductionId, nonconformancesById, prependNotification],
+  )
+
+  const routeNonconformance = useCallback(
+    (nonconformanceId: string, target: 'project' | 'production', instruction: string): boolean => {
+      const record = nonconformancesById[nonconformanceId]
+      if (!record || record.status !== 'manager_review') return false
+      if (!instruction.trim()) return false
+
+      const routedAt = new Date().toISOString()
+      const targetUnit = target === 'project' ? 'drawing' : 'production'
+      const assigneeUserId = target === 'project' ? 'u5' : 'u-emre'
+      const routedStatus = target === 'project' ? 'routed_project' : 'routed_production'
+
+      setNonconformancesById((prev) => {
+        const current = prev[nonconformanceId]
+        if (!current) return prev
+        const next = appendNonconformanceStatus(
+          current,
+          routedStatus,
+          routedAt,
+          MOCK_WORK_QUEUE_VIEWER_ID,
+          instruction.trim(),
+        )
+        return {
+          ...prev,
+          [nonconformanceId]: {
+            ...next,
+            routingInstruction: instruction.trim(),
+            routedAt,
+            routedByUserId: MOCK_WORK_QUEUE_VIEWER_ID,
+            routedToTarget: target,
+          },
+        }
+      })
+
+      setItems((prev) =>
+        prev.map((row) =>
+          row.id === record.workQueueId
+            ? {
+                ...row,
+                targetUnit,
+                toUnit: targetUnit,
+                assigneeUserId,
+                status: 'islemde' as const,
+                lastUpdatedLabel: routedAt,
+              }
+            : row,
+        ),
+      )
+
+      prependNotification({
+        id: `n-nc-route-${nonconformanceId}`,
+        title: 'Uygunsuzluk yönlendirildi',
+        detail: target === 'project' ? 'Proje birimi' : 'Üretim birimi',
+        time: 'şimdi',
+        moduleId: 'unit-work-queue',
+      })
+
+      return true
+    },
+    [nonconformancesById, prependNotification],
+  )
+
+  const advanceNonconformanceToAwaitingResolution = useCallback(
+    (nonconformanceId: string): boolean => {
+      const record = nonconformancesById[nonconformanceId]
+      if (
+        !record ||
+        (record.status !== 'routed_project' && record.status !== 'routed_production')
+      ) {
+        return false
+      }
+      const at = new Date().toISOString()
+      setNonconformancesById((prev) => ({
+        ...prev,
+        [nonconformanceId]: appendNonconformanceStatus(
+          record,
+          'awaiting_resolution',
+          at,
+          MOCK_WORK_QUEUE_VIEWER_ID,
+        ),
+      }))
+      return true
+    },
+    [nonconformancesById],
+  )
+
+  const resolveNonconformance = useCallback((nonconformanceId: string): boolean => {
+    const record = nonconformancesById[nonconformanceId]
+    if (!record || record.status !== 'awaiting_resolution') return false
+    const at = new Date().toISOString()
+    setNonconformancesById((prev) => ({
+      ...prev,
+      [nonconformanceId]: appendNonconformanceStatus(
+        record,
+        'resolved',
+        at,
+        MOCK_WORK_QUEUE_VIEWER_ID,
+      ),
+    }))
+    return true
+  }, [nonconformancesById])
+
+  const closeNonconformance = useCallback((nonconformanceId: string): boolean => {
+    const record = nonconformancesById[nonconformanceId]
+    if (!record || record.status !== 'resolved') return false
+    const at = new Date().toISOString()
+    setNonconformancesById((prev) => ({
+      ...prev,
+      [nonconformanceId]: appendNonconformanceStatus(
+        record,
+        'closed',
+        at,
+        MOCK_WORK_QUEUE_VIEWER_ID,
+      ),
+    }))
+    setItems((prev) =>
+      prev.map((row) =>
+        row.id === record.workQueueId ? { ...row, status: 'tamamlandi' as const } : row,
+      ),
+    )
+    return true
+  }, [nonconformancesById])
+
   useEffect(() => {
     const tick = () => {
       const now = Date.now()
@@ -259,6 +899,9 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       getProductionFlowState,
       togglePrePourCheck,
       approvePourSpawn,
+      togglePostPourLabeling,
+      togglePostPourSurfaceCleaning,
+      approveWarehouseTransfer,
       getCuringFlowState,
       startCuring,
       acknowledgeCuringSteamOff,
@@ -267,6 +910,24 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       getCuringReportsForProductionOrder,
       getCuringReportsForProduct,
       getSpawnedChildren,
+      getMarkers,
+      addMarker,
+      saveWarningMarkerNote,
+      saveNonconformanceFromMarker,
+      getNonconformance,
+      getNonconformanceByWorkQueueId,
+      getNonconformanceByMarkerId,
+      getNonconformancesForProductionOrder,
+      getAllMarkersForProduction,
+      getMarkerCountsForProduction,
+      getQualityControlReport,
+      generateQualityControlReport,
+      workQueueNavRequest,
+      requestWorkQueueNav,
+      routeNonconformance,
+      advanceNonconformanceToAwaitingResolution,
+      resolveNonconformance,
+      closeNonconformance,
     }),
     [
       items,
@@ -274,6 +935,9 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       getProductionFlowState,
       togglePrePourCheck,
       approvePourSpawn,
+      togglePostPourLabeling,
+      togglePostPourSurfaceCleaning,
+      approveWarehouseTransfer,
       getCuringFlowState,
       startCuring,
       acknowledgeCuringSteamOff,
@@ -282,6 +946,24 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       getCuringReportsForProductionOrder,
       getCuringReportsForProduct,
       getSpawnedChildren,
+      getMarkers,
+      addMarker,
+      saveWarningMarkerNote,
+      saveNonconformanceFromMarker,
+      getNonconformance,
+      getNonconformanceByWorkQueueId,
+      getNonconformanceByMarkerId,
+      getNonconformancesForProductionOrder,
+      getAllMarkersForProduction,
+      getMarkerCountsForProduction,
+      getQualityControlReport,
+      generateQualityControlReport,
+      workQueueNavRequest,
+      requestWorkQueueNav,
+      routeNonconformance,
+      advanceNonconformanceToAwaitingResolution,
+      resolveNonconformance,
+      closeNonconformance,
     ],
   )
 
