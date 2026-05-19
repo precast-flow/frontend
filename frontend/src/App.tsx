@@ -23,6 +23,7 @@ import { ElementIdentityProjectDetailPage } from './components/elementIdentity/E
 import { ProjectManagementDetailPage } from './components/proje/ProjectManagementDetailPage'
 import { CrmCustomerDetailPage } from './components/crm/CrmCustomerDetailPage'
 import { QuoteDetailPage } from './components/teklif/QuoteDetailPage'
+import { DailyProductionReportDetailPage } from './components/planlama/DailyProductionReportDetailPage'
 import { QualityControlReportDetailPage } from './components/workQueue/QualityControlReportDetailPage'
 
 function App() {
@@ -62,6 +63,10 @@ function App() {
             <Route
               path="kalite-kontrol-raporu/:productionWorkQueueId"
               element={<QualityControlReportDetailPage />}
+            />
+            <Route
+              path="gunluk-uretim-raporu/:reportId"
+              element={<DailyProductionReportDetailPage />}
             />
             <Route path="muhendislik-okan" element={<Navigate to="/tanimlar" replace />} />
             <Route path="parca-sablon-studyosu/*" element={<Navigate to="/tanimlar" replace />} />

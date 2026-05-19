@@ -49,7 +49,7 @@ const BASE_TOOLBAR: PlanningToolbarActionId[] = [
 const OPS_TOOLBAR: PlanningToolbarActionId[] = ['filters', 'queue', 'undo', 'redo', 'history']
 
 /** Genel planlama araç çubuğunda gösterilen birimler (koordinasyon / «Planlama» sekmesi hariç). */
-export const GENERAL_PLANNING_UI_UNITS = ['production', 'dispatch'] as const satisfies readonly PlanningUnitKey[]
+export const GENERAL_PLANNING_UI_UNITS = ['production', 'dispatch', 'assembly'] as const satisfies readonly PlanningUnitKey[]
 
 export const GENERAL_PLANNING_UNIT_CONFIGS: Record<PlanningUnitKey, PlanningUnitConfig> = {
   planning: {

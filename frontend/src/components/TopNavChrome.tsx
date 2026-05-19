@@ -6,6 +6,7 @@ import { useFactoryContext } from '../context/FactoryContext'
 import { useI18n } from '../i18n/I18nProvider'
 import { useNotificationFeed } from '../context/NotificationFeedContext'
 import { useWorkQueueOptional } from '../context/WorkQueueContext'
+import { dailyProductionReportDetailPath } from '../data/dailyProductionReportPaths'
 import { qualityControlReportDetailPath } from '../data/qualityControlReportPaths'
 import { TopNavMenuPortal } from './TopNavMenuPortal'
 
@@ -107,6 +108,12 @@ export function TopNavChrome({ chromeMenu, setChromeMenu, onModuleNavigate }: Pr
                   className="gm-topnav-dd-item flex w-full flex-col gap-0.5 rounded-xl px-2 py-2.5 text-left text-sm text-slate-800 focus-visible:outline-none dark:text-[var(--glass-text-primary)]"
                   onClick={() => {
                     setChromeMenu(null)
+                    if (n.openDailyReportId) {
+                      navigate(dailyProductionReportDetailPath(n.openDailyReportId), {
+                        state: { fromProductionPlanning: true },
+                      })
+                      return
+                    }
                     if (n.openQualityReportProductionId) {
                       navigate(qualityControlReportDetailPath(n.openQualityReportProductionId), {
                         state: {
