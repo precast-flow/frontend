@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Bell, ChevronDown, Moon, Sun, User } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { Bell, ChevronDown, LayoutDashboard, Moon, Sun, User } from 'lucide-react'
 import { useThemeMode } from '../theme/ThemeProvider'
 import { useFactoryContext } from '../context/FactoryContext'
 import { useI18n } from '../i18n/I18nProvider'
@@ -22,6 +22,8 @@ export function TopNavChrome({ chromeMenu, setChromeMenu, onModuleNavigate }: Pr
   const { t } = useI18n()
   const menuId = useId()
   const navigate = useNavigate()
+  const location = useLocation()
+  const isDashboardHome = location.pathname === '/'
   const { mode, toggle: toggleTheme } = useThemeMode()
   const { selectedCodes } = useFactoryContext()
   const { items: notificationFeedItems } = useNotificationFeed()
@@ -64,6 +66,22 @@ export function TopNavChrome({ chromeMenu, setChromeMenu, onModuleNavigate }: Pr
         ) : (
           <Moon className="size-5" strokeWidth={2} aria-hidden />
         )}
+      </button>
+
+      <button
+        type="button"
+        onClick={() => {
+          setChromeMenu(null)
+          navigate('/')
+        }}
+        className={[
+          'gm-topnav-chrome-btn flex size-10 shrink-0 items-center justify-center rounded-xl border backdrop-blur-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/45 dark:focus-visible:ring-cyan-400/50',
+          isDashboardHome ? 'gm-topnav-chrome-btn--open' : '',
+        ].join(' ')}
+        aria-label={t('topbar.dashboard')}
+        title={t('topbar.dashboard')}
+      >
+        <LayoutDashboard className="size-5" strokeWidth={2} aria-hidden />
       </button>
 
       <div className="relative shrink-0">

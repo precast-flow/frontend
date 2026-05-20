@@ -26,6 +26,8 @@ import { CrmCustomerDetailPage } from './components/crm/CrmCustomerDetailPage'
 import { QuoteDetailPage } from './components/teklif/QuoteDetailPage'
 import { DailyProductionReportDetailPage } from './components/planlama/DailyProductionReportDetailPage'
 import { QualityControlReportDetailPage } from './components/workQueue/QualityControlReportDetailPage'
+import { DashboardProvider } from './context/DashboardContext'
+import { DashboardHomePage } from './pages/DashboardHomePage'
 
 function App() {
   return (
@@ -34,6 +36,7 @@ function App() {
       <FactoryProvider>
       <QualityManagementProvider>
       <WorkQueueProvider>
+      <DashboardProvider>
       <BrowserRouter>
         <>
         <Routes>
@@ -50,7 +53,7 @@ function App() {
             <Route path="guvenlik" element={<FirmAdminPlaceholderPage />} />
           </Route>
           <Route path="/" element={<ShellResolver />}>
-            <Route index element={<MainCanvasOutlet />} />
+            <Route index element={<DashboardHomePage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="glass-showcase" element={<GlassShowcasePage />} />
@@ -80,6 +83,7 @@ function App() {
         </Routes>
         </>
       </BrowserRouter>
+      </DashboardProvider>
       </WorkQueueProvider>
       </QualityManagementProvider>
     </FactoryProvider>

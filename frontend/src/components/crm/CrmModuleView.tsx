@@ -15,9 +15,19 @@ import {
   User,
   X,
 } from 'lucide-react'
-import { crmCustomers, statusLabel, type CrmCustomer, type CrmLocationRow } from '../../data/crmCustomers'
+import {
+  crmCustomers,
+  statusLabel,
+  type CrmCustomer,
+  type CrmDocRow,
+  type CrmIletisimKisi,
+  type CrmLocationRow,
+} from '../../data/crmCustomers'
 import { useFactoryContext } from '../../context/FactoryContext'
-import { CrmNewCustomerModal } from './CrmNewCustomerModal'
+import { CrmNewCustomerModal, type CustomerDraft } from './CrmNewCustomerModal'
+import { useCrmReminderWatcher } from './useCrmReminderWatcher'
+import { CRM_TARGET_AUDIENCES } from '../../data/crmFormOptions'
+import { removeCrmReminder, upsertCrmReminder } from '../../data/crmReminders'
 import { NeoSwitch } from '../NeoSwitch'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
@@ -87,8 +97,107 @@ function resolveLocations(customer: CrmCustomer): CrmLocationRow[] {
   ]
 }
 
+function generateCandidateCode(name: string, existingCodes: string[]): string {
+  const base = name
+    .replace(/[^a-zA-ZğüşıöçĞÜŞİÖÇ0-9]/g, '')
+    .slice(0, 3)
+    .toUpperCase()
+    .padEnd(3, 'X')
+  let attempt = `A-${base}`
+  let n = 1
+  while (existingCodes.some((c) => c.toUpperCase() === attempt)) {
+    attempt = `A-${base}${n}`
+    n += 1
+  }
+  return attempt.slice(0, 8)
+}
+
+function mapContactsFromDraft(persons: CustomerDraft['contactPersons']): CrmIletisimKisi[] {
+  return persons
+    .filter((p) => p.adSoyad.trim() && p.telefon.trim())
+    .map((p, index) => ({
+      id: p.id,
+      adSoyad: p.adSoyad.trim(),
+      gorev: p.unvan.trim(),
+      cep: p.telefon.trim(),
+      email: p.email.trim(),
+      notlar: p.notlar.trim() || undefined,
+      birincil: index === 0,
+    }))
+}
+
+function mapDocsFromDraft(docs: CustomerDraft['pendingDocs']): CrmDocRow[] {
+  const now = new Date().toLocaleDateString('tr-TR')
+  return docs.map((d) => ({
+    id: d.id,
+    type: 'Rapor',
+    name: d.name,
+    size: d.size,
+    ext: d.name.includes('.') ? (d.name.split('.').pop() ?? 'dosya') : 'dosya',
+    uploadedAt: now,
+    uploadedBy: 'CRM',
+    revision: 'A',
+    note: 'Aday müşteri oluşturma',
+    previewUrl: '',
+  }))
+}
+
+function buildCustomerFromDraft(
+  payload: CustomerDraft,
+  existing: Partial<CrmCustomer> & { id: string; code: string },
+  existingCodes: string[],
+): CrmCustomer {
+  const contacts = mapContactsFromDraft(payload.contactPersons)
+  const primary = contacts.find((c) => c.birincil) ?? contacts[0]
+  const audienceLabels = CRM_TARGET_AUDIENCES.filter((a) => payload.targetAudienceIds.includes(a.id)).map(
+    (a) => a.label,
+  )
+  const fullAddress = `${payload.openAddress.trim()}, ${payload.district}, ${payload.province}`
+
+  return {
+    id: existing.id,
+    name: payload.name.trim(),
+    code: existing.code || generateCandidateCode(payload.name, existingCodes),
+    sector: existing.sector ?? '—',
+    lastActivity: 'Az önce',
+    status: existing.status ?? 'potansiyel',
+    openQuotes: existing.openQuotes ?? 0,
+    taxId: payload.taxId.trim(),
+    createdAt: existing.createdAt ?? new Date().toLocaleDateString('tr-TR'),
+    owner: existing.owner ?? 'Ayşe K.',
+    city: payload.province,
+    notes: payload.meetingNotes.trim(),
+    contactPerson: primary?.adSoyad ?? 'Tanımlanmadı',
+    lastQuoteDate: existing.lastQuoteDate ?? '—',
+    iletisim: {
+      sabitHat: primary?.cep ?? '-',
+      infoEmail: primary?.email ?? '-',
+      adresNotu: fullAddress,
+      kisiler: contacts,
+    },
+    tags: [...new Set([...(existing.tags ?? []), 'Aday', ...audienceLabels.slice(0, 2)])],
+    factories: existing.factories ?? [],
+    projeler: existing.projeler ?? [],
+    teklifler: existing.teklifler ?? [],
+    dokumanlar: [...(existing.dokumanlar ?? []), ...mapDocsFromDraft(payload.pendingDocs)],
+    locations: existing.locations,
+    province: payload.province,
+    district: payload.district,
+    openAddress: payload.openAddress.trim(),
+    stampImageUrl: payload.stampImageUrl,
+    customerPotential: payload.customerPotential || undefined,
+    targetAudienceIds: payload.targetAudienceIds,
+    meetingMethod: payload.meetingMethod,
+    meetingNotes: payload.meetingNotes.trim(),
+    reminder: payload.reminderEnabled
+      ? { enabled: true, note: payload.reminderNote.trim(), date: payload.reminderDate }
+      : undefined,
+  }
+}
+
 export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
   void _onNavigate
+  useCrmReminderWatcher(true)
   const { gl, neutralShell } = useManagementModulePage('crm')
   const navigate = useNavigate()
   const { selectedCodes } = useFactoryContext()
@@ -252,69 +361,42 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
     setNewOpen(true)
   }
 
-  const saveCustomer = (payload: {
-    name: string
-    code: string
-    sector: string
-    taxId: string
-    city: string
-    billingAddress: string
-    locations: CrmLocationRow[]
-  }) => {
+  const syncReminder = (customerId: string, customerName: string, payload: CustomerDraft) => {
+    if (payload.reminderEnabled && payload.reminderDate) {
+      upsertCrmReminder({
+        id: `rem-${customerId}`,
+        customerId,
+        customerName,
+        note: payload.reminderNote.trim(),
+        dueDate: payload.reminderDate,
+        notified: false,
+      })
+    } else {
+      removeCrmReminder(customerId)
+    }
+  }
+
+  const saveCustomer = (payload: CustomerDraft) => {
+    const codes = rows.map((row) => row.code)
     if (customerDialogMode === 'edit' && selected) {
-      setRows((prev) =>
-        prev.map((row) =>
-          row.id === selected.id
-            ? {
-                ...row,
-                name: payload.name.trim(),
-                code: payload.code,
-                sector: payload.sector,
-                taxId: payload.taxId,
-                city: payload.city,
-                contactPerson: row.contactPerson || 'Tanımlanmadı',
-                iletisim: {
-                  ...row.iletisim,
-                  adresNotu: payload.billingAddress,
-                },
-                locations: payload.locations,
-              }
-            : row,
-        ),
-      )
+      const updated = buildCustomerFromDraft(payload, selected, codes)
+      setRows((prev) => prev.map((row) => (row.id === selected.id ? updated : row)))
+      syncReminder(updated.id, updated.name, payload)
     } else {
       const newId = `c-${Date.now()}`
-      const now = new Date().toLocaleDateString('tr-TR')
-      const newCustomer: CrmCustomer = {
-        id: newId,
-        name: payload.name.trim(),
-        code: payload.code,
-        sector: payload.sector,
-        lastActivity: 'Az önce',
-        status: 'potansiyel',
-        openQuotes: 0,
-        taxId: payload.taxId,
-        createdAt: now,
-        owner: 'Ayşe K.',
-        city: payload.city,
-        notes: '',
-        contactPerson: 'Tanımlanmadı',
-        lastQuoteDate: '—',
-        iletisim: {
-          sabitHat: '-',
-          infoEmail: '-',
-          adresNotu: payload.billingAddress,
-          kisiler: [],
+      const newCustomer = buildCustomerFromDraft(
+        payload,
+        {
+          id: newId,
+          code: generateCandidateCode(payload.name, codes),
+          factories: selectedCodes.length ? [...selectedCodes] : ['IST-HAD'],
+          tags: ['Yeni'],
         },
-        tags: ['Yeni'],
-        factories: selectedCodes.length ? [...selectedCodes] : ['IST-HAD'],
-        projeler: [],
-        teklifler: [],
-        dokumanlar: [],
-        locations: payload.locations,
-      }
+        codes,
+      )
       setRows((prev) => [newCustomer, ...prev])
       setSelectedId(newId)
+      syncReminder(newId, newCustomer.name, payload)
     }
     setNewOpen(false)
   }
@@ -431,7 +513,7 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                       className={eiSplitHeaderButtonPassive}
                     >
                       <Plus className="size-3.5 shrink-0" aria-hidden />
-                      <span>Yeni müşteri</span>
+                      <span>Aday müşteri</span>
                     </button>
                   </div>
                 </div>
@@ -563,7 +645,7 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                       onClick={openCreateCustomerDialog}
                       className={eiSplitHeaderButtonPassive}
                     >
-                      Yeni müşteri
+                      Aday müşteri
                     </button>
                   </div>
                 ) : (
@@ -1178,7 +1260,6 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
       open={newOpen}
       mode={customerDialogMode}
       initialCustomer={customerDialogMode === 'edit' ? selected : null}
-      existingCodes={rows.map((row) => row.code)}
       onSave={saveCustomer}
       onClose={() => setNewOpen(false)}
     />

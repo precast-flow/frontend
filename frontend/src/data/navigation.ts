@@ -119,7 +119,7 @@ export const navGroups: NavGroup[] = [
 /** Hesap — `findNavItem` / geriye dönük referanslar için son gruptan türetilir */
 export const accountNavGroup: NavGroup = navGroups.find((g) => g.id === 'account')!
 
-const DEFAULT_MODULE_ID = 'project'
+const DEFAULT_MODULE_ID = 'dashboard'
 
 export function findNavItem(id: string): NavItem | undefined {
   const inStart = startNavItems.find((i) => i.id === id)
@@ -146,6 +146,7 @@ export function findModuleIdBySlug(slug: string): string | undefined {
  * Modül / hesap geçişi — yenilemede doğru ekran için path (profil & ayarlar sabit path).
  */
 export function moduleIdToPath(id: string): string {
+  if (id === 'dashboard') return '/'
   if (id === 'profile') return '/profile'
   if (id === 'settings') return '/settings'
   const item = findNavItem(id)
@@ -157,7 +158,7 @@ export function moduleIdToPath(id: string): string {
 export function activeModuleIdFromPathname(pathname: string): string {
   if (pathname === '/profile') return 'profile'
   if (pathname === '/settings') return 'settings'
-  if (pathname === '/') return DEFAULT_MODULE_ID
+  if (pathname === '/' || pathname === '') return 'dashboard'
   if (pathname.startsWith('/musteri-detay/')) return 'crm'
   if (pathname.startsWith('/kalite-kontrol-raporu/')) return 'unit-work-queue'
   if (pathname.startsWith('/gunluk-uretim-raporu/')) return 'production-planning'
