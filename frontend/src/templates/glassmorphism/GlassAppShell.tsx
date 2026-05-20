@@ -53,6 +53,9 @@ function GlassAppShellInner() {
     location.pathname.startsWith('/roller-izinler') ||
     location.pathname.startsWith('/onay-akisi') ||
     location.pathname.startsWith('/birim-is-kuyrugu') ||
+    location.pathname.startsWith('/kalite-girdi-malzeme') ||
+    location.pathname.startsWith('/kalite-beton-recete') ||
+    location.pathname.startsWith('/kalite-laboratuvar') ||
     location.pathname.startsWith('/kalite-kontrol-raporu') ||
     location.pathname.startsWith('/gunluk-uretim-raporu') ||
     location.pathname.startsWith('/planlama') ||
@@ -72,6 +75,13 @@ function GlassAppShellInner() {
   const isWorkQueueListRoute =
     location.pathname === '/birim-is-kuyrugu' || location.pathname === '/birim-is-kuyrugu/'
   const isCrmListRoute = location.pathname === '/crm' || location.pathname === '/crm/'
+  const isQualityListRoute =
+    location.pathname === '/kalite-girdi-malzeme' ||
+    location.pathname === '/kalite-girdi-malzeme/' ||
+    location.pathname === '/kalite-beton-recete' ||
+    location.pathname === '/kalite-beton-recete/' ||
+    location.pathname === '/kalite-laboratuvar' ||
+    location.pathname === '/kalite-laboratuvar/'
   const isSystemListRoute =
     location.pathname === '/onay-akisi' ||
     location.pathname === '/onay-akisi/' ||
@@ -93,6 +103,7 @@ function GlassAppShellInner() {
     isProjectListRoute ||
     isWorkQueueListRoute ||
     isCrmListRoute ||
+    isQualityListRoute ||
     isSystemListRoute ||
     isDefinitionsListRoute ||
     isAccountListRoute

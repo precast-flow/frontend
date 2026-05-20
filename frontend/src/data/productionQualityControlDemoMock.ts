@@ -222,6 +222,7 @@ function buildDemoFlow(spawnedIds: string[]): ProductionWorkOrderFlowState {
 
   return {
     checklist,
+    rebarScans: [],
     pourApprovedAt: DEMO_POUR_AT,
     spawnedChildIds: spawnedIds,
     postPour,

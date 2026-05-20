@@ -11,8 +11,7 @@ import {
   Route,
   X,
 } from 'lucide-react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { activeModuleIdFromPathname } from '../../data/navigation'
+import { useNavigate } from 'react-router-dom'
 import {
   projectManagementActivitiesMock,
   projectManagementCardsMock,
@@ -21,8 +20,6 @@ import {
   type ProjectStatus,
 } from '../../data/projectManagementCardsMock'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
-import { useI18n } from '../../i18n/I18nProvider'
-import { useThemeMode } from '../../theme/ThemeProvider'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
 import {
@@ -31,6 +28,7 @@ import {
 } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import {
   ManagementModuleShell,
+  useManagementModulePage,
   managementModuleDetailPanelClass,
   managementModuleListPanelClass,
   managementModuleListTitleClass,
@@ -118,12 +116,8 @@ function toTrDate(isoDate: string): string {
 }
 
 export function ProjectManagementModuleView({ onNavigate }: Props) {
-  const { t } = useI18n()
-  const { mode } = useThemeMode()
-  const gl = mode === 'light'
+  const { gl, neutralShell } = useManagementModulePage('project')
   const navigate = useNavigate()
-  const location = useLocation()
-  const neutralShell = activeModuleIdFromPathname(location.pathname) === 'project'
   const detailPanelRef = useRef<HTMLElement | null>(null)
   const splitRef = useRef<HTMLDivElement | null>(null)
   const listRef = useRef<HTMLUListElement | null>(null)
@@ -509,33 +503,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
 
   return (
     <>
-    <ManagementModuleShell
-      neutralShell={neutralShell}
-      gl={gl}
-      breadcrumb={
-          <nav
-            aria-label={t('project.breadcrumbAria')}
-            className="mb-0"
-          >
-            <ol className="flex flex-wrap items-center gap-1 text-xs text-black/60 dark:text-white/65">
-              <li>
-                <Link
-                  to="/planlama"
-                  className="font-medium text-black/75 underline-offset-2 transition hover:text-black hover:underline dark:text-white/75 dark:hover:text-white"
-                >
-                  {t('nav.sidebar.section.planning')}
-                </Link>
-              </li>
-              <li className="flex items-center gap-1" aria-hidden>
-                <ChevronRight className="size-3.5 shrink-0 opacity-70" />
-              </li>
-              <li className="font-semibold text-black dark:text-white" aria-current="page">
-                {t('nav.project')}
-              </li>
-            </ol>
-          </nav>
-      }
-    >
+    <ManagementModuleShell neutralShell={neutralShell} gl={gl}>
           <div
             ref={splitRef}
             data-split-dragging={isResizing ? 'true' : undefined}

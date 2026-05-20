@@ -33,8 +33,20 @@ export type PostPourFlowState = {
   dailyProductionReportId: string | null
 }
 
+export type RebarMaterialScan = {
+  scanId: string
+  inputMaterialId: string
+  workQueueId: string
+  productCode?: string
+  elementLabel?: string
+  scannedAt: string
+  scannedByUserId?: string
+  manualEntry?: boolean
+}
+
 export type ProductionWorkOrderFlowState = {
   checklist: Record<PrePourCheckId, boolean>
+  rebarScans: RebarMaterialScan[]
   pourApprovedAt: string | null
   spawnedChildIds: string[]
   postPour: PostPourFlowState
@@ -115,6 +127,7 @@ export function createInitialProductionFlowState(): ProductionWorkOrderFlowState
       PrePourCheckId,
       boolean
     >,
+    rebarScans: [],
     pourApprovedAt: null,
     spawnedChildIds: [],
     postPour: createInitialPostPourState(),

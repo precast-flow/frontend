@@ -1,15 +1,8 @@
 import type { ReactNode } from 'react'
 
-/** Proje / Görev / Müşteri / Sistem&Onay / Tanımlar yönetimi modüllerinde ortak dış kabuk. */
+/** Proje / Görev / Müşteri / Kalite yönetimi modüllerinde ortak dış kabuk (başlık/breadcrumb MainCanvas’ta). */
 export const managementModuleOuterClass =
-  'project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl'
-
-/** Breadcrumb şeridi ile split alanı arasındaki grid. */
-export const managementModuleGridClass =
-  'grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-2'
-
-/** Modül içi breadcrumb hizası — MainCanvas başlığı ile aynı yatay padding. */
-export const managementModuleBreadcrumbClass = 'px-[0.6875rem] pt-0 pb-0'
+  'project-mgmt-glass-light flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl'
 
 export function managementModuleContentClass(gl: boolean): string {
   return [
@@ -58,8 +51,6 @@ type ManagementModuleShellProps = {
   neutralShell?: boolean
   /** Modül üstü modal vb. */
   topSlot?: ReactNode
-  /** Planlama modüllerinde iç breadcrumb; Sistem&Onay ve Tanımlar’da MainCanvas breadcrumb kullanılır */
-  breadcrumb?: ReactNode
   gl: boolean
   children: ReactNode
 }
@@ -67,7 +58,6 @@ type ManagementModuleShellProps = {
 export function ManagementModuleShell({
   neutralShell,
   topSlot,
-  breadcrumb,
   gl,
   children,
 }: ManagementModuleShellProps) {
@@ -77,14 +67,7 @@ export function ManagementModuleShell({
       data-neutral-shell={neutralShell ? 'true' : undefined}
     >
       {topSlot}
-      {breadcrumb != null ? (
-        <div className={managementModuleGridClass}>
-          <div className={managementModuleBreadcrumbClass}>{breadcrumb}</div>
-          <div className={managementModuleContentClass(gl)}>{children}</div>
-        </div>
-      ) : (
-        <div className={['min-h-0 flex-1', managementModuleContentClass(gl)].join(' ')}>{children}</div>
-      )}
+      <div className={['min-h-0 flex-1', managementModuleContentClass(gl)].join(' ')}>{children}</div>
     </div>
   )
 }

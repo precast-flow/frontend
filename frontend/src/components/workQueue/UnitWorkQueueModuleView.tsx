@@ -1,15 +1,14 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { ChevronRight, ChevronsLeftRight, Factory, Filter, GripVertical } from 'lucide-react'
-import { activeModuleIdFromPathname } from '../../data/navigation'
+import { ChevronsLeftRight, Factory, Filter, GripVertical } from 'lucide-react'
 import { useFactoryContext } from '../../context/FactoryContext'
 import { useI18n } from '../../i18n/I18nProvider'
-import { useThemeMode } from '../../theme/ThemeProvider'
 import { NeoSwitch } from '../NeoSwitch'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
 import {
   ManagementModuleShell,
+  useManagementModulePage,
   managementModuleDetailPanelClass,
   managementModuleListPanelClass,
   managementModuleListTitleClass,
@@ -251,35 +250,10 @@ export function UnitWorkQueueModuleView(_props: Props) {
     requestWorkQueueNav(null)
   }, [workQueueNavRequest, getNonconformance, requestWorkQueueNav, navigate])
 
-  const { mode } = useThemeMode()
-  const gl = mode === 'light'
-  const neutralShell = activeModuleIdFromPathname(location.pathname) === 'unit-work-queue'
+  const { gl, neutralShell } = useManagementModulePage('unit-work-queue')
 
   return (
-    <ManagementModuleShell
-      neutralShell={neutralShell}
-      gl={gl}
-      breadcrumb={
-        <nav aria-label={t('project.breadcrumbAria')} className="mb-0">
-          <ol className="flex flex-wrap items-center gap-1 text-xs text-black/60 dark:text-white/65">
-            <li>
-              <Link
-                to="/planlama"
-                className="font-medium text-black/75 underline-offset-2 transition hover:text-black hover:underline dark:text-white/75 dark:hover:text-white"
-              >
-                {t('nav.sidebar.section.planning')}
-              </Link>
-            </li>
-            <li className="flex items-center gap-1" aria-hidden>
-              <ChevronRight className="size-3.5 shrink-0 opacity-70" />
-            </li>
-            <li className="font-semibold text-black dark:text-white" aria-current="page">
-              {t('nav.unitWorkQueue')}
-            </li>
-          </ol>
-        </nav>
-      }
-    >
+    <ManagementModuleShell neutralShell={neutralShell} gl={gl}>
       <div
         ref={splitRef}
         data-split-dragging={isResizing ? 'true' : undefined}

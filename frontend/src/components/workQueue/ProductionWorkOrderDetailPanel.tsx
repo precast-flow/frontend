@@ -39,6 +39,7 @@ import { ProductionNonconformancesList } from './productionControl/ProductionNon
 import { QualityReportComposeDialog } from './productionControl/QualityReportComposeDialog'
 import { PostPourControlTab } from './productionControl/PostPourControlTab'
 import { PourSpawnPreviewDialog } from './productionControl/PourSpawnPreviewDialog'
+import { PrePourReinforcementCheckRow } from './productionControl/PrePourReinforcementCheckRow'
 import type { QualityReportIncludeKinds } from '../../data/qualityControlReport'
 
 type TabId = 'document' | 'prePour' | 'spawned' | 'nonconformances' | 'postPour'
@@ -326,6 +327,19 @@ export function ProductionWorkOrderDetailPanel({ item, gl, onOpenInList }: Props
                   <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3">
                     {PRE_POUR_CHECKS.map((check) => {
                       const done = flow.checklist[check.id]
+                      if (check.id === 'reinforcement') {
+                        return (
+                          <PrePourReinforcementCheckRow
+                            key={check.id}
+                            item={item}
+                            done={done}
+                            approved={approved}
+                            scans={flow.rebarScans}
+                            gl={gl}
+                            onToggle={() => togglePrePourCheck(item.id, check.id)}
+                          />
+                        )
+                      }
                       return (
                         <li key={check.id}>
                           <label

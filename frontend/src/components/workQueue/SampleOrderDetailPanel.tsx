@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useI18n } from '../../i18n/I18nProvider'
+import { useQualityManagement } from '../../context/QualityManagementContext'
 import { useWorkQueue } from '../../context/WorkQueueContext'
 import { MOCK_QUALITY_SAMPLES } from '../../data/qualitySamplesMock'
 import { splitDetailPanelBodyClass } from '../shared/splitModuleStyles'
@@ -23,6 +24,7 @@ export function SampleOrderDetailPanel({ item, gl }: Props) {
     linkExistingSample,
     completeSampleOrder,
   } = useWorkQueue()
+  const { labTestsForSample } = useQualityManagement()
   const flow = getSampleFlowState(item.id)
   const [mode, setMode] = useState<Mode>('new')
   const [search, setSearch] = useState('')
@@ -46,6 +48,8 @@ export function SampleOrderDetailPanel({ item, gl }: Props) {
 
   const pourDate = item.planDayIso ?? new Date().toISOString().slice(0, 10)
   const sampleCode = flow.sampleLabelCode ?? ''
+  const linkedSampleId = flow.linkedSampleId ?? selectedSampleId
+  const linkedLabTests = labTestsForSample(linkedSampleId)
 
   const handlePrintLabel = () => {
     const code = printSampleLabel(item)
@@ -118,7 +122,24 @@ export function SampleOrderDetailPanel({ item, gl }: Props) {
             <SampleLabelPrintSheet item={item} sampleCode={sampleCode} reportId={reportId} pourDate={pourDate} />
           ) : null}
         </div>
-      ) : (
+      ) : null}
+
+      {linkedLabTests.length > 0 ? (
+        <div className={cardCls}>
+          <h4 className="text-sm font-semibold text-black dark:text-white">
+            {t('qualityLab.samplePanelTitle')}
+          </h4>
+          <ul className="mt-2 space-y-1 text-sm">
+            {linkedLabTests.map((lt) => (
+              <li key={lt.id} className="font-mono text-xs">
+                {lt.testCode} · {lt.validityStartDate} – {lt.validityEndDate}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {mode === 'link' ? (
         <div className={cardCls}>
           <label className="text-xs font-semibold text-black/70 dark:text-white/75">
             {t('unitWorkQueue.sample.searchLabel')}
@@ -155,7 +176,7 @@ export function SampleOrderDetailPanel({ item, gl }: Props) {
             {t('unitWorkQueue.sample.linkConfirm')}
           </button>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

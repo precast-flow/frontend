@@ -30,8 +30,10 @@ import {
   type PourOrderFlowState,
   type PrePourCheckId,
   type ProductionWorkOrderFlowState,
+  type RebarMaterialScan,
   type SampleOrderFlowState,
 } from '../data/productionWorkOrderFlow'
+import { useQualityManagement } from './QualityManagementContext'
 import { buildCuringReport, type CuringReport } from '../data/curingReport'
 import { buildNcOrderNo, buildNonconformanceReportNo } from '../data/nonconformanceReport'
 import {
@@ -87,6 +89,12 @@ type WorkQueueContextValue = {
   appendItems: (rows: WorkQueueItem[]) => void
   getProductionFlowState: (workQueueId: string) => ProductionWorkOrderFlowState
   togglePrePourCheck: (workQueueId: string, checkId: PrePourCheckId) => void
+  scanRebarMaterial: (
+    workQueueId: string,
+    rawOrMaterialId: string,
+    item?: WorkQueueItem,
+  ) => { ok: boolean; errorKey?: string }
+  removeRebarScan: (workQueueId: string, scanId: string) => void
   approvePourSpawn: (parent: WorkQueueItem) => boolean
   togglePostPourLabeling: (workQueueId: string) => void
   togglePostPourSurfaceCleaning: (workQueueId: string) => void
@@ -192,6 +200,7 @@ function normalizeFlowState(state: ProductionWorkOrderFlowState): ProductionWork
     ...createInitialProductionFlowState(),
     ...state,
     checklist: { ...createInitialProductionFlowState().checklist, ...state.checklist },
+    rebarScans: state.rebarScans ?? [],
     postPour: { ...createInitialPostPourState(), ...state.postPour },
   }
 }
@@ -201,6 +210,7 @@ const DAILY_REPORT_DEMO_SEED = buildDailyProductionReportDemoSeed()
 
 function WorkQueueProviderInner({ children }: { children: ReactNode }) {
   const { prependNotification } = useNotificationFeed()
+  const { findInputMaterialByQr } = useQualityManagement()
   const [items, setItems] = useState<WorkQueueItem[]>(() => [
     BLANK_PRODUCTION_WORK_ORDER,
     QUALITY_CONTROL_DEMO_SEED.productionItem,
@@ -440,6 +450,63 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       }
     })
   }, [updateFlow])
+
+  const scanRebarMaterial = useCallback(
+    (
+      workQueueId: string,
+      rawOrMaterialId: string,
+      item?: WorkQueueItem,
+    ): { ok: boolean; errorKey?: string } => {
+      const material = findInputMaterialByQr(rawOrMaterialId)
+      if (!material) return { ok: false, errorKey: 'qualityQrScan.errorNotFound' }
+      if (material.status !== 'active') {
+        return { ok: false, errorKey: 'qualityQrScan.errorInactive' }
+      }
+      let added = false
+      updateFlow(workQueueId, (current) => {
+        if (alreadyPourApproved(current)) return current
+        if (current.rebarScans.some((s) => s.inputMaterialId === material.id)) {
+          return current
+        }
+        const scan: RebarMaterialScan = {
+          scanId: `scan-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          inputMaterialId: material.id,
+          workQueueId,
+          productCode: item?.productCode,
+          elementLabel: item?.productName ?? item?.title,
+          scannedAt: new Date().toISOString(),
+          scannedByUserId: MOCK_WORK_QUEUE_VIEWER_ID,
+          manualEntry: !rawOrMaterialId.includes('pf://'),
+        }
+        added = true
+        return {
+          ...current,
+          rebarScans: [...current.rebarScans, scan],
+          checklist: { ...current.checklist, reinforcement: true },
+        }
+      })
+      return added ? { ok: true } : { ok: false, errorKey: 'qualityQrScan.errorDuplicate' }
+    },
+    [findInputMaterialByQr, updateFlow],
+  )
+
+  const removeRebarScan = useCallback(
+    (workQueueId: string, scanId: string) => {
+      updateFlow(workQueueId, (current) => {
+        if (alreadyPourApproved(current)) return current
+        const rebarScans = current.rebarScans.filter((s) => s.scanId !== scanId)
+        return {
+          ...current,
+          rebarScans,
+          checklist: {
+            ...current.checklist,
+            reinforcement: rebarScans.length > 0 ? true : current.checklist.reinforcement,
+          },
+        }
+      })
+    },
+    [updateFlow],
+  )
 
   const approvePourSpawn = useCallback(
     (parent: WorkQueueItem): boolean => {
@@ -1271,6 +1338,8 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       appendItems,
       getProductionFlowState,
       togglePrePourCheck,
+      scanRebarMaterial,
+      removeRebarScan,
       approvePourSpawn,
       togglePostPourLabeling,
       togglePostPourSurfaceCleaning,
@@ -1328,6 +1397,8 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       appendItems,
       getProductionFlowState,
       togglePrePourCheck,
+      scanRebarMaterial,
+      removeRebarScan,
       approvePourSpawn,
       togglePostPourLabeling,
       togglePostPourSurfaceCleaning,

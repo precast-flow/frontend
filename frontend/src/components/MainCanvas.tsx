@@ -2,6 +2,11 @@ import { findNavItem } from '../data/navigation'
 import { useI18n } from '../i18n/I18nProvider'
 import { AppModuleBreadcrumb } from './shared/AppModuleBreadcrumb'
 import { mainCanvasBreadcrumbSegments } from './shared/mainCanvasBreadcrumb'
+import {
+  mainCanvasManagementBreadcrumbGapClass,
+  mainCanvasManagementHeaderWrapperClass,
+  mainCanvasManagementTitleClass,
+} from './shared/splitModuleStyles'
 import { CrmModuleView } from './crm/CrmModuleView'
 import { ElementIdentityModuleView } from './elementIdentity/ElementIdentityModuleView'
 import { ProjectManagementModuleView } from './proje/ProjectManagementModuleView'
@@ -19,6 +24,11 @@ import { MaterialCatalogModuleView } from './materialCatalog/MaterialCatalogModu
 import { StandardSeriesCatalogModuleView } from './standardSeriesCatalog/StandardSeriesCatalogModuleView'
 import { AdminElementIdentityModuleView } from './admin/elementIdentity/AdminElementIdentityModuleView'
 import { UnitWorkQueueModuleView } from './workQueue/UnitWorkQueueModuleView'
+import {
+  ConcreteRecipeManagementView,
+  InputMaterialManagementView,
+  LabTestsManagementView,
+} from './kalite/index.ts'
 
 type Props = {
   activeId: string
@@ -35,7 +45,12 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
   const isProject = activeId === 'project'
   const isPlanningHub = activeId === 'planning-hub'
   const isUnitWorkQueue = activeId === 'unit-work-queue'
-  const isManagementModule = isProject || isCrm || isUnitWorkQueue
+  const isQualityInputMaterials = activeId === 'quality-input-materials'
+  const isQualityConcreteRecipes = activeId === 'quality-concrete-recipes'
+  const isQualityLabTests = activeId === 'quality-lab-tests'
+  const isQualityModule =
+    isQualityInputMaterials || isQualityConcreteRecipes || isQualityLabTests
+  const isManagementModule = isProject || isCrm || isUnitWorkQueue || isQualityModule
   const isElementIdentity = activeId === 'element-identity'
   const isElementIdentityAdmin = activeId === 'element-identity-admin'
   const isMaterialCatalog = activeId === 'material-catalog'
@@ -63,6 +78,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
     isProject ||
     isCrm ||
     isUnitWorkQueue ||
+    isQualityModule ||
     isDefinitionsModule ||
     isAdminModule
 
@@ -78,7 +94,8 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
     isRolesPermissions ||
     isUserManagement ||
     isElementIdentity ||
-    isUnitWorkQueue
+    isUnitWorkQueue ||
+    isQualityModule
 
   return (
     <div
@@ -107,22 +124,19 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
       }
     >
       <div
-        className={[
-          fullBleedInMainModule
-            ? 'mb-2 shrink-0 pb-2'
-            : isSplitModulePage
-              ? 'mb-2 shrink-0 pt-1 pb-2 md:pt-1.5'
-              : 'mb-2 pb-2',
-          okanSplitHeadingAlign ? 'ps-[0.6875rem] pe-[0.6875rem]' : '',
-        ]
-          .filter(Boolean)
-          .join(' ')}
+        className={
+          okanSplitHeadingAlign
+            ? mainCanvasManagementHeaderWrapperClass
+            : [
+                fullBleedInMainModule ? 'mb-2 shrink-0 pb-2' : 'mb-2 pb-2',
+              ].join(' ')
+        }
       >
-        <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-50 md:text-2xl">
+        <h1 className={okanSplitHeadingAlign ? mainCanvasManagementTitleClass : 'text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-50 md:text-2xl'}>
           {title}
         </h1>
         {breadcrumbSegments ? (
-          <div className="mt-1.5">
+          <div className={mainCanvasManagementBreadcrumbGapClass}>
             <AppModuleBreadcrumb segments={breadcrumbSegments} />
           </div>
         ) : null}
@@ -187,6 +201,18 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
       ) : isUserManagement ? (
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <UserManagementView />
+        </div>
+      ) : isQualityInputMaterials ? (
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <InputMaterialManagementView />
+        </div>
+      ) : isQualityConcreteRecipes ? (
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <ConcreteRecipeManagementView />
+        </div>
+      ) : isQualityLabTests ? (
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <LabTestsManagementView />
         </div>
       ) : (
         <div className="grid flex-1 gap-4 lg:grid-cols-3">
