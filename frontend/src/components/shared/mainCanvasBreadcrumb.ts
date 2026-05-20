@@ -16,8 +16,38 @@ const ADMIN_PAGE_KEY: Record<string, string> = {
   'element-identity-admin': 'nav.elementIdentityAdmin',
 }
 
-/** MainCanvas üst breadcrumb (Proje/CRM/Planlama modülleri kendi iç breadcrumb’ını kullanır). */
+/** Planlama grubu — Proje, Görev, Müşteri */
+const PLANNING_PAGE_KEY: Record<string, string> = {
+  project: 'nav.project',
+  crm: 'nav.crm',
+  'unit-work-queue': 'nav.unitWorkQueue',
+}
+
+/** Kalite modül sayfaları */
+const QUALITY_PAGE_KEY: Record<string, string> = {
+  'quality-input-materials': 'nav.qualityInputMaterials',
+  'quality-concrete-recipes': 'nav.qualityConcreteRecipes',
+  'quality-lab-tests': 'nav.qualityLabTests',
+}
+
+/** MainCanvas üst başlık + breadcrumb (tek kaynak). */
 export function mainCanvasBreadcrumbSegments(activeId: string): BreadcrumbSegment[] | null {
+  const planningPage = PLANNING_PAGE_KEY[activeId]
+  if (planningPage) {
+    return [
+      { labelKey: 'nav.sidebar.section.planning', to: '/planlama' },
+      { labelKey: planningPage },
+    ]
+  }
+
+  const qualityPage = QUALITY_PAGE_KEY[activeId]
+  if (qualityPage) {
+    return [
+      { labelKey: 'nav.sidebar.section.quality', to: '/kalite-girdi-malzeme' },
+      { labelKey: qualityPage },
+    ]
+  }
+
   const sys = SYSTEM_PAGE_KEY[activeId]
   if (sys) {
     return [{ labelKey: 'nav.sidebar.section.system' }, { labelKey: sys }]

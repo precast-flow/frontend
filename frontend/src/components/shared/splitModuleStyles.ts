@@ -59,8 +59,6 @@ export { useSplitPaneDrag } from './layout/useSplitPaneDrag'
 export {
   ManagementModuleShell,
   managementModuleOuterClass,
-  managementModuleGridClass,
-  managementModuleBreadcrumbClass,
   managementModuleContentClass,
   managementModuleSplitRowClass,
   managementModuleListPanelClass,
@@ -69,3 +67,9 @@ export {
   managementModuleListTitleClass,
   splitPanePanelMinHeightClass,
 } from './layout/ManagementModuleShell'
+export { useManagementModulePage } from './layout/useManagementModulePage'
+export {
+  mainCanvasManagementHeaderWrapperClass,
+  mainCanvasManagementTitleClass,
+  mainCanvasManagementBreadcrumbGapClass,
+} from './layout/mainCanvasManagementHeader'

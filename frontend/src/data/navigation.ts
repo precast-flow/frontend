@@ -44,7 +44,23 @@ export const navGroups: NavGroup[] = [
   {
     id: 'quality',
     titleKey: 'nav.sidebar.section.quality',
-    items: [],
+    items: [
+      {
+        id: 'quality-input-materials',
+        labelKey: 'nav.qualityInputMaterials',
+        slug: 'kalite-girdi-malzeme',
+      },
+      {
+        id: 'quality-concrete-recipes',
+        labelKey: 'nav.qualityConcreteRecipes',
+        slug: 'kalite-beton-recete',
+      },
+      {
+        id: 'quality-lab-tests',
+        labelKey: 'nav.qualityLabTests',
+        slug: 'kalite-laboratuvar',
+      },
+    ],
   },
   {
     id: 'logistics',

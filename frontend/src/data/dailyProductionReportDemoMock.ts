@@ -44,6 +44,7 @@ function buildCompletedFlow(
   postPour.productionCompletedAt = completedAt
   return {
     checklist,
+    rebarScans: [],
     pourApprovedAt: completionAtOnDay(completedAt.slice(0, 10), 6),
     spawnedChildIds: spawnedIds,
     postPour,

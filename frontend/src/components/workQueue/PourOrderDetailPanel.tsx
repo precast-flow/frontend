@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useI18n } from '../../i18n/I18nProvider'
+import { useQualityManagement } from '../../context/QualityManagementContext'
 import { useWorkQueue } from '../../context/WorkQueueContext'
 import { splitDetailPanelBodyClass } from '../shared/splitModuleStyles'
 import type { WorkQueueItem } from '../../data/workQueueMock'
@@ -19,7 +20,10 @@ function recipeLabel(recipeId?: string): string {
 export function PourOrderDetailPanel({ item, gl }: Props) {
   const { t } = useI18n()
   const { getPourFlowState, approvePourOrder, reportPourDelay, cancelPourOrder } = useWorkQueue()
+  const { isRecipePublished, findRecipe } = useQualityManagement()
   const flow = getPourFlowState(item.id)
+  const recipePublished = item.recipeId ? isRecipePublished(item.recipeId) : true
+  const recipe = item.recipeId ? findRecipe(item.recipeId) : undefined
   const [dialog, setDialog] = useState<'delay' | 'cancel' | null>(null)
 
   const cardCls = gl
@@ -46,7 +50,19 @@ export function PourOrderDetailPanel({ item, gl }: Props) {
         </div>
         <div>
           <dt className="text-xs text-black/55 dark:text-white/60">{t('unitWorkQueue.pour.recipe')}</dt>
-          <dd className="font-medium text-black dark:text-white">{recipeLabel(item.recipeId)}</dd>
+          <dd className="font-medium text-black dark:text-white">
+            {recipe?.recipeCode ?? recipeLabel(item.recipeId)}
+            {recipe?.status === 'published' ? (
+              <span className="ms-2 text-xs text-emerald-700 dark:text-emerald-300">
+                ({t('qualityRecipe.publishedBadge')})
+              </span>
+            ) : null}
+          </dd>
+          {!recipePublished && item.recipeId ? (
+            <p className="mt-1 text-xs font-medium text-amber-800 dark:text-amber-200">
+              {t('qualityRecipe.notPublishedWarning')}
+            </p>
+          ) : null}
         </div>
         <div>
           <dt className="text-xs text-black/55 dark:text-white/60">{t('unitWorkQueue.pour.mold')}</dt>

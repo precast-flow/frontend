@@ -15,6 +15,7 @@ import { RegisterPage } from './pages/RegisterPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ThemeProvider } from './theme/ThemeProvider'
 import { FactoryProvider } from './context/FactoryContext'
+import { QualityManagementProvider } from './context/QualityManagementContext'
 import { WorkQueueProvider } from './context/WorkQueueContext'
 import { I18nProvider } from './i18n/I18nProvider'
 import { GlassShowcasePage } from './pages/GlassShowcasePage'
@@ -33,6 +34,7 @@ function App() {
     <I18nProvider>
     <ThemeProvider>
       <FactoryProvider>
+      <QualityManagementProvider>
       <WorkQueueProvider>
       <DashboardProvider>
       <BrowserRouter>
@@ -83,6 +85,7 @@ function App() {
       </BrowserRouter>
       </DashboardProvider>
       </WorkQueueProvider>
+      </QualityManagementProvider>
     </FactoryProvider>
     </ThemeProvider>
     </I18nProvider>
