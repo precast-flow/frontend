@@ -37,9 +37,13 @@ function GlassAppShellInner() {
   const useNeutralGlassBackdrop = mode === 'light'
 
   /** Proje/CRM/Teklif (alt path dahil) + Üretim planlama: üst boşluk (proje listesi hariç) `pt-14 md:pt-16`, outlet padding 0 — navbar–başlık hizası */
+  const isDashboardHome = location.pathname === '/'
+
+  /** Pano: tek iç kaydırma, kabuk viewport’ta sabit (alt gri boşluk / çift scroll önlenir). */
+  const isDashboardViewportLock = isDashboardHome
+
   const isOkanPlanSplitPage =
-    /** `/` → `DEFAULT_MODULE_ID` proje; aksi halde `pt-20` ile çift üst boşluk oluşur */
-    location.pathname === '/' ||
+    isDashboardHome ||
     location.pathname.startsWith('/proje') ||
     location.pathname.startsWith('/proje-detay') ||
     location.pathname.startsWith('/crm') ||
@@ -68,7 +72,7 @@ function GlassAppShellInner() {
 
   /** Proje / Görev / Müşteri liste modülleri: üst padding ve dış gap aynı (navbar altı hizası). */
   const isProjectListRoute =
-    location.pathname === '/proje' || location.pathname === '/proje/' || location.pathname === '/'
+    location.pathname === '/proje' || location.pathname === '/proje/'
   const isWorkQueueListRoute =
     location.pathname === '/birim-is-kuyrugu' || location.pathname === '/birim-is-kuyrugu/'
   const isCrmListRoute = location.pathname === '/crm' || location.pathname === '/crm/'
@@ -90,6 +94,7 @@ function GlassAppShellInner() {
     location.pathname === '/settings/' ||
     location.pathname.startsWith('/admin/eleman-kimlik')
   const isTightListShellRoute =
+    isDashboardViewportLock ||
     isProjectListRoute ||
     isWorkQueueListRoute ||
     isCrmListRoute ||
@@ -134,7 +139,9 @@ function GlassAppShellInner() {
 
   const shellScrollClass = isPageScrollDetailRoute
     ? 'relative z-0 flex w-full min-w-0 flex-col pb-[var(--gm-footer-clear)]'
-    : 'relative z-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain pb-[var(--gm-footer-clear)] md:min-h-0'
+    : isDashboardViewportLock
+      ? 'relative z-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pb-[var(--gm-footer-clear)] md:min-h-0'
+      : 'relative z-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain pb-[var(--gm-footer-clear)] md:min-h-0'
 
   return (
     <GlassLayout backdrop={useNeutralGlassBackdrop ? 'neutral-grid' : 'blobs'}>

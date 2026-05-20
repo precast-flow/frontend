@@ -1,0 +1,179 @@
+.dashboard-grid-host {
+  position: relative;
+  min-height: max(24rem, 100%);
+}
+
+.dashboard-scroll-pane {
+  overscroll-behavior-y: auto;
+}
+
+/* Widget içi kaydırma */
+.dashboard-grid-host .dash-widget-scroll {
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
+}
+
+/* Katalog sürükleme — hedef alan */
+.dashboard-grid-host--drop-active .react-grid-layout {
+  outline: 1px dashed rgb(100 116 139 / 0.35);
+  outline-offset: 4px;
+  border-radius: 1rem;
+}
+
+.dashboard-drop-preview {
+  pointer-events: none;
+  border-radius: 1rem;
+  border: 1px dashed rgb(14 165 233 / 0.55);
+  background: rgb(14 165 233 / 0.06);
+  box-shadow: 0 4px 24px rgb(14 165 233 / 0.08);
+  transition: left 60ms linear, top 60ms linear, width 60ms linear, height 60ms linear;
+}
+
+.dark .dashboard-drop-preview {
+  border-color: rgb(34 211 238 / 0.45);
+  background: rgb(34 211 238 / 0.06);
+  box-shadow: 0 4px 24px rgb(34 211 238 / 0.06);
+}
+
+/* Katalog kutuları */
+.dash-catalog-tile {
+  border-color: rgb(226 232 240 / 0.75);
+  background: rgb(255 255 255 / 0.45);
+}
+
+.dark .dash-catalog-tile {
+  border-color: rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.04);
+}
+
+.dash-catalog-tile:not(:disabled):hover {
+  border-color: rgb(14 165 233 / 0.4);
+  background: rgb(255 255 255 / 0.65);
+}
+
+.dark .dash-catalog-tile:not(:disabled):hover {
+  border-color: rgb(34 211 238 / 0.35);
+  background: rgb(255 255 255 / 0.07);
+}
+
+.dash-catalog-tile[draggable='true']:active {
+  opacity: 0.92;
+  transform: scale(0.98);
+}
+
+/* Widget kabuğu */
+.dash-widget-shell {
+  border-radius: 1rem;
+  border: 1px solid rgb(226 232 240 / 0.65);
+  background: rgb(255 255 255 / 0.35);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+.dark .dash-widget-shell {
+  border-color: rgb(255 255 255 / 0.08);
+  background: rgb(15 23 42 / 0.25);
+  box-shadow: none;
+}
+
+.dash-widget-shell--edit {
+  border-color: rgb(14 165 233 / 0.28);
+  box-shadow: 0 0 0 1px rgb(14 165 233 / 0.12);
+}
+
+.dark .dash-widget-shell--edit {
+  border-color: rgb(34 211 238 / 0.22);
+  box-shadow: 0 0 0 1px rgb(34 211 238 / 0.1);
+}
+
+.dash-widget-drag-bar {
+  height: 1.5rem;
+  cursor: grab;
+  border-bottom: 1px solid rgb(226 232 240 / 0.5);
+  background: rgb(248 250 252 / 0.6);
+}
+
+.dark .dash-widget-drag-bar {
+  border-bottom-color: rgb(255 255 255 / 0.06);
+  background: rgb(255 255 255 / 0.04);
+}
+
+.dash-widget-drag-bar:active {
+  cursor: grabbing;
+}
+
+.dash-widget-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--glass-text-primary);
+}
+
+.dash-widget-delete {
+  pointer-events: auto;
+}
+
+/* react-grid-layout */
+.dashboard-grid-host .react-grid-layout {
+  position: relative;
+  transition: height 180ms ease;
+}
+
+.dashboard-grid-host .react-grid-item {
+  transition: transform 180ms ease, width 180ms ease, height 180ms ease;
+}
+
+.dashboard-grid-host .react-grid-item.cssTransforms {
+  transition-property: transform, width, height;
+}
+
+.dashboard-grid-host .react-grid-item.resizing,
+.dashboard-grid-host .react-grid-item.react-draggable-dragging {
+  z-index: 20;
+  transition: none;
+}
+
+.dashboard-grid-host .react-resizable-handle {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.dashboard-grid-host .react-grid-item:hover .react-resizable-handle,
+.dashboard-grid-host .react-grid-item.resizing .react-resizable-handle {
+  opacity: 1;
+}
+
+.dashboard-grid-host .react-resizable-handle-se {
+  bottom: 4px;
+  right: 4px;
+  cursor: se-resize;
+}
+
+.dashboard-grid-host .react-resizable-handle::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid rgb(148 163 184 / 0.85);
+  border-bottom: 2px solid rgb(148 163 184 / 0.85);
+  border-radius: 1px;
+}
+
+/* Düzenleme araç çubuğu */
+.dash-edit-toolbar {
+  border: 1px solid rgb(226 232 240 / 0.75);
+  background: rgb(255 255 255 / 0.82);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 16px rgb(15 23 42 / 0.08);
+}
+
+.dark .dash-edit-toolbar {
+  border-color: rgb(255 255 255 / 0.1);
+  background: rgb(15 23 42 / 0.72);
+  box-shadow: 0 4px 20px rgb(0 0 0 / 0.25);
+}

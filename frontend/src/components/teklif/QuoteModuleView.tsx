@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronsLeftRight, ChevronRight, Filter, GripVertical, X } from 'lucide-react'
+import { ChevronsLeftRight, ChevronRight, Filter, GripVertical, Plus, X } from 'lucide-react'
+import type { CrmIletisimKisi } from '../../data/crmCustomers'
+import { loadAllQuotes } from '../../data/quoteExtraStore'
 import {
   lineTotal,
-  quotes as allQuotes,
   statusLabel,
   type Quote,
   type QuoteStatus,
 } from '../../data/quotesMock'
+import { useWorkQueue } from '../../context/WorkQueueContext'
+import { useNotificationFeed } from '../../context/NotificationFeedContext'
+import { CrmNewQuoteModal } from '../crm/CrmNewQuoteModal'
+import { eiSplitHeaderButtonPassive } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import { activeModuleIdFromPathname } from '../../data/navigation'
 import { useI18n } from '../../i18n/I18nProvider'
 import { useThemeMode } from '../../theme/ThemeProvider'
@@ -24,6 +29,8 @@ type Props = {
   embedded?: boolean
   /** Doluysa yalnızca bu müşteri adına ait teklifler listelenir */
   customerName?: string | null
+  customerId?: string | null
+  customerContacts?: CrmIletisimKisi[]
   /** Örn. crm:detail:c1:quotes — split, seçim ve filtre durumu */
   storageKeyPrefix?: string
 }
@@ -91,6 +98,8 @@ export function QuoteModuleView({
   onNavigate: _onNavigate,
   embedded = false,
   customerName = null,
+  customerId = null,
+  customerContacts = [],
   storageKeyPrefix,
 }: Props) {
   void _onNavigate
@@ -99,16 +108,22 @@ export function QuoteModuleView({
   const gl = mode === 'light'
   const navigate = useNavigate()
   const location = useLocation()
+  const { appendItems } = useWorkQueue()
+  const { prependNotification } = useNotificationFeed()
   const neutralShell = activeModuleIdFromPathname(location.pathname) === 'project'
   const detailPanelRef = useRef<HTMLElement | null>(null)
   const persistKey = storageKeyPrefix ? `${storageKeyPrefix}:state` : null
+  const [quoteStoreVersion, setQuoteStoreVersion] = useState(0)
+  const [newQuoteOpen, setNewQuoteOpen] = useState(false)
 
   const rows = useMemo(() => {
-    if (!customerName) return allQuotes
-    return allQuotes.filter((q) => q.customer === customerName)
-  }, [customerName])
+    void quoteStoreVersion
+    const all = loadAllQuotes()
+    if (!customerName) return all
+    return all.filter((q) => q.customer === customerName || q.customerId === customerId)
+  }, [customerName, customerId, quoteStoreVersion])
 
-  const firstId = rows[0]?.id ?? allQuotes[0]!.id
+  const firstId = rows[0]?.id ?? loadAllQuotes()[0]?.id ?? ''
 
   const [selectedId, setSelectedId] = useState(firstId)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -281,22 +296,64 @@ export function QuoteModuleView({
     </div>
   ) : null
 
+  const canCreateQuote = embedded && customerId && customerName
+  const createQuoteButton = canCreateQuote ? (
+    <button
+      type="button"
+      onClick={() => setNewQuoteOpen(true)}
+      className={`${eiSplitHeaderButtonPassive} inline-flex shrink-0 items-center gap-1.5 px-3 py-2 text-sm`}
+    >
+      <Plus className="size-4" aria-hidden />
+      Yeni teklif oluştur
+    </button>
+  ) : null
+
+  const newQuoteModal =
+    canCreateQuote && customerId && customerName ? (
+      <CrmNewQuoteModal
+        open={newQuoteOpen}
+        customerId={customerId}
+        customerName={customerName}
+        contacts={customerContacts}
+        onClose={() => setNewQuoteOpen(false)}
+        onSave={({ quote, workQueueItem }) => {
+          appendItems([workQueueItem])
+          setQuoteStoreVersion((v) => v + 1)
+          setSelectedId(quote.id)
+          setNewQuoteOpen(false)
+          prependNotification({
+            id: `quote-created-${quote.id}`,
+            title: 'Yeni teklif oluşturuldu',
+            detail: `${quote.number} · iş kuyruğuna eklendi`,
+            time: 'şimdi',
+            moduleId: 'unit-work-queue',
+            workQueueId: workQueueItem.id,
+          })
+        }}
+      />
+    ) : null
+
   if (rows.length === 0) {
     return (
-      <div
-        className={`flex min-h-0 flex-1 flex-col overflow-hidden ${embedded ? 'h-full justify-center' : 'gap-2 rounded-[1.25rem]'}`}
-      >
-        {breadcrumbNav}
-        <p className="rounded-xl border border-slate-200/50 bg-white/55 px-4 py-6 text-center text-sm text-slate-600 dark:border-slate-700/50 dark:bg-slate-900/35 dark:text-slate-300">
-          {customerName
-            ? 'Bu müşteri için teklif listesinde kayıt yok (mock).'
-            : 'Teklif listesi boş (mock).'}
-        </p>
-      </div>
+      <>
+        <div
+          className={`flex min-h-0 flex-1 flex-col overflow-hidden ${embedded ? 'h-full justify-center gap-3' : 'gap-2 rounded-[1.25rem]'}`}
+        >
+          {breadcrumbNav}
+          {createQuoteButton ? <div className="flex justify-end px-2">{createQuoteButton}</div> : null}
+          <p className="rounded-xl border border-slate-200/50 bg-white/55 px-4 py-6 text-center text-sm text-slate-600 dark:border-slate-700/50 dark:bg-slate-900/35 dark:text-slate-300">
+            {customerName
+              ? 'Bu müşteri için henüz teklif yok. Yeni teklif oluşturarak başlayın.'
+              : 'Teklif listesi boş (mock).'}
+          </p>
+        </div>
+        {newQuoteModal}
+      </>
     )
   }
 
   return (
+    <>
     <div
       className={`flex min-h-0 flex-1 flex-col overflow-hidden ${embedded ? 'h-full min-h-0 gap-0' : 'gap-2 rounded-[1.25rem]'}`}
     >
@@ -349,6 +406,7 @@ export function QuoteModuleView({
                     inputClassName={gl ? 'glass-input' : undefined}
                   />
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    {createQuoteButton}
                     <button
                       type="button"
                       onClick={() => setFiltersOpen((v) => !v)}
@@ -1011,5 +1069,7 @@ export function QuoteModuleView({
         </div>
       </div>
     </div>
+    {newQuoteModal}
+    </>
   )
 }

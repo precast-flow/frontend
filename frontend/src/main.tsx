@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import './styles/themes/glassmorphism.css'
 import './styles/appShellTopNav.css'
+import './components/dashboard/dashboard.css'
 import App from './App.tsx'
 
 document.documentElement.dataset.uiTemplate = 'glass'

@@ -1,6 +1,6 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { ChevronDown, LayoutGrid, Menu } from 'lucide-react'
+import { ChevronDown, Home, LayoutGrid, Menu } from 'lucide-react'
 import type { NavGroup, NavItem } from '../data/navigation'
 import { moduleIdToPath } from '../data/navigation'
 import { useI18n } from '../i18n/I18nProvider'
@@ -170,10 +170,19 @@ export function AppTopNav({ onMenuToggle, onModuleNavigate, startItems, groups, 
             </button>
           ) : null}
 
-          <div
-            className="gm-topnav-brand pointer-events-none flex min-w-0 max-w-[min(100%,15rem)] items-center gap-2.5 border-0 bg-transparent px-2 py-2 shadow-none sm:max-w-[17rem] sm:gap-3 sm:px-2.5 md:max-w-[19rem]"
-            role="img"
-            aria-label={`${t('sidebar.brandPrimary')}. ${t('sidebar.brandProduct')}`}
+          <NavLink
+            to="/"
+            end
+            title={t('nav.home')}
+            aria-label={`${t('sidebar.brandPrimary')} — ${t('sidebar.brandProduct')}. ${t('nav.home')}`}
+            onClick={() => setChromeMenu(null)}
+            className={({ isActive }) =>
+              [
+                'gm-topnav-brand gm-topnav-brand-btn flex min-w-0 max-w-[min(100%,15rem)] items-center gap-2.5 rounded-xl border-0 px-2 py-2 shadow-none transition sm:max-w-[17rem] sm:gap-3 sm:px-2.5 md:max-w-[19rem]',
+                'hover:bg-slate-900/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 dark:hover:bg-white/8 dark:focus-visible:ring-cyan-400/60',
+                isActive ? 'gm-topnav-brand-btn--active ring-1 ring-sky-500/25' : '',
+              ].join(' ')
+            }
           >
             <span
               className="gm-topnav-brand-mark flex size-9 shrink-0 items-center justify-center border-0 bg-transparent text-xs font-bold tabular-nums tracking-tight shadow-none md:size-10 md:text-sm"
@@ -189,7 +198,7 @@ export function AppTopNav({ onMenuToggle, onModuleNavigate, startItems, groups, 
                 {t('sidebar.brandProduct')}
               </span>
             </span>
-          </div>
+          </NavLink>
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-2 md:flex-row md:items-center md:gap-2">
@@ -218,30 +227,55 @@ export function AppTopNav({ onMenuToggle, onModuleNavigate, startItems, groups, 
             {groups.map((group) => {
               const filteredItems =
                 group.id === 'planning' ? group.items.filter((item) => item.id !== 'planning-hub') : group.items
+              const isHomeActive = activeId === 'dashboard' || location.pathname === '/'
               return (
-                <TopNavDropdown
-                  key={group.id}
-                  ddId={group.id}
-                  openKey={openGroupKey}
-                  setOpenKey={setNavDropdownKey}
-                  triggerLabel={t(group.titleKey)}
-                  triggerIcon={
-                    <NavSectionIcon
-                      groupId={group.id}
-                      className="size-4 text-slate-500 dark:text-[var(--glass-text-muted)]"
-                    />
-                  }
-                  hasActive={groupHasActiveItem(group, activeId)}
-                  menuId={menuInstanceId}
-                >
-                  {filteredItems.length === 0 ? (
-                    <p className="px-3 py-2 text-left text-xs text-slate-500 dark:text-slate-400">{t('topNav.sectionEmpty')}</p>
-                  ) : (
-                    filteredItems.map((item) => (
-                      <TopNavDropdownLink key={item.id} item={item} activeId={activeId} onPick={closeDropdowns} />
-                    ))
-                  )}
-                </TopNavDropdown>
+                <Fragment key={group.id}>
+                  {group.id === 'planning' ? (
+                    <NavLink
+                      to="/"
+                      end
+                      title={t('nav.home')}
+                      aria-label={t('nav.home')}
+                      onClick={() => {
+                        setChromeMenu(null)
+                        closeDropdowns()
+                      }}
+                      className={({ isActive }) =>
+                        [
+                          'gm-topnav-trigger inline-flex size-10 shrink-0 items-center justify-center rounded-lg border-0 bg-transparent p-0 shadow-none transition',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 dark:focus-visible:ring-cyan-400/60',
+                          isActive || isHomeActive ? 'gm-topnav-trigger--active' : '',
+                        ].join(' ')
+                      }
+                    >
+                      <Home className="size-4 shrink-0" strokeWidth={2} aria-hidden />
+                    </NavLink>
+                  ) : null}
+                  <TopNavDropdown
+                    ddId={group.id}
+                    openKey={openGroupKey}
+                    setOpenKey={setNavDropdownKey}
+                    triggerLabel={t(group.titleKey)}
+                    triggerIcon={
+                      <NavSectionIcon
+                        groupId={group.id}
+                        className="size-4 text-slate-500 dark:text-[var(--glass-text-muted)]"
+                      />
+                    }
+                    hasActive={groupHasActiveItem(group, activeId)}
+                    menuId={menuInstanceId}
+                  >
+                    {filteredItems.length === 0 ? (
+                      <p className="px-3 py-2 text-left text-xs text-slate-500 dark:text-slate-400">
+                        {t('topNav.sectionEmpty')}
+                      </p>
+                    ) : (
+                      filteredItems.map((item) => (
+                        <TopNavDropdownLink key={item.id} item={item} activeId={activeId} onPick={closeDropdowns} />
+                      ))
+                    )}
+                  </TopNavDropdown>
+                </Fragment>
               )
             })}
           </nav>

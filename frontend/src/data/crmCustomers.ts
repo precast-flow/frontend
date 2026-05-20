@@ -1,4 +1,13 @@
+import type { CrmCustomerPotential } from './crmFormOptions'
+
 export type CrmCustomerStatus = 'aktif' | 'beklemede' | 'pasif' | 'potansiyel'
+
+export type CrmCustomerReminder = {
+  enabled: boolean
+  note: string
+  /** ISO YYYY-MM-DD */
+  date: string
+}
 
 /** Proje yönetimi kartı [projectManagementCardsMock](projectManagementCardsMock.ts) ile bağlantı */
 export type CrmProjectRow = { id: string; projectCardId: string; name: string; phase: string }
@@ -25,6 +34,7 @@ export type CrmIletisimKisi = {
   gorev: string
   cep: string
   email: string
+  notlar?: string
   /** Birincil ilgili kişi */
   birincil?: boolean
 }
@@ -67,6 +77,19 @@ export type CrmCustomer = {
   teklifler: CrmQuoteRow[]
   dokumanlar: CrmDocRow[]
   locations?: CrmLocationRow[]
+  /** İl (adres) */
+  province?: string
+  /** İlçe (adres) */
+  district?: string
+  /** Açık adres */
+  openAddress?: string
+  /** Kaşe görseli (opsiyonel) */
+  stampImageUrl?: string | null
+  customerPotential?: CrmCustomerPotential
+  targetAudienceIds?: string[]
+  meetingMethod?: string
+  meetingNotes?: string
+  reminder?: CrmCustomerReminder
 }
 
 export const crmCustomers: CrmCustomer[] = [
