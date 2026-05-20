@@ -5,6 +5,7 @@ import { useWorkQueue } from '../../context/WorkQueueContext'
 import {
   PRE_POUR_CHECKS,
   alreadyPourApproved,
+  buildSpawnedWorkOrders,
   canApprovePour,
   canInteractPostPour,
 } from '../../data/productionWorkOrderFlow'
@@ -37,9 +38,10 @@ import { useOpenQualityControlReport } from './useOpenQualityControlReport'
 import { ProductionNonconformancesList } from './productionControl/ProductionNonconformancesList'
 import { QualityReportComposeDialog } from './productionControl/QualityReportComposeDialog'
 import { PostPourControlTab } from './productionControl/PostPourControlTab'
+import { PourSpawnPreviewDialog } from './productionControl/PourSpawnPreviewDialog'
 import type { QualityReportIncludeKinds } from '../../data/qualityControlReport'
 
-type TabId = 'document' | 'prePour' | 'spawned' | 'nonconformances' | 'curingReport' | 'postPour'
+type TabId = 'document' | 'prePour' | 'spawned' | 'nonconformances' | 'postPour'
 
 type Props = {
   item: WorkQueueItem
@@ -54,7 +56,6 @@ const TAB_ORDER: readonly { id: TabId; key: string; locked?: boolean }[] = [
   { id: 'document', key: 'unitWorkQueue.productionFlow.tab.document' },
   { id: 'prePour', key: 'unitWorkQueue.productionFlow.tab.prePour' },
   { id: 'spawned', key: 'unitWorkQueue.productionFlow.tab.spawned' },
-  { id: 'curingReport', key: 'unitWorkQueue.productionFlow.tab.curingReport' },
   { id: 'postPour', key: 'unitWorkQueue.productionFlow.tab.postPour', locked: true },
   { id: 'nonconformances', key: 'unitWorkQueue.productionFlow.tab.nonconformances' },
 ]
@@ -90,6 +91,8 @@ export function ProductionWorkOrderDetailPanel({ item, gl, onOpenInList }: Props
   const [composeReportOpen, setComposeReportOpen] = useState(false)
   const [reportGenerating, setReportGenerating] = useState(false)
   const [focusMarkerId, setFocusMarkerId] = useState<string | null>(null)
+  const [spawnPreviewOpen, setSpawnPreviewOpen] = useState(false)
+  const [spawnConfirming, setSpawnConfirming] = useState(false)
 
   const ncRecords = useMemo(
     () => getNonconformancesForProductionOrder(item.id),
@@ -159,9 +162,25 @@ export function ProductionWorkOrderDetailPanel({ item, gl, onOpenInList }: Props
     [spawned],
   )
 
-  const handleApprove = () => {
+  const handleApproveClick = () => {
+    if (approved) {
+      setTab('spawned')
+      return
+    }
     if (!canApprove) return
+    setSpawnPreviewOpen(true)
+  }
+
+  const spawnPreviewRows = useMemo(
+    () => buildSpawnedWorkOrders(item, Date.now()),
+    [item, spawnPreviewOpen],
+  )
+
+  const handleSpawnConfirm = () => {
+    setSpawnConfirming(true)
     const ok = approvePourSpawn(item)
+    setSpawnConfirming(false)
+    setSpawnPreviewOpen(false)
     if (ok) {
       setToast(t('unitWorkQueue.productionFlow.approveSuccess'))
       setTab('spawned')
@@ -343,7 +362,7 @@ export function ProductionWorkOrderDetailPanel({ item, gl, onOpenInList }: Props
                     <button
                       type="button"
                       disabled={!canApprove || approved}
-                      onClick={handleApprove}
+                      onClick={handleApproveClick}
                       className={
                         canApprove && !approved
                           ? 'w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:opacity-50'
@@ -419,35 +438,6 @@ export function ProductionWorkOrderDetailPanel({ item, gl, onOpenInList }: Props
           </div>
         ) : null}
 
-        {tab === 'curingReport' ? (
-          <div className={`${splitDetailPanelBodyClass} mt-3 space-y-3`}>
-            {linkedReports.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-black/18 p-6 text-center text-sm text-black/65 dark:border-white/15 dark:text-white/70">
-                {t('unitWorkQueue.curingReport.tabEmpty')}
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {linkedReports.map((r) => (
-                  <li key={r.id}>
-                    <button
-                      type="button"
-                      className={`w-full rounded-lg border px-3 py-3 text-left text-sm font-medium transition ${
-                        gl
-                          ? 'border-black/12 hover:bg-black/[0.04] dark:border-white/12'
-                          : 'border-slate-200 hover:bg-slate-50 dark:border-slate-600'
-                      }`}
-                      onClick={() => setReportCuringId(r.curingWorkQueueId)}
-                    >
-                      <span className="font-mono">{r.reportNo}</span>
-                      <span className="text-black/60 dark:text-white/65"> · {r.productName}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ) : null}
-
         {tab === 'postPour' ? (
           <div className="mt-3">
             <PostPourControlTab
@@ -504,6 +494,15 @@ export function ProductionWorkOrderDetailPanel({ item, gl, onOpenInList }: Props
         busy={reportGenerating}
         onClose={() => setComposeReportOpen(false)}
         onConfirm={handleComposeReport}
+      />
+
+      <PourSpawnPreviewDialog
+        open={spawnPreviewOpen}
+        parent={item}
+        previewRows={spawnPreviewRows}
+        confirming={spawnConfirming}
+        onClose={() => setSpawnPreviewOpen(false)}
+        onConfirm={handleSpawnConfirm}
       />
     </div>
   )

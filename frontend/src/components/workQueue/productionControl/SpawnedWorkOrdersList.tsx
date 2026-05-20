@@ -81,7 +81,22 @@ export function SpawnedWorkOrdersList({
             </div>
             <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
               <WorkOrderListProgress item={row} />
-              {onOpenInList ? (
+              {row.kind === 'curing_order' ? (
+                hasCuringReport?.(row.id) && onOpenCuringReport ? (
+                  <button
+                    type="button"
+                    className="rounded-lg border border-emerald-500/35 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-900 dark:text-emerald-100"
+                    onClick={() => onOpenCuringReport(row.id)}
+                  >
+                    {t('unitWorkQueue.curingReport.viewReport')}
+                  </button>
+                ) : (
+                  <span className="max-w-[120px] text-right text-[10px] leading-snug text-black/55 dark:text-white/60">
+                    {t('unitWorkQueue.curingReport.pending')}
+                  </span>
+                )
+              ) : null}
+              {row.kind !== 'curing_order' && onOpenInList ? (
                 <button
                   type="button"
                   className="rounded-lg border border-sky-500/35 bg-sky-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-sky-950 dark:text-sky-100"
@@ -93,15 +108,6 @@ export function SpawnedWorkOrdersList({
                   }
                 >
                   {t('unitWorkQueue.productionFlow.openInList')}
-                </button>
-              ) : null}
-              {row.kind === 'curing_order' && hasCuringReport?.(row.id) && onOpenCuringReport ? (
-                <button
-                  type="button"
-                  className="rounded-lg border border-emerald-500/35 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-900 dark:text-emerald-100"
-                  onClick={() => onOpenCuringReport(row.id)}
-                >
-                  {t('unitWorkQueue.curingReport.viewReport')}
                 </button>
               ) : null}
             </div>

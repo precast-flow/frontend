@@ -43,6 +43,8 @@ import {
   useSplitPaneDrag,
   useSplitPaneRatio,
 } from '../shared/splitModuleStyles'
+import { SplitListCollapseToggle } from '../shared/layout/SplitListCollapseToggle'
+import { SPLIT_LIST_RAIL_PX, useSplitListCollapsed } from '../shared/layout/useSplitListCollapsed'
 import { AppDialog, AppDialogButton, appDialogFieldClass, appDialogLabelClass } from '../shared/AppDialog'
 import './projectManagementGlassLight.css'
 
@@ -227,6 +229,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
   })
   const [isResizerHover, setIsResizerHover] = useState(false)
   useSplitPaneDrag(splitRef, { isResizing, setIsResizing, setRatioFromPointer })
+  const { collapsed: listCollapsed, toggle: toggleListCollapsed } =
+    useSplitListCollapsed('project-management')
+  const listPanelStyle = listCollapsed
+    ? { width: SPLIT_LIST_RAIL_PX, minWidth: SPLIT_LIST_RAIL_PX, maxWidth: SPLIT_LIST_RAIL_PX }
+    : leftWidthStyle
   const [dialogMode, setDialogMode] = useState<ProjectDialogMode>('create')
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false)
   const [dialogError, setDialogError] = useState<string | null>(null)
@@ -536,12 +543,21 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
           >
             <section
               className={managementModuleListPanelClass(gl)}
-              style={leftWidthStyle}
+              style={listPanelStyle}
             >
+              {listCollapsed ? (
+                <div className="flex h-full flex-col items-center gap-2 py-2">
+                  <SplitListCollapseToggle collapsed={listCollapsed} onToggle={toggleListCollapsed} />
+                </div>
+              ) : (
+              <>
               <div className={managementModuleListToolbarClass}>
-                <h2 className={managementModuleListTitleClass}>
-                  Projeler
-                </h2>
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <SplitListCollapseToggle collapsed={listCollapsed} onToggle={toggleListCollapsed} />
+                  <h2 className={managementModuleListTitleClass}>
+                    Projeler
+                  </h2>
+                </div>
                 <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
                   <FilterToolbarSearch
                     id="project-list-inline-search"
@@ -925,8 +941,11 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                   )}
                     </div>
               </div>
+              </>
+              )}
             </section>
 
+            {!listCollapsed ? (
             <div className="relative z-10 mx-1 hidden w-2 shrink-0 cursor-col-resize lg:flex">
               <button
                 type="button"
@@ -960,6 +979,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                 </span>
               </button>
             </div>
+            ) : null}
 
             <aside
               ref={detailPanelRef}

@@ -2653,6 +2653,10 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
             moldNameById={moldNameById}
             defaultDayIso={dailyWorkOrderDefaultDay}
             visibleDayRange={dailyWorkOrderVisibleRange}
+            onOpenDailyReport={() => {
+              setDailyWorkOrderOpen(false)
+              setDailyReportOpen(true)
+            }}
             onConfirmed={(count) =>
               setDailyWorkOrderToast(
                 t('productionPlanning.dailyOrder.toast', { count: String(count) }),

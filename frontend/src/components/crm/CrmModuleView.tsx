@@ -41,6 +41,8 @@ import {
   useSplitPaneDrag,
   useSplitPaneRatio,
 } from '../shared/splitModuleStyles'
+import { SplitListCollapseToggle } from '../shared/layout/SplitListCollapseToggle'
+import { SPLIT_LIST_RAIL_PX, useSplitListCollapsed } from '../shared/layout/useSplitListCollapsed'
 import { AppDialog, AppDialogButton, appDialogFieldClass, appDialogLabelClass } from '../shared/AppDialog'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 import '../proje/projectManagementGlassLight.css'
@@ -127,6 +129,10 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
   const listRef = useRef<HTMLUListElement | null>(null)
   const splitRef = useRef<HTMLDivElement | null>(null)
   useSplitPaneDrag(splitRef, { isResizing, setIsResizing, setRatioFromPointer })
+  const { collapsed: listCollapsed, toggle: toggleListCollapsed } = useSplitListCollapsed('crm-module')
+  const listPanelStyle = listCollapsed
+    ? { width: SPLIT_LIST_RAIL_PX, minWidth: SPLIT_LIST_RAIL_PX, maxWidth: SPLIT_LIST_RAIL_PX }
+    : leftWidthStyle
 
   const list = useMemo(() => {
     let rowsView = [...rows]
@@ -400,12 +406,21 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
           >
             <section
               className={managementModuleListPanelClass(gl)}
-              style={leftWidthStyle}
+              style={listPanelStyle}
             >
+              {listCollapsed ? (
+                <div className="flex h-full flex-col items-center gap-2 py-2">
+                  <SplitListCollapseToggle collapsed={listCollapsed} onToggle={toggleListCollapsed} />
+                </div>
+              ) : (
+              <>
               <div className={managementModuleListToolbarClass}>
-                <h2 className={managementModuleListTitleClass}>
-                  Müşteriler
-                </h2>
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <SplitListCollapseToggle collapsed={listCollapsed} onToggle={toggleListCollapsed} />
+                  <h2 className={managementModuleListTitleClass}>
+                    Müşteriler
+                  </h2>
+                </div>
                 <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
                   <FilterToolbarSearch
                     id="crm-list-inline-search"
@@ -673,8 +688,11 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                   </div>
                 )}
               </div>
+              </>
+              )}
             </section>
 
+            {!listCollapsed ? (
             <div className="relative z-10 mx-1 hidden w-2 shrink-0 cursor-col-resize lg:flex">
               <button
                 type="button"
@@ -704,6 +722,7 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                 </span>
               </button>
             </div>
+            ) : null}
 
             <aside
               ref={detailPanelRef}
