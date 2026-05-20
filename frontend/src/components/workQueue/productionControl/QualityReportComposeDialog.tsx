@@ -4,7 +4,7 @@ import { Check, AlertTriangle, X } from 'lucide-react'
 import { useI18n } from '../../../i18n/I18nProvider'
 import type { QualityReportIncludeKinds } from '../../../data/qualityControlReport'
 import type { MarkerKind } from '../../../data/productionQualityControl'
-import { PmStyleDialog } from '../../shared/PmStyleDialog'
+import { PmStyleDialog, AppDialogButton } from '../../shared/PmStyleDialog'
 
 type Props = {
   open: boolean
@@ -27,7 +27,7 @@ export function QualityReportComposeDialog({
   open,
   itemLabel,
   counts,
-  gl,
+  gl: _gl,
   replacingExisting = false,
   busy = false,
   onClose,
@@ -87,33 +87,23 @@ export function QualityReportComposeDialog({
 
   return (
     <PmStyleDialog
+      open={open}
       title={t('unitWorkQueue.qcReport.composeTitle')}
       subtitle={itemLabel}
       closeLabel={t('unitWorkQueue.nonconformance.cancel')}
       onClose={onClose}
-      variant={gl ? 'glass' : 'default'}
-      maxWidthClass="max-w-md"
+      size="sm"
       footer={
-        <div className="flex flex-wrap justify-end gap-2">
-          <button
-            type="button"
-            disabled={busy}
-            className="rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold disabled:opacity-50 dark:border-white/15"
-            onClick={onClose}
-          >
+        <>
+          <AppDialogButton variant="secondary" disabled={busy} onClick={onClose}>
             {t('unitWorkQueue.nonconformance.cancel')}
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
-            onClick={handleConfirm}
-          >
+          </AppDialogButton>
+          <AppDialogButton variant="danger" disabled={busy} onClick={handleConfirm}>
             {busy
               ? t('unitWorkQueue.qcReport.composeGenerating')
               : t('unitWorkQueue.qcReport.composeConfirm')}
-          </button>
-        </div>
+          </AppDialogButton>
+        </>
       }
     >
       <p className="mb-3 text-sm text-black/75 dark:text-white/80">

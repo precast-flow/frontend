@@ -1,6 +1,6 @@
 import { ChevronRight, LayoutList, Plus, Shapes, Tags } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { activeModuleIdFromPathname } from '../../data/navigation'
 import { projectManagementCardsMock } from '../../data/projectManagementCardsMock'
 import { ALL_ELEMENT_TYPES } from '../../elementIdentity/catalog/allElementTypes'
@@ -32,6 +32,7 @@ import { NewProductDialog } from './NewProductDialog'
 import { TemplateBuilderPanel } from './TemplateBuilderPanel'
 import { useElementIdentity } from './elementIdentityContextValue'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
+import { AppDialog, AppDialogButton, appDialogFieldClass, appDialogLabelClass } from '../shared/AppDialog'
 
 type MainTab = 'general' | 'products' | 'code' | 'labels'
 type CodeSub = 'detail' | 'typologies' | 'label'
@@ -363,14 +364,6 @@ export function ElementIdentityProjectDetailPage() {
         </div>
         <nav aria-label="Breadcrumb" className="mb-0">
           <ol className={`flex flex-wrap items-center gap-1 text-xs ${crumbMuted}`}>
-            <li>
-              <Link to="/tanimlar" className={crumbLink}>
-                {t('elementIdentity.detail.breadcrumbHub')}
-              </Link>
-            </li>
-            <li className="flex items-center gap-1" aria-hidden>
-              <ChevronRight className="size-3.5 shrink-0 opacity-70" />
-            </li>
             <li>
               <button type="button" onClick={() => navigate('/eleman-kimlik')} className={crumbLink}>
                 {t('elementIdentity.detail.breadcrumbModule')}
@@ -1466,58 +1459,59 @@ export function ElementIdentityProjectDetailPage() {
       <NewProductDialog open={newProductOpen} projectId={projectId} onClose={() => setNewProductOpen(false)} />
       <BulkProductImportDialog open={bulkOpen} projectId={projectId} onClose={() => setBulkOpen(false)} />
 
-      {newLabelOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal>
-          <div className="w-full max-w-sm rounded-2xl border border-white/20 bg-white p-4 dark:border-white/10 dark:bg-slate-900">
-            <h3 className="text-sm font-semibold">
-              {newLabelDialogSource === 'fromLabelOverview'
-                ? t('elementIdentity.labels.createFromLabel')
-                : t('elementIdentity.labels.new')}
-            </h3>
-            <label className="mt-2 block text-xs">
-              {t('elementIdentity.labels.name')}
-              <input
-                value={newLabelName}
-                onChange={(e) => setNewLabelName(e.target.value)}
-                className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 dark:border-slate-600 dark:bg-slate-800"
-              />
-            </label>
-            <label className="mt-2 block text-xs">
-              {t('elementIdentity.labels.startFrom')}
-              <select
-                value={presetId}
-                onChange={(e) => setPresetId(e.target.value)}
-                className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 dark:border-slate-600 dark:bg-slate-800"
-              >
-                {firmTemplates.map((tm) => (
-                  <option key={tm.id} value={tm.id}>
-                    {tm.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="mt-3 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setNewLabelOpen(false)
-                  setNewLabelDialogSource('listHeader')
-                }}
-                className="text-xs font-semibold text-slate-600"
-              >
-                {t('elementIdentity.cancel')}
-              </button>
-              <button
-                type="button"
-                onClick={duplicateTemplate}
-                className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white"
-              >
-                {t('elementIdentity.save')}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <AppDialog
+        open={newLabelOpen}
+        size="sm"
+        title={
+          newLabelDialogSource === 'fromLabelOverview'
+            ? t('elementIdentity.labels.createFromLabel')
+            : t('elementIdentity.labels.new')
+        }
+        closeLabel={t('elementIdentity.cancel')}
+        onClose={() => {
+          setNewLabelOpen(false)
+          setNewLabelDialogSource('listHeader')
+        }}
+        footer={
+          <>
+            <AppDialogButton
+              variant="secondary"
+              onClick={() => {
+                setNewLabelOpen(false)
+                setNewLabelDialogSource('listHeader')
+              }}
+            >
+              {t('elementIdentity.cancel')}
+            </AppDialogButton>
+            <AppDialogButton variant="primary" onClick={duplicateTemplate}>
+              {t('elementIdentity.save')}
+            </AppDialogButton>
+          </>
+        }
+      >
+        <label className="block">
+          <span className={appDialogLabelClass}>{t('elementIdentity.labels.name')}</span>
+          <input
+            value={newLabelName}
+            onChange={(e) => setNewLabelName(e.target.value)}
+            className={appDialogFieldClass}
+          />
+        </label>
+        <label className="mt-3 block">
+          <span className={appDialogLabelClass}>{t('elementIdentity.labels.startFrom')}</span>
+          <select
+            value={presetId}
+            onChange={(e) => setPresetId(e.target.value)}
+            className={appDialogFieldClass}
+          >
+            {firmTemplates.map((tm) => (
+              <option key={tm.id} value={tm.id}>
+                {tm.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </AppDialog>
     </div>
   )
 }

@@ -19,7 +19,13 @@ import '../muhendislikOkan/engineeringOkanLiquid.css'
 import './projectManagementGlassLight.css'
 import { eiSplitFilterToggleClass } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
-import { splitDetailHeaderClass, splitListCardClass, splitTabPill } from '../shared/splitModuleStyles'
+import {
+  splitDetailHeaderClass,
+  splitListCardClass,
+  splitTabPill,
+  useSplitPaneDrag,
+  useSplitPaneRatio,
+} from '../shared/splitModuleStyles'
 
 export type ProjectDetailPieceCodesProjectContext = {
   name: string
@@ -79,14 +85,20 @@ export function ProjectDetailPieceCodesPanel({ project }: ProjectDetailPieceCode
     'production-asc' | 'production-desc' | 'code-asc' | 'family-asc'
   >('production-asc')
   const [page, setPage] = useState(1)
-  const [splitRatio, setSplitRatio] = useState(40)
-  const [isResizing, setIsResizing] = useState(false)
+  const {
+    isResizing,
+    setIsResizing,
+    resetRatio,
+    leftWidthStyle,
+    setRatioFromPointer,
+  } = useSplitPaneRatio('project-detail-piece-codes')
   const [isResizerHover, setIsResizerHover] = useState(false)
   const [selectedDrawingRevisionId, setSelectedDrawingRevisionId] = useState<string>('')
   const [isDrawingHistoryOpen, setIsDrawingHistoryOpen] = useState(false)
   const panelRef = useRef<HTMLDivElement | null>(null)
   const splitRef = useRef<HTMLDivElement | null>(null)
   const listRef = useRef<HTMLUListElement | null>(null)
+  useSplitPaneDrag(splitRef, { isResizing, setIsResizing, setRatioFromPointer })
 
   const selected = useMemo(() => parts.find((p) => p.id === selectedId) ?? null, [parts, selectedId])
 
@@ -219,29 +231,6 @@ export function ProjectDetailPieceCodesPanel({ project }: ProjectDetailPieceCode
   }, [isDrawingHistoryOpen])
 
   useEffect(() => {
-    if (!isResizing) return
-    const onMouseMove = (event: MouseEvent) => {
-      const host = splitRef.current
-      if (!host) return
-      const rect = host.getBoundingClientRect()
-      if (rect.width <= 0) return
-      const next = ((event.clientX - rect.left) / rect.width) * 100
-      setSplitRatio(Math.min(55, Math.max(30, Number(next.toFixed(2)))))
-    }
-    const onMouseUp = () => setIsResizing(false)
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', onMouseUp)
-    return () => {
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('mouseup', onMouseUp)
-    }
-  }, [isResizing])
-
-  useEffect(() => {
     setSelectedDrawingRevisionId(drawingRevisions[0]?.id ?? '')
   }, [selectedId, drawingRevisions])
 
@@ -288,7 +277,7 @@ export function ProjectDetailPieceCodesPanel({ project }: ProjectDetailPieceCode
           'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden',
           gl ? 'glass-card glass-card--static project-mgmt-split-panel min-h-0' : 'p-3',
         ].join(' ')}
-        style={{ width: `calc(${splitRatio}% - 5px)` }}
+        style={leftWidthStyle}
       >
         <div className="mb-2 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
           <h2 className="min-w-0 shrink-0 text-sm font-semibold text-black dark:text-white sm:text-base">
@@ -671,7 +660,7 @@ export function ProjectDetailPieceCodesPanel({ project }: ProjectDetailPieceCode
           onDoubleClick={(e) => {
             e.preventDefault()
             setIsResizing(false)
-            setSplitRatio(40)
+            resetRatio()
           }}
           onMouseEnter={() => setIsResizerHover(true)}
           onMouseLeave={() => setIsResizerHover(false)}

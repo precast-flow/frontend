@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { activeModuleIdFromPathname } from '../../data/navigation'
 import {
@@ -30,10 +29,19 @@ import {
   eiSplitHeaderButtonPassive,
 } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import {
+  ManagementModuleShell,
+  managementModuleDetailPanelClass,
+  managementModuleListPanelClass,
+  managementModuleListTitleClass,
+  managementModuleListToolbarClass,
+  managementModuleSplitRowClass,
   splitDetailHeaderClass,
   splitListCardClass,
   splitTabPill,
+  useSplitPaneDrag,
+  useSplitPaneRatio,
 } from '../shared/splitModuleStyles'
+import { AppDialog, AppDialogButton, appDialogFieldClass, appDialogLabelClass } from '../shared/AppDialog'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 import '../proje/projectManagementGlassLight.css'
 
@@ -104,22 +112,21 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
   const [detailTab, setDetailTab] = useState<DetailTabId>('genel')
   const [listPage, setListPage] = useState(1)
   const pageSize = CRM_LIST_PAGE_SIZE
-  const [splitRatio, setSplitRatio] = useState(40)
-  const [isResizing, setIsResizing] = useState(false)
+  const {
+    isResizing,
+    setIsResizing,
+    resetRatio,
+    leftWidthStyle,
+    setRatioFromPointer,
+  } = useSplitPaneRatio('crm-module')
   const [isResizerHover, setIsResizerHover] = useState(false)
   const [newLocationName, setNewLocationName] = useState('')
   const [newLocationInfo, setNewLocationInfo] = useState('')
   const [locationAddOpen, setLocationAddOpen] = useState(false)
-  const [locationPopoverPlacement, setLocationPopoverPlacement] = useState<{
-    top: number
-    left: number
-    width: number
-  } | null>(null)
-  const locationAddTriggerRef = useRef<HTMLButtonElement | null>(null)
-  const locationPopoverPanelRef = useRef<HTMLDivElement | null>(null)
   const newLocationNameInputRef = useRef<HTMLInputElement | null>(null)
   const listRef = useRef<HTMLUListElement | null>(null)
   const splitRef = useRef<HTMLDivElement | null>(null)
+  useSplitPaneDrag(splitRef, { isResizing, setIsResizing, setRatioFromPointer })
 
   const list = useMemo(() => {
     let rowsView = [...rows]
@@ -207,61 +214,11 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
     newLocationNameInputRef.current?.focus()
   }, [locationAddOpen])
 
-  const measureLocationPopover = useCallback(() => {
-    const btn = locationAddTriggerRef.current
-    if (!btn || !locationAddOpen) return
-    const rect = btn.getBoundingClientRect()
-    const width = Math.min(320, Math.max(240, window.innerWidth - 16))
-    const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))
-    setLocationPopoverPlacement({ top: rect.top, left, width })
-  }, [locationAddOpen])
-
   const cancelLocationAdd = useCallback(() => {
     setLocationAddOpen(false)
     setNewLocationName('')
     setNewLocationInfo('')
-    setLocationPopoverPlacement(null)
   }, [])
-
-  useLayoutEffect(() => {
-    if (!locationAddOpen) {
-      setLocationPopoverPlacement(null)
-      return
-    }
-    measureLocationPopover()
-    const scrollHost = crmDetailTabPanelRef.current
-    const ro = new ResizeObserver(() => measureLocationPopover())
-    ro.observe(document.documentElement)
-    const onScrollOrResize = () => measureLocationPopover()
-    window.addEventListener('resize', onScrollOrResize)
-    window.addEventListener('scroll', onScrollOrResize, true)
-    scrollHost?.addEventListener('scroll', onScrollOrResize)
-    return () => {
-      ro.disconnect()
-      window.removeEventListener('resize', onScrollOrResize)
-      window.removeEventListener('scroll', onScrollOrResize, true)
-      scrollHost?.removeEventListener('scroll', onScrollOrResize)
-    }
-  }, [locationAddOpen, measureLocationPopover])
-
-  useEffect(() => {
-    if (!locationAddOpen) return
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') cancelLocationAdd()
-    }
-    const onMouseDown = (event: MouseEvent) => {
-      const t = event.target as Node
-      if (locationAddTriggerRef.current?.contains(t)) return
-      if (locationPopoverPanelRef.current?.contains(t)) return
-      cancelLocationAdd()
-    }
-    document.addEventListener('keydown', onKeyDown)
-    document.addEventListener('mousedown', onMouseDown)
-    return () => {
-      document.removeEventListener('keydown', onKeyDown)
-      document.removeEventListener('mousedown', onMouseDown)
-    }
-  }, [locationAddOpen, cancelLocationAdd])
 
   useEffect(() => {
     if (!filtersOpen) return
@@ -271,37 +228,6 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [filtersOpen])
-
-  useEffect(() => {
-    if (!isResizing) return
-    let rafId = 0
-    const onMouseMove = (event: MouseEvent) => {
-      cancelAnimationFrame(rafId)
-      rafId = requestAnimationFrame(() => {
-        const host = splitRef.current
-        if (!host) return
-        const rect = host.getBoundingClientRect()
-        if (rect.width <= 0) return
-        const next = ((event.clientX - rect.left) / rect.width) * 100
-        setSplitRatio(Math.min(55, Math.max(30, Number(next.toFixed(2)))))
-      })
-    }
-    const onMouseUp = () => {
-      cancelAnimationFrame(rafId)
-      setIsResizing(false)
-    }
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', onMouseUp)
-    return () => {
-      cancelAnimationFrame(rafId)
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('mouseup', onMouseUp)
-    }
-  }, [isResizing])
 
   useEffect(() => {
     requestAnimationFrame(() => listRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
@@ -411,7 +337,6 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
     setNewLocationName('')
     setNewLocationInfo('')
     setLocationAddOpen(false)
-    setLocationPopoverPlacement(null)
   }
 
   const updateSelectedLocation = (locationId: string, patch: Partial<CrmLocationRow>) => {
@@ -443,21 +368,11 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
   }
 
   return (
-    <div
-      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl"
-      data-neutral-shell={neutralShell ? 'true' : undefined}
-    >
-      <CrmNewCustomerModal
-        open={newOpen}
-        mode={customerDialogMode}
-        initialCustomer={customerDialogMode === 'edit' ? selected : null}
-        existingCodes={rows.map((row) => row.code)}
-        onSave={saveCustomer}
-        onClose={() => setNewOpen(false)}
-      />
-
-      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-2">
-        <div className="px-[0.6875rem] py-1">
+    <>
+    <ManagementModuleShell
+      neutralShell={neutralShell}
+      gl={gl}
+      breadcrumb={
           <nav aria-label={t('project.breadcrumbAria')} className="mb-0">
             <ol className="flex flex-wrap items-center gap-1 text-xs text-black/60 dark:text-white/65">
               <li>
@@ -476,35 +391,19 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
               </li>
             </ol>
           </nav>
-        </div>
-
-        <div
-          className={[
-            'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
-            gl
-              ? 'gap-2 rounded-3xl bg-transparent p-1 md:p-1.5'
-              : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
-          ].join(' ')}
-        >
+      }
+    >
           <div
             ref={splitRef}
             data-split-dragging={isResizing ? 'true' : undefined}
-            className={[
-              'relative flex h-full min-h-0 min-w-0 overflow-hidden',
-              gl ? 'gap-3 rounded-3xl lg:gap-4' : 'gap-0',
-            ].join(' ')}
+            className={managementModuleSplitRowClass(gl)}
           >
             <section
-              className={[
-                'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden',
-                gl
-                  ? 'glass-card glass-card--static project-mgmt-split-panel min-h-0'
-                  : 'p-3',
-              ].join(' ')}
-              style={{ width: `calc(${splitRatio}% - 5px)` }}
+              className={managementModuleListPanelClass(gl)}
+              style={leftWidthStyle}
             >
-              <div className="mb-2 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
-                <h2 className="min-w-0 shrink-0 text-sm font-semibold text-black dark:text-white sm:text-base">
+              <div className={managementModuleListToolbarClass}>
+                <h2 className={managementModuleListTitleClass}>
                   Müşteriler
                 </h2>
                 <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
@@ -785,7 +684,7 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
                 onDoubleClick={(e) => {
                   e.preventDefault()
                   setIsResizing(false)
-                  setSplitRatio(40)
+                  resetRatio()
                 }}
                 onMouseEnter={() => setIsResizerHover(true)}
                 onMouseLeave={() => setIsResizerHover(false)}
@@ -808,11 +707,7 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
 
             <aside
               ref={detailPanelRef}
-              className={
-                gl
-                  ? 'okan-project-split-aside glass-card glass-card--static project-mgmt-split-panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
-                  : 'okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:pl-2'
-              }
+              className={managementModuleDetailPanelClass(gl)}
             >
               {selected ? (
                 <div key={selected.id} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
@@ -1073,112 +968,14 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
 
                           <div className="self-start">
                             <button
-                              ref={locationAddTriggerRef}
                               type="button"
-                              onClick={() => setLocationAddOpen((open) => !open)}
-                              aria-expanded={locationAddOpen}
-                              aria-haspopup="dialog"
+                              onClick={() => setLocationAddOpen(true)}
                               className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/70 bg-white/60 px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-white/90 dark:border-slate-600/60 dark:bg-slate-900/40 dark:text-slate-100 dark:hover:bg-slate-900/60"
                             >
                               <Plus className="size-4 shrink-0" aria-hidden />
                               Lokasyon ekle
                             </button>
                           </div>
-
-                          {locationAddOpen && locationPopoverPlacement
-                            ? createPortal(
-                                <>
-                                  <button
-                                    type="button"
-                                    className="fixed inset-0 z-[96] cursor-default bg-slate-950/25 backdrop-blur-[2px] dark:bg-slate-950/40"
-                                    aria-label="Kapat"
-                                    onMouseDown={(event) => {
-                                      event.preventDefault()
-                                      cancelLocationAdd()
-                                    }}
-                                  />
-                                  <div
-                                    ref={locationPopoverPanelRef}
-                                    role="dialog"
-                                    aria-modal="true"
-                                    aria-labelledby="crm-location-add-title"
-                                    style={{
-                                      top: locationPopoverPlacement.top,
-                                      left: locationPopoverPlacement.left,
-                                      width: locationPopoverPlacement.width,
-                                    }}
-                                    className="fixed z-[100] -translate-y-[calc(100%+0.5rem)] rounded-2xl border border-white/20 bg-white/10 p-3 shadow-xl shadow-slate-900/10 ring-1 ring-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5 dark:shadow-black/30 dark:ring-white/10"
-                                  >
-                                    <div className="flex items-start justify-between gap-2 border-b border-slate-200/40 pb-2.5 dark:border-white/10">
-                                      <p
-                                        id="crm-location-add-title"
-                                        className="text-sm font-semibold tracking-tight text-slate-900 dark:text-slate-50"
-                                      >
-                                        Yeni lokasyon
-                                      </p>
-                                      <button
-                                        type="button"
-                                        onClick={cancelLocationAdd}
-                                        className="rounded-lg p-1 text-slate-500 transition hover:bg-white/50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
-                                        aria-label="Kapat"
-                                      >
-                                        <X className="size-4" aria-hidden />
-                                      </button>
-                                    </div>
-                                    <div className="mt-3 flex flex-col gap-3">
-                                      <label className="block min-w-0">
-                                        <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                                          Lokasyon adı
-                                        </span>
-                                        <input
-                                          ref={newLocationNameInputRef}
-                                          type="text"
-                                          value={newLocationName}
-                                          onChange={(event) => setNewLocationName(event.target.value)}
-                                          placeholder="Örn. İstanbul şantiyesi"
-                                          className={`mt-1 ${crmLocationFieldInputClass}`}
-                                        />
-                                      </label>
-                                      <label className="block min-w-0">
-                                        <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                                          Adres / konum
-                                        </span>
-                                        <input
-                                          type="text"
-                                          value={newLocationInfo}
-                                          onChange={(event) => setNewLocationInfo(event.target.value)}
-                                          placeholder="İl, ilçe, açık adres…"
-                                          className={`mt-1 ${crmLocationFieldInputClass}`}
-                                          onKeyDown={(event) => {
-                                            if (event.key === 'Enter') {
-                                              event.preventDefault()
-                                              addLocationToSelected()
-                                            }
-                                          }}
-                                        />
-                                      </label>
-                                      <div className="flex flex-wrap justify-end gap-2 pt-0.5">
-                                        <button
-                                          type="button"
-                                          onClick={cancelLocationAdd}
-                                          className="okan-liquid-btn-secondary rounded-full px-3 py-2 text-xs font-semibold"
-                                        >
-                                          Vazgeç
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => addLocationToSelected()}
-                                          className="rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
-                                        >
-                                          Kaydet
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </>,
-                                document.body,
-                              )
-                            : null}
 
                           {selectedLocations.length > 0 ? (
                             <ul
@@ -1339,8 +1136,62 @@ export function CrmModuleView({ onNavigate: _onNavigate }: Props) {
               )}
             </aside>
           </div>
-        </div>
+    </ManagementModuleShell>
+    <AppDialog
+      open={locationAddOpen}
+      size="sm"
+      title="Yeni lokasyon"
+      closeLabel="Kapat"
+      onClose={cancelLocationAdd}
+      footer={
+        <>
+          <AppDialogButton variant="secondary" onClick={cancelLocationAdd}>
+            Vazgeç
+          </AppDialogButton>
+          <AppDialogButton variant="primary" onClick={() => addLocationToSelected()}>
+            Kaydet
+          </AppDialogButton>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <label className="block min-w-0">
+          <span className={appDialogLabelClass}>Lokasyon adı</span>
+          <input
+            ref={newLocationNameInputRef}
+            type="text"
+            value={newLocationName}
+            onChange={(event) => setNewLocationName(event.target.value)}
+            placeholder="Örn. İstanbul şantiyesi"
+            className={appDialogFieldClass}
+          />
+        </label>
+        <label className="block min-w-0">
+          <span className={appDialogLabelClass}>Adres / konum</span>
+          <input
+            type="text"
+            value={newLocationInfo}
+            onChange={(event) => setNewLocationInfo(event.target.value)}
+            placeholder="İl, ilçe, açık adres…"
+            className={appDialogFieldClass}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                addLocationToSelected()
+              }
+            }}
+          />
+        </label>
       </div>
-    </div>
+    </AppDialog>
+    <CrmNewCustomerModal
+      open={newOpen}
+      mode={customerDialogMode}
+      initialCustomer={customerDialogMode === 'edit' ? selected : null}
+      existingCodes={rows.map((row) => row.code)}
+      onSave={saveCustomer}
+      onClose={() => setNewOpen(false)}
+    />
+    </>
   )
 }

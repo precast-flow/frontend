@@ -1,8 +1,11 @@
 import { ChevronsLeftRight, Filter, GripVertical, X } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useThemeMode } from '../../theme/ThemeProvider'
+import { managementModuleSplitRowClass } from '../shared/layout/ManagementModuleShell'
+import { useSplitPaneDrag } from '../shared/layout/useSplitPaneDrag'
+import { useSplitPaneRatio } from '../shared/layout/useSplitPaneRatio'
 
-const SPLIT_KEY = (persistKey: string) => `ei-piece-split:${persistKey}`
+const LEGACY_SPLIT_KEY = (persistKey: string) => `ei-piece-split:${persistKey}`
 
 /** Liste başlığı sağı — «Filtrele» kapalıyken (ve aynı görünümlü aksiyonlar). */
 export const eiSplitHeaderButtonPassive =
@@ -42,8 +45,13 @@ export type ElementIdentityPieceCodesLikeSplitProps = {
   footer?: ReactNode
   rightAside: ReactNode
   rightPanelRef?: React.RefObject<HTMLDivElement | null>
-  /** Sol liste genişliği (%) — session’da değer yokken kullanılır (ör. etiket listesi %30) */
+  /** Sol liste genişliği (%) — session’da değer yokken kullanılır (varsayılan %40) */
   defaultSplitRatio?: number
+  /**
+   * `useSplitPaneRatio` persist anahtarı; verilmezse `ei-piece-split:{persistKey}` kullanılır.
+   * Örn. görev yönetimi: `unit-work-queue` → `split-pane:unit-work-queue`
+   */
+  splitPanePersistKey?: string
   /**
    * Proje / CRM ile aynı cam kabuk (`project-mgmt-glass-light` üst sarmalayıcı + `projectManagementGlassLight.css` gerekir).
    */
@@ -80,6 +88,7 @@ export function ElementIdentityPieceCodesLikeSplit({
   rightAside,
   rightPanelRef,
   defaultSplitRatio = 40,
+  splitPanePersistKey,
   visualVariant = 'legacy',
   neutralChrome = false,
   fillParentHeight = false,
@@ -93,20 +102,21 @@ export function ElementIdentityPieceCodesLikeSplit({
   const internalListRef = useRef<HTMLUListElement | null>(null)
   const ulRef = listRef ?? internalListRef
 
-  const [splitRatio, setSplitRatio] = useState(() => {
-    try {
-      const raw = sessionStorage.getItem(SPLIT_KEY(persistKey))
-      if (!raw) return defaultSplitRatio
-      const v = JSON.parse(raw) as { splitRatio?: number }
-      return typeof v.splitRatio === 'number'
-        ? Math.min(55, Math.max(30, v.splitRatio))
-        : defaultSplitRatio
-    } catch {
-      return defaultSplitRatio
-    }
+  const {
+    isResizing,
+    setIsResizing,
+    setRatioFromPointer,
+    resetRatio,
+    leftWidthStyle,
+  } = useSplitPaneRatio(splitPanePersistKey ?? `ei-piece-split:${persistKey}`, defaultSplitRatio, {
+    legacyViewStateKey: LEGACY_SPLIT_KEY(persistKey),
+    legacySplitPanePersistKey:
+      splitPanePersistKey && splitPanePersistKey !== `ei-piece-split:${persistKey}`
+        ? `ei-piece-split:${persistKey}`
+        : undefined,
   })
-  const [isResizing, setIsResizing] = useState(false)
   const [isResizerHover, setIsResizerHover] = useState(false)
+  useSplitPaneDrag(splitRef, { isResizing, setIsResizing, setRatioFromPointer })
   const leftColumnRef = useRef<HTMLElement | null>(null)
   const [rightPanelHeightPx, setRightPanelHeightPx] = useState<number | null>(null)
 
@@ -128,37 +138,6 @@ export function ElementIdentityPieceCodesLikeSplit({
   }, [isPm, fillFull])
 
   useEffect(() => {
-    if (!isResizing) return
-    let rafId = 0
-    const onMouseMove = (event: MouseEvent) => {
-      cancelAnimationFrame(rafId)
-      rafId = requestAnimationFrame(() => {
-        const host = splitRef.current
-        if (!host) return
-        const rect = host.getBoundingClientRect()
-        if (rect.width <= 0) return
-        const next = ((event.clientX - rect.left) / rect.width) * 100
-        setSplitRatio(Math.min(55, Math.max(30, Number(next.toFixed(2)))))
-      })
-    }
-    const onMouseUp = () => {
-      cancelAnimationFrame(rafId)
-      setIsResizing(false)
-    }
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', onMouseUp)
-    return () => {
-      cancelAnimationFrame(rafId)
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('mouseup', onMouseUp)
-    }
-  }, [isResizing])
-
-  useEffect(() => {
     if (!isFilterOpen) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onFilterOpenChange(false)
@@ -166,15 +145,6 @@ export function ElementIdentityPieceCodesLikeSplit({
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [isFilterOpen, onFilterOpenChange])
-
-  useEffect(() => {
-    if (isResizing) return
-    try {
-      sessionStorage.setItem(SPLIT_KEY(persistKey), JSON.stringify({ splitRatio }))
-    } catch {
-      /* ignore */
-    }
-  }, [isResizing, persistKey, splitRatio])
 
   const filterBtnClass = eiSplitFilterToggleClass(isFilterOpen)
 
@@ -199,7 +169,7 @@ export function ElementIdentityPieceCodesLikeSplit({
       <section
         ref={leftColumnRef}
         className={sectionClass}
-        style={{ width: `calc(${splitRatio}% - 5px)` }}
+        style={leftWidthStyle}
       >
         <div className="mb-2 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
           <h3
@@ -269,7 +239,7 @@ export function ElementIdentityPieceCodesLikeSplit({
           onDoubleClick={(e) => {
             e.preventDefault()
             setIsResizing(false)
-            setSplitRatio(Math.min(55, Math.max(30, defaultSplitRatio)))
+            resetRatio()
           }}
           onMouseEnter={() => setIsResizerHover(true)}
           onMouseLeave={() => setIsResizerHover(false)}
@@ -333,10 +303,7 @@ export function ElementIdentityPieceCodesLikeSplit({
   )
 
   if (isPm) {
-    const splitHostClass = [
-      'relative flex h-full min-h-0 min-w-0 flex-1 overflow-hidden',
-      gl ? 'gap-3 lg:gap-4' : 'gap-0',
-    ].join(' ')
+    const splitHostClass = managementModuleSplitRowClass(gl)
 
     if (embedded) {
       return (

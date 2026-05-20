@@ -10,8 +10,9 @@ import {
   ElementIdentityFilterSheetHeader,
   ElementIdentityPieceCodesLikeSplit,
 } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import { ManagementModuleShell } from '../shared/splitModuleStyles'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
-import { PmStyleDialog } from '../shared/PmStyleDialog'
+import { PmStyleDialog, AppDialogButton } from '../shared/PmStyleDialog'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 import '../proje/projectManagementGlassLight.css'
 import {
@@ -92,21 +93,12 @@ export function ApprovalFlowDesignerModuleView(props: ApprovalFlowDesignerState)
 
   return (
     <>
-      <div
-        className="project-mgmt-glass-light flex min-h-0 min-w-0 flex-1 basis-0 flex-col gap-0 overflow-hidden rounded-3xl"
-        data-neutral-shell={neutralShell ? 'true' : undefined}
-      >
-        <div className="grid min-h-0 min-w-0 flex-1 grid-rows-[minmax(0,1fr)] overflow-hidden">
-          <div
-            className={[
-              'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
-              gl
-                ? 'rounded-3xl bg-transparent p-0'
-                : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
-            ].join(' ')}
-          >
+      <ManagementModuleShell neutralShell={neutralShell} gl={gl}>
             <ElementIdentityPieceCodesLikeSplit
               persistKey="approval-flow-designer"
+              splitPanePersistKey="approval-flow"
+              fillParentHeight
+              embedded
               visualVariant="project-mgmt"
               neutralChrome={neutralShell}
               listIndentWhenFilterOpen="18.5rem"
@@ -306,9 +298,7 @@ export function ApprovalFlowDesignerModuleView(props: ApprovalFlowDesignerState)
                 </div>
               }
             />
-          </div>
-        </div>
-      </div>
+      </ManagementModuleShell>
 
       {deleteTarget ? (
         <PmStyleDialog
@@ -317,22 +307,14 @@ export function ApprovalFlowDesignerModuleView(props: ApprovalFlowDesignerState)
           closeLabel={t('approvalFlowDesigner.cancel')}
           onClose={() => setDeleteTarget(null)}
           footer={
-            <div className="flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(null)}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 dark:border-slate-600 dark:text-slate-200"
-              >
+            <>
+              <AppDialogButton variant="secondary" onClick={() => setDeleteTarget(null)}>
                 {t('approvalFlowDesigner.cancel')}
-              </button>
-              <button
-                type="button"
-                onClick={confirmDelete}
-                className="rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600"
-              >
+              </AppDialogButton>
+              <AppDialogButton variant="danger" onClick={confirmDelete}>
                 {t('approvalFlowDesigner.confirmDelete')}
-              </button>
-            </div>
+              </AppDialogButton>
+            </>
           }
         >
           <p className="text-sm text-slate-700 dark:text-slate-300">

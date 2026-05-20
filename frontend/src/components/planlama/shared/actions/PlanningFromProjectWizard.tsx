@@ -181,12 +181,11 @@ export function PlanningFromProjectWizard({ onTimelinePage }: Props) {
 
   return (
     <PmStyleDialog
-      variant="planning"
       title={t(wizardTitleKey(kind))}
       subtitle={activeWizard.projectName || undefined}
       closeLabel={t('planningActions.cancel')}
       onClose={handleClose}
-      maxWidthClass="max-w-3xl"
+      size="lg"
       footer={
         <footer className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex gap-2">

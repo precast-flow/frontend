@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useI18n } from '../../../i18n/I18nProvider'
 import { getWarehousesForFactory } from '../../../data/productionWarehouseMock'
 import type { WorkQueueItem } from '../../../data/workQueueMock'
-import { PmStyleDialog } from '../../shared/PmStyleDialog'
+import { appDialogInputClass, PmStyleDialog, AppDialogButton } from '../../shared/PmStyleDialog'
 
 type Props = {
   open: boolean
@@ -12,45 +12,38 @@ type Props = {
   onConfirm: (warehouseId: string) => void
 }
 
-export function WarehouseTransferDialog({ open, item, gl, onClose, onConfirm }: Props) {
+export function WarehouseTransferDialog({ open, item, gl: _gl, onClose, onConfirm }: Props) {
   const { t } = useI18n()
   const warehouses = getWarehousesForFactory(item.factoryCode)
   const [selectedId, setSelectedId] = useState(warehouses[0]?.id ?? '')
 
   if (!open) return null
 
-  const selectCls = gl
-    ? 'w-full rounded-lg border border-black/15 bg-white/80 px-3 py-2 text-sm text-black dark:border-white/15 dark:bg-slate-900/60 dark:text-white'
-    : 'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900/50'
+  const selectCls = appDialogInputClass
 
   return (
     <PmStyleDialog
+      open={open}
       title={t('unitWorkQueue.warehouse.dialogTitle')}
       subtitle={`${item.productName ?? item.title} · ${item.orderNo}`}
       closeLabel={t('unitWorkQueue.close')}
       onClose={onClose}
-      variant={gl ? 'glass' : 'default'}
-      maxWidthClass="max-w-md"
+      size="sm"
       footer={
-        <div className="flex flex-wrap justify-end gap-2">
-          <button
-            type="button"
-            className="rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold dark:border-white/15"
-            onClick={onClose}
-          >
+        <>
+          <AppDialogButton variant="secondary" onClick={onClose}>
             {t('unitWorkQueue.nonconformance.cancel')}
-          </button>
-          <button
-            type="button"
+          </AppDialogButton>
+          <AppDialogButton
+            variant="primary"
             disabled={!selectedId}
-            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-45"
             onClick={() => {
               if (selectedId) onConfirm(selectedId)
             }}
           >
             {t('unitWorkQueue.warehouse.confirm')}
-          </button>
-        </div>
+          </AppDialogButton>
+        </>
       }
     >
       <div className="space-y-3 text-left">

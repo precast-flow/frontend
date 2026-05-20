@@ -2,10 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CheckCircle2 } from 'lucide-react'
 import type { ProjectProduct } from '../../elementIdentity/types'
 import { useI18n } from '../../i18n/I18nProvider'
-import { PmStyleDialog } from '../shared/PmStyleDialog'
+import { PmStyleDialog, AppDialogButton } from '../shared/PmStyleDialog'
 import { useElementIdentity } from './elementIdentityContextValue'
 import { newRowId } from './productEditorUtils'
-import { eiSplitHeaderButtonPassive } from './ElementIdentityPieceCodesLikeSplit'
 import {
   PRODUCT_TRANSFER_REASON_ORDER,
   type ProductTransferLogEntry,
@@ -180,64 +179,37 @@ export function ProductTransferDialog({
   }
 
   const footer = (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+    <div className="flex w-full flex-wrap items-center justify-between gap-2">
+      <span className="text-[11px] text-slate-500">
         {step !== 'done' ? stepLabels[step] : null}
       </span>
       <div className="flex flex-wrap justify-end gap-2">
-        <button
-          type="button"
-          onClick={resetAndClose}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200"
-        >
+        <AppDialogButton variant="secondary" onClick={resetAndClose}>
           {t('elementIdentity.cancel')}
-        </button>
+        </AppDialogButton>
         {step === 'select' ? (
-          <button
-            type="button"
-            disabled={!canGoTarget}
-            onClick={() => setStep('target')}
-            className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm disabled:opacity-40`}
-          >
+          <AppDialogButton variant="primary" disabled={!canGoTarget} onClick={() => setStep('target')}>
             {t('elementIdentity.ifc.next')}
-          </button>
+          </AppDialogButton>
         ) : null}
         {step === 'target' ? (
           <>
-            <button
-              type="button"
-              onClick={() => setStep('select')}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold dark:border-slate-600"
-            >
+            <AppDialogButton variant="secondary" onClick={() => setStep('select')}>
               {t('elementIdentity.transfer.back')}
-            </button>
-            <button
-              type="button"
-              disabled={!canGoConfirm}
-              onClick={() => setStep('confirm')}
-              className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm disabled:opacity-40`}
-            >
+            </AppDialogButton>
+            <AppDialogButton variant="primary" disabled={!canGoConfirm} onClick={() => setStep('confirm')}>
               {t('elementIdentity.transfer.review')}
-            </button>
+            </AppDialogButton>
           </>
         ) : null}
         {step === 'confirm' ? (
           <>
-            <button
-              type="button"
-              onClick={() => setStep('target')}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold dark:border-slate-600"
-            >
+            <AppDialogButton variant="secondary" onClick={() => setStep('target')}>
               {t('elementIdentity.transfer.back')}
-            </button>
-            <button
-              type="button"
-              disabled={!canExecute}
-              onClick={executeTransfer}
-              className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-40 dark:bg-sky-500"
-            >
+            </AppDialogButton>
+            <AppDialogButton variant="primary" disabled={!canExecute} onClick={executeTransfer}>
               {t('elementIdentity.transfer.confirmAction')}
-            </button>
+            </AppDialogButton>
           </>
         ) : null}
       </div>
@@ -255,7 +227,7 @@ export function ProductTransferDialog({
       closeLabel={t('elementIdentity.cancel')}
       onClose={resetAndClose}
       footer={footer}
-      maxWidthClass="max-w-2xl"
+      size="md"
       ariaLabel={t('elementIdentity.transfer.title')}
     >
       <div className="flex flex-col gap-4 text-sm">

@@ -119,12 +119,11 @@ export function DailyProductionReportDialog({
 
   return (
     <PmStyleDialog
-      variant="planning"
       title={t('productionPlanning.dailyReport.title')}
       subtitle={t('productionPlanning.dailyReport.subtitle')}
       closeLabel={t('productionPlanning.dailyReport.cancel')}
       onClose={onClose}
-      maxWidthClass={step === 'preview' ? 'max-w-4xl' : 'max-w-2xl'}
+      size={step === 'preview' ? 'lg' : 'md'}
       footer={
         <footer className="flex flex-wrap items-center justify-end gap-2">
           {step === 'preview' ? (

@@ -22,7 +22,19 @@ import {
 } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 import '../proje/projectManagementGlassLight.css'
+import {
+  ManagementModuleShell,
+  managementModuleDetailPanelClass,
+  managementModuleListPanelClass,
+  managementModuleListTitleClass,
+  managementModuleListToolbarClass,
+  managementModuleSplitRowClass,
+  useSplitPaneDrag,
+  useSplitPaneRatio,
+} from '../shared/splitModuleStyles'
 import type { ProfilePageState, ProfileSectionId } from './useProfilePageState'
+
+const PROFILE_SPLIT_PANE_KEY = 'profile-module'
 
 const SECTIONS: { id: ProfileSectionId; labelKey: string; icon: typeof UserCircle }[] = [
   { id: 'overview', labelKey: 'profileModule.secOverview', icon: LayoutGrid },
@@ -31,9 +43,6 @@ const SECTIONS: { id: ProfileSectionId; labelKey: string; icon: typeof UserCircl
   { id: 'work', labelKey: 'profileModule.secWork', icon: Briefcase },
   { id: 'security', labelKey: 'profileModule.secSecurity', icon: Lock },
 ]
-
-const PROFILE_SPLIT_STATE_KEY = 'profile-page:split-state'
-const PROFILE_DEFAULT_SPLIT_RATIO = 40
 
 function initials(first: string, last: string) {
   const a = first.trim().charAt(0)
@@ -52,20 +61,15 @@ export function ProfileModuleView(props: Props) {
   const rightPanelRef = useRef<HTMLElement | null>(null)
   const [filterOpen, setFilterOpen] = useState(false)
   const [listSearch, setListSearch] = useState('')
-  const [splitRatio, setSplitRatio] = useState(() => {
-    try {
-      const raw = sessionStorage.getItem(PROFILE_SPLIT_STATE_KEY)
-      if (!raw) return PROFILE_DEFAULT_SPLIT_RATIO
-      const parsed = JSON.parse(raw) as { splitRatio?: number }
-      return typeof parsed.splitRatio === 'number'
-        ? Math.min(55, Math.max(30, parsed.splitRatio))
-        : PROFILE_DEFAULT_SPLIT_RATIO
-    } catch {
-      return PROFILE_DEFAULT_SPLIT_RATIO
-    }
-  })
-  const [isResizing, setIsResizing] = useState(false)
+  const {
+    isResizing,
+    setIsResizing,
+    resetRatio,
+    leftWidthStyle,
+    setRatioFromPointer,
+  } = useSplitPaneRatio(PROFILE_SPLIT_PANE_KEY)
   const [isResizerHover, setIsResizerHover] = useState(false)
+  useSplitPaneDrag(splitRef, { isResizing, setIsResizing, setRatioFromPointer })
 
   const {
     onNavigate,
@@ -115,37 +119,6 @@ export function ProfileModuleView(props: Props) {
   }, [section, t])
 
   useEffect(() => {
-    if (!isResizing) return
-    let rafId = 0
-    const onMouseMove = (event: MouseEvent) => {
-      cancelAnimationFrame(rafId)
-      rafId = requestAnimationFrame(() => {
-        const host = splitRef.current
-        if (!host) return
-        const rect = host.getBoundingClientRect()
-        if (rect.width <= 0) return
-        const next = ((event.clientX - rect.left) / rect.width) * 100
-        setSplitRatio(Math.min(55, Math.max(30, Number(next.toFixed(2)))))
-      })
-    }
-    const onMouseUp = () => {
-      cancelAnimationFrame(rafId)
-      setIsResizing(false)
-    }
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', onMouseUp)
-    return () => {
-      cancelAnimationFrame(rafId)
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('mouseup', onMouseUp)
-    }
-  }, [isResizing])
-
-  useEffect(() => {
     if (!filterOpen) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setFilterOpen(false)
@@ -154,48 +127,17 @@ export function ProfileModuleView(props: Props) {
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [filterOpen])
 
-  useEffect(() => {
-    if (isResizing) return
-    try {
-      sessionStorage.setItem(PROFILE_SPLIT_STATE_KEY, JSON.stringify({ splitRatio }))
-    } catch {
-      /* ignore */
-    }
-  }, [isResizing, splitRatio])
-
   return (
-    <div className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-1 overflow-hidden rounded-3xl">
-      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] gap-1">
-        <div
-          className={[
-            'min-h-0 overflow-hidden',
-            gl
-              ? 'flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl bg-transparent p-1 md:p-1.5'
-              : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
-          ].join(' ')}
-        >
-          <div
-            ref={splitRef}
-            data-split-dragging={isResizing ? 'true' : undefined}
-            className={[
-              'relative flex h-full min-h-0 min-w-0 overflow-hidden',
-              gl ? 'gap-3 rounded-3xl lg:gap-4' : 'gap-0',
-            ].join(' ')}
-          >
-            <section
-              className={[
-                'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden',
-                gl
-                  ? 'glass-card glass-card--static project-mgmt-split-panel min-h-0'
-                  : 'p-3',
-              ].join(' ')}
-              style={{ width: `calc(${splitRatio}% - 5px)` }}
-            >
-              <div className="mb-2 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
-                <h2 className="min-w-0 shrink-0 text-sm font-semibold text-black dark:text-white sm:text-base">
-                  {t('profileModule.listTitle')}
-                </h2>
-                <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
+    <ManagementModuleShell gl={gl}>
+      <div
+        ref={splitRef}
+        data-split-dragging={isResizing ? 'true' : undefined}
+        className={managementModuleSplitRowClass(gl)}
+      >
+        <section className={managementModuleListPanelClass(gl)} style={leftWidthStyle}>
+          <div className={managementModuleListToolbarClass}>
+            <h2 className={managementModuleListTitleClass}>{t('profileModule.listTitle')}</h2>
+                                <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
                   <FilterToolbarSearch
                     id="profile-module-list-search"
                     value={listSearch}
@@ -337,7 +279,7 @@ export function ProfileModuleView(props: Props) {
                 onDoubleClick={(e) => {
                   e.preventDefault()
                   setIsResizing(false)
-                  setSplitRatio(PROFILE_DEFAULT_SPLIT_RATIO)
+                  resetRatio()
                 }}
                 onMouseEnter={() => setIsResizerHover(true)}
                 onMouseLeave={() => setIsResizerHover(false)}
@@ -358,29 +300,14 @@ export function ProfileModuleView(props: Props) {
               </button>
             </div>
 
-            <aside
-              ref={rightPanelRef}
-              className={
-                gl
-                  ? 'okan-project-split-aside glass-card glass-card--static project-mgmt-split-panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
-                  : 'okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:pl-2'
-              }
-            >
+            <aside ref={rightPanelRef} className={managementModuleDetailPanelClass(gl)}>
               <div className="okan-project-detail-column flex h-full min-h-0 min-w-0 flex-1 flex-col">
-                <div className="mx-auto flex h-full min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 overflow-hidden lg:max-w-3xl">
+                <div className="mx-auto flex h-full min-h-0 w-full min-w-0 flex-1 flex-col gap-4 overflow-hidden">
                   <header className="shrink-0 border-b border-black/12 pb-3 text-center dark:border-white/10">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
-                      {t('profileModule.listTitle')}
-                    </p>
-                    <h3 className="mt-1.5 text-xl font-semibold leading-tight text-black dark:text-white">
-                      {firstName} {lastName}
+                    <h3 className="text-xl font-semibold leading-tight text-black dark:text-white">
+                      {activeSectionLabel}
                     </h3>
-                    <p className="mt-1 text-sm leading-snug text-black/75 dark:text-white/80">{activeSectionLabel}</p>
                   </header>
-
-                  <p className="shrink-0 px-0.5 text-center text-[11px] leading-relaxed text-black/70 dark:text-white/70 sm:px-1">
-                    {t('profileModule.intro')}
-                  </p>
 
                   <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                     <div
@@ -605,8 +532,6 @@ export function ProfileModuleView(props: Props) {
               </div>
             </aside>
           </div>
-        </div>
-      </div>
-    </div>
+    </ManagementModuleShell>
   )
 }

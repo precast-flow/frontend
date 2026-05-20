@@ -1,9 +1,10 @@
 import { buildCuringReport } from './curingReport'
 import { buildNonconformanceReportNo, buildNcOrderNo } from './nonconformanceReport'
-import { DEFAULT_DRAWING_ASSET } from './productionDrawingMock'
+import { S2_KOLON_DRAWING_PDF } from './productionDrawingMock'
 import {
   PRE_POUR_CHECKS,
   buildSpawnedWorkOrders,
+  createInitialCuringFlowState,
   createInitialPostPourState,
   type CuringFlowState,
   type ProductionWorkOrderFlowState,
@@ -30,7 +31,7 @@ export const QUALITY_CONTROL_DEMO_PRODUCTION_ID = 'wq-qc-demo-full'
 const DEMO_STAMP = 990_001
 const DEMO_CREATED_AT = '2025-05-06T08:30:00.000Z'
 const DEMO_POUR_AT = '2025-05-06T09:15:00.000Z'
-const DEMO_SPOT_SNAPSHOT = DEFAULT_DRAWING_ASSET
+const DEMO_SPOT_SNAPSHOT = S2_KOLON_DRAWING_PDF
 
 type MarkerSeed = {
   id: string
@@ -132,8 +133,8 @@ function buildDemoProductionItem(): WorkQueueItem {
     daysOnDesk: 0,
     lastUpdatedLabel: '06.05.2025 09:45',
     dueToday: true,
-    productCode: 'PRD-ATL-D01',
-    productName: 'Çiftlik öncülü döküş — demo',
+    productCode: 'S2-KOLON',
+    productName: 'S2 Kolon — demo',
     moldId: 'MOLD-D14',
     moldName: 'Hat D — demo kalıbı',
     shiftLabel: 'Öğle',
@@ -142,7 +143,7 @@ function buildDemoProductionItem(): WorkQueueItem {
     recipeId: 'R-884',
     planDayIso: '2025-05-06',
     fieldNotes: 'Demo: tüm kalite akışı önceden doldurulmuştur.',
-    drawingPreviewUrl: DEFAULT_DRAWING_ASSET,
+    drawingPreviewUrl: S2_KOLON_DRAWING_PDF,
   }
 }
 
@@ -233,6 +234,7 @@ function buildCompletedCuringFlow(): { flow: CuringFlowState; completedAt: numbe
   const steamOffDueAt = startedAt + 30_000
   const steamAcknowledgedAt = steamOffDueAt + 5_000
   const flow: CuringFlowState = {
+    ...createInitialCuringFlowState(startedAt),
     status: 'tamamlandi',
     startedAt,
     steamOffDueAt,
@@ -240,6 +242,7 @@ function buildCompletedCuringFlow(): { flow: CuringFlowState; completedAt: numbe
     steamAcknowledgedAt,
     completeDueAt: completedAt,
     completedAt,
+    expectedCuringEndAt: completedAt,
   }
   return { flow, completedAt }
 }

@@ -16,6 +16,7 @@ import '../muhendislikOkan/engineeringOkanLiquid.css'
 import '../proje/projectManagementGlassLight.css'
 import { eiSplitFilterToggleClass } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
+import { useSplitPaneDrag, useSplitPaneRatio, writeSplitPaneRatio } from '../shared/splitModuleStyles'
 
 type Props = {
   onNavigate?: (moduleId: string) => void
@@ -28,7 +29,6 @@ type Props = {
 }
 
 const QUOTE_LIST_PAGE_SIZE = 6
-const QUOTE_DEFAULT_SPLIT_RATIO = 40
 
 const detailTabDefs = [
   { id: 'ozet', label: 'Özet' },
@@ -77,6 +77,7 @@ function totalFromLines(quote: Quote) {
 
 type QuotePersist = {
   selectedId?: string
+  /** @deprecated split-pane anahtarına taşındı; yalnızca eski oturumlardan okuma */
   splitRatio?: number
   pageSize?: number
   detailTab?: DetailTabId
@@ -116,12 +117,19 @@ export function QuoteModuleView({
   const [detailTab, setDetailTab] = useState<DetailTabId>('ozet')
   const [listPage, setListPage] = useState(1)
   const pageSize = QUOTE_LIST_PAGE_SIZE
-  const [splitRatio, setSplitRatio] = useState(QUOTE_DEFAULT_SPLIT_RATIO)
-  const [isResizing, setIsResizing] = useState(false)
+  const splitPaneKey = `quote:${storageKeyPrefix ?? 'module'}`
+  const {
+    isResizing,
+    setIsResizing,
+    resetRatio,
+    leftWidthStyle,
+    setRatioFromPointer,
+  } = useSplitPaneRatio(splitPaneKey)
   const [isResizerHover, setIsResizerHover] = useState(false)
   const [persistHydrated, setPersistHydrated] = useState(!persistKey)
   const listRef = useRef<HTMLUListElement | null>(null)
   const splitRef = useRef<HTMLDivElement | null>(null)
+  useSplitPaneDrag(splitRef, { isResizing, setIsResizing, setRatioFromPointer })
 
   useEffect(() => {
     if (!persistKey) {
@@ -132,7 +140,9 @@ export function QuoteModuleView({
       const raw = sessionStorage.getItem(persistKey)
       if (raw) {
         const p = JSON.parse(raw) as QuotePersist
-        if (typeof p.splitRatio === 'number') setSplitRatio(Math.min(55, Math.max(30, p.splitRatio)))
+        if (typeof p.splitRatio === 'number') {
+          writeSplitPaneRatio(splitPaneKey, p.splitRatio)
+        }
         if (p.detailTab && detailTabDefs.some((d) => d.id === p.detailTab)) setDetailTab(p.detailTab)
         if (Array.isArray(p.statusFilter)) setStatusFilter(p.statusFilter)
         if (typeof p.searchQuery === 'string') setSearchQuery(p.searchQuery)
@@ -144,7 +154,7 @@ export function QuoteModuleView({
       /* ignore */
     }
     setPersistHydrated(true)
-  }, [persistKey])
+  }, [persistKey, splitPaneKey])
 
   const activeFilterCount = statusFilter.length + (searchQuery.trim() ? 1 : 0)
 
@@ -173,7 +183,6 @@ export function QuoteModuleView({
     if (!persistKey || !persistHydrated) return
     const p: QuotePersist = {
       selectedId,
-      splitRatio,
       detailTab,
       statusFilter,
       searchQuery,
@@ -185,7 +194,6 @@ export function QuoteModuleView({
     persistHydrated,
     persistKey,
     selectedId,
-    splitRatio,
     detailTab,
     statusFilter,
     searchQuery,
@@ -232,29 +240,6 @@ export function QuoteModuleView({
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [filtersOpen])
-
-  useEffect(() => {
-    if (!isResizing) return
-    const onMouseMove = (event: MouseEvent) => {
-      const host = splitRef.current
-      if (!host) return
-      const rect = host.getBoundingClientRect()
-      if (rect.width <= 0) return
-      const next = ((event.clientX - rect.left) / rect.width) * 100
-      setSplitRatio(Math.min(55, Math.max(30, Number(next.toFixed(2)))))
-    }
-    const onMouseUp = () => setIsResizing(false)
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', onMouseUp)
-    return () => {
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('mouseup', onMouseUp)
-    }
-  }, [isResizing])
 
   const scrollPanelTop = () => {
     requestAnimationFrame(() => {
@@ -339,7 +324,7 @@ export function QuoteModuleView({
                 'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden',
                 gl ? 'glass-card glass-card--static project-mgmt-split-panel min-h-0' : 'p-3',
               ].join(' ')}
-              style={{ width: `calc(${splitRatio}% - 5px)` }}
+              style={leftWidthStyle}
             >
               <div className="mb-2 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
                 <h2
@@ -651,7 +636,7 @@ export function QuoteModuleView({
                 onDoubleClick={(e) => {
                   e.preventDefault()
                   setIsResizing(false)
-                  setSplitRatio(QUOTE_DEFAULT_SPLIT_RATIO)
+                  resetRatio()
                 }}
                 onMouseEnter={() => setIsResizerHover(true)}
                 onMouseLeave={() => setIsResizerHover(false)}

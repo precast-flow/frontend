@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import {
   Building2,
   ChevronsLeftRight,
@@ -31,11 +30,20 @@ import {
   eiSplitHeaderButtonPassive,
 } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import {
+  ManagementModuleShell,
+  managementModuleDetailPanelClass,
+  managementModuleListPanelClass,
+  managementModuleListTitleClass,
+  managementModuleListToolbarClass,
+  managementModuleSplitRowClass,
   splitDetailHeaderClass,
   splitListCardClass,
   splitListEmptyClass,
   splitTabPill,
+  useSplitPaneDrag,
+  useSplitPaneRatio,
 } from '../shared/splitModuleStyles'
+import { AppDialog, AppDialogButton, appDialogFieldClass, appDialogLabelClass } from '../shared/AppDialog'
 import './projectManagementGlassLight.css'
 
 function statusLabel(status: ProjectStatus) {
@@ -84,7 +92,7 @@ type ProjectDialogDraft = {
 }
 type ProjectRow = ProjectCardItem & { location: string; shortCode: string }
 const PROJECT_MANAGEMENT_VIEW_STATE_KEY = 'project-management:view-state'
-const PROJECT_MANAGEMENT_DEFAULT_SPLIT_RATIO = 40
+const PROJECT_MANAGEMENT_SPLIT_PANE_KEY = 'project-management'
 
 const CUSTOMER_LOCATIONS: Record<string, string[]> = {
   'Acme Altyapi': ['Merkez Kampüs', 'Saha-1', 'Saha-2'],
@@ -208,20 +216,17 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
     }
   })
   const pageSize = 4
-  const [splitRatio, setSplitRatio] = useState(() => {
-    try {
-      const raw = sessionStorage.getItem(PROJECT_MANAGEMENT_VIEW_STATE_KEY)
-      if (!raw) return PROJECT_MANAGEMENT_DEFAULT_SPLIT_RATIO
-      const parsed = JSON.parse(raw) as { splitRatio?: number }
-      return typeof parsed.splitRatio === 'number'
-        ? Math.min(55, Math.max(30, parsed.splitRatio))
-        : PROJECT_MANAGEMENT_DEFAULT_SPLIT_RATIO
-    } catch {
-      return PROJECT_MANAGEMENT_DEFAULT_SPLIT_RATIO
-    }
+  const {
+    isResizing,
+    setIsResizing,
+    resetRatio,
+    leftWidthStyle,
+    setRatioFromPointer,
+  } = useSplitPaneRatio(PROJECT_MANAGEMENT_SPLIT_PANE_KEY, 40, {
+    legacyViewStateKey: PROJECT_MANAGEMENT_VIEW_STATE_KEY,
   })
-  const [isResizing, setIsResizing] = useState(false)
   const [isResizerHover, setIsResizerHover] = useState(false)
+  useSplitPaneDrag(splitRef, { isResizing, setIsResizing, setRatioFromPointer })
   const [dialogMode, setDialogMode] = useState<ProjectDialogMode>('create')
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false)
   const [dialogError, setDialogError] = useState<string | null>(null)
@@ -450,37 +455,6 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [filtersOpen])
 
-  useEffect(() => {
-    if (!isResizing) return
-    let rafId = 0
-    const onMouseMove = (event: MouseEvent) => {
-      cancelAnimationFrame(rafId)
-      rafId = requestAnimationFrame(() => {
-        const host = splitRef.current
-        if (!host) return
-        const rect = host.getBoundingClientRect()
-        if (rect.width <= 0) return
-        const next = ((event.clientX - rect.left) / rect.width) * 100
-        setSplitRatio(Math.min(55, Math.max(30, Number(next.toFixed(2)))))
-      })
-    }
-    const onMouseUp = () => {
-      cancelAnimationFrame(rafId)
-      setIsResizing(false)
-    }
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', onMouseUp)
-    return () => {
-      cancelAnimationFrame(rafId)
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('mouseup', onMouseUp)
-    }
-  }, [isResizing])
-
   const applyMockStatusChange = () => {
     if (!selected) return
     setRows((prev) =>
@@ -512,7 +486,6 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
       sortMode,
       detailTab,
       listPage: safeListPage,
-      splitRatio,
     }
     sessionStorage.setItem(PROJECT_MANAGEMENT_VIEW_STATE_KEY, JSON.stringify(next))
   }, [
@@ -524,17 +497,15 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
     searchQuery,
     selectedId,
     sortMode,
-    splitRatio,
     statusFilter,
   ])
 
   return (
-    <div
-      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl"
-      data-neutral-shell={neutralShell ? 'true' : undefined}
-    >
-      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-2">
-        <div className="px-[0.6875rem] pt-0 pb-0.5">
+    <>
+    <ManagementModuleShell
+      neutralShell={neutralShell}
+      gl={gl}
+      breadcrumb={
           <nav
             aria-label={t('project.breadcrumbAria')}
             className="mb-0"
@@ -556,35 +527,19 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               </li>
             </ol>
           </nav>
-        </div>
-
-        <div
-          className={[
-            'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
-            gl
-              ? 'gap-2 rounded-3xl bg-transparent p-1 md:p-1.5'
-              : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
-          ].join(' ')}
-        >
+      }
+    >
           <div
             ref={splitRef}
             data-split-dragging={isResizing ? 'true' : undefined}
-            className={[
-              'relative flex h-full min-h-0 min-w-0 overflow-hidden',
-              gl ? 'gap-3 rounded-3xl lg:gap-4' : 'gap-0',
-            ].join(' ')}
+            className={managementModuleSplitRowClass(gl)}
           >
             <section
-              className={[
-                'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden',
-                gl
-                  ? 'glass-card glass-card--static project-mgmt-split-panel min-h-0'
-                  : 'p-3',
-              ].join(' ')}
-              style={{ width: `calc(${splitRatio}% - 5px)` }}
+              className={managementModuleListPanelClass(gl)}
+              style={leftWidthStyle}
             >
-              <div className="mb-2 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
-                <h2 className="min-w-0 shrink-0 text-sm font-semibold text-black dark:text-white sm:text-base">
+              <div className={managementModuleListToolbarClass}>
+                <h2 className={managementModuleListTitleClass}>
                   Projeler
                 </h2>
                 <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
@@ -981,7 +936,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                 onDoubleClick={(e) => {
                   e.preventDefault()
                   setIsResizing(false)
-                  setSplitRatio(PROJECT_MANAGEMENT_DEFAULT_SPLIT_RATIO)
+                  resetRatio()
                 }}
                 onMouseEnter={() => setIsResizerHover(true)}
                 onMouseLeave={() => setIsResizerHover(false)}
@@ -1008,11 +963,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
 
             <aside
               ref={detailPanelRef}
-              className={
-                gl
-                  ? 'okan-project-split-aside glass-card glass-card--static project-mgmt-split-panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
-                  : 'okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:pl-2'
-              }
+              className={managementModuleDetailPanelClass(gl)}
             >
             {selected ? (
               <div key={selectedId} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
@@ -1275,60 +1226,28 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
             )}
             </aside>
           </div>
-        </div>
-      </div>
-      {isProjectDialogOpen
-        ? createPortal(
-            <div className="fixed inset-0 z-[110] flex items-end justify-center p-3 sm:items-center sm:p-6">
-              <button
-                type="button"
-                className="absolute inset-0 z-0 bg-black/40 backdrop-blur-[2px] dark:bg-black/60"
-                aria-label="Proje dialog kapat"
-                onClick={() => setIsProjectDialogOpen(false)}
-              />
-              <div
-                className={
-                  gl
-                    ? 'project-mgmt-glass-light relative z-10 w-full max-w-2xl'
-                    : 'relative z-10 w-full max-w-2xl'
-                }
-              >
-                <div
-                  role="dialog"
-                  aria-modal="true"
-                  aria-label={dialogMode === 'create' ? 'Proje oluştur' : 'Proje düzenle'}
-                  className={
-                    gl
-                      ? 'glass-card glass-card--static w-full'
-                      : 'w-full rounded-2xl border border-black/18 bg-white p-4 shadow-xl dark:border-white/12 dark:bg-black/85'
-                  }
-                >
-                  <div className="mb-4 flex items-start justify-between gap-2">
-                    <div className="min-w-0 pr-2">
-                      <h3 className="text-base font-semibold text-black dark:text-white">
-                        {dialogMode === 'create' ? 'Proje oluştur' : 'Proje düzenle'}
-                      </h3>
-                      <p className="mt-1 text-xs text-black/60 dark:text-white/65">
-                        Genel bilgiler alanını doldurun.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsProjectDialogOpen(false)}
-                      aria-label="Kapat"
-                      className={
-                        gl
-                          ? 'card-button inline-flex size-8 shrink-0 items-center justify-center p-0 text-black shadow-sm ring-1 ring-black/15 dark:text-white dark:ring-white/20'
-                          : 'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-black/20 text-black/80 shadow-sm hover:bg-black/5 dark:border-white/15 dark:text-white/85 dark:hover:bg-white/10'
-                      }
-                    >
-                      <X className="size-4 shrink-0" strokeWidth={2} aria-hidden />
-                    </button>
-                  </div>
-
+    </ManagementModuleShell>
+      <AppDialog
+        open={isProjectDialogOpen}
+        size="md"
+        title={dialogMode === 'create' ? 'Proje oluştur' : 'Proje düzenle'}
+        subtitle="Genel bilgiler alanını doldurun."
+        closeLabel="Kapat"
+        onClose={() => setIsProjectDialogOpen(false)}
+        footer={
+          <>
+            <AppDialogButton variant="secondary" onClick={() => setIsProjectDialogOpen(false)}>
+              Vazgeç
+            </AppDialogButton>
+            <AppDialogButton variant="primary" onClick={saveProjectDialog}>
+              {dialogMode === 'create' ? 'Projeyi oluştur' : 'Değişiklikleri kaydet'}
+            </AppDialogButton>
+          </>
+        }
+      >
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="sm:col-span-2">
-                <span className="text-xs font-medium text-black/75 dark:text-white/80">Müşteri</span>
+                <span className={appDialogLabelClass}>Müşteri</span>
                 <select
                   value={dialogDraft.customer}
                   onChange={(event) => {
@@ -1340,11 +1259,7 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     }))
                     setDialogError(null)
                   }}
-                  className={
-                    gl
-                      ? 'glass-input mt-1 w-full'
-                      : 'mt-1 w-full rounded-lg border border-black/22 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-black/80'
-                  }
+                  className={appDialogFieldClass}
                 >
                   {customerOptions.map((customer) => (
                     <option key={customer} value={customer}>
@@ -1355,18 +1270,14 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               </label>
 
               <label>
-                <span className="text-xs font-medium text-black/75 dark:text-white/80">Lokasyon</span>
+                <span className={appDialogLabelClass}>Lokasyon</span>
                 <select
                   value={dialogDraft.location}
                   onChange={(event) => {
                     setDialogDraft((prev) => ({ ...prev, location: event.target.value }))
                     setDialogError(null)
                   }}
-                  className={
-                    gl
-                      ? 'glass-input mt-1 w-full'
-                      : 'mt-1 w-full rounded-lg border border-black/22 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-black/80'
-                  }
+                  className={appDialogFieldClass}
                 >
                   {locationOptions.map((location) => (
                     <option key={location} value={location}>
@@ -1377,18 +1288,14 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               </label>
 
               <label>
-                <span className="text-xs font-medium text-black/75 dark:text-white/80">Durum</span>
+                <span className={appDialogLabelClass}>Durum</span>
                 <select
                   value={dialogDraft.status}
                   onChange={(event) => {
                     setDialogDraft((prev) => ({ ...prev, status: event.target.value as ProjectStatus }))
                     setDialogError(null)
                   }}
-                  className={
-                    gl
-                      ? 'glass-input mt-1 w-full'
-                      : 'mt-1 w-full rounded-lg border border-black/22 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-black/80'
-                  }
+                  className={appDialogFieldClass}
                 >
                   {(['planlama', 'devam', 'riskli', 'beklemede', 'tamamlandi'] as const).map((status) => (
                     <option key={status} value={status}>
@@ -1399,23 +1306,19 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
               </label>
 
               <label className="sm:col-span-2">
-                <span className="text-xs font-medium text-black/75 dark:text-white/80">Proje adı</span>
+                <span className={appDialogLabelClass}>Proje adı</span>
                 <input
                   value={dialogDraft.name}
                   onChange={(event) => {
                     setDialogDraft((prev) => ({ ...prev, name: event.target.value }))
                     setDialogError(null)
                   }}
-                  className={
-                    gl
-                      ? 'glass-input mt-1 w-full'
-                      : 'mt-1 w-full rounded-lg border border-black/22 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-black/80'
-                  }
+                  className={appDialogFieldClass}
                 />
               </label>
 
               <label>
-                <span className="text-xs font-medium text-black/75 dark:text-white/80">Proje kısa kodu</span>
+                <span className={appDialogLabelClass}>Proje kısa kodu</span>
                 <input
                   value={dialogDraft.shortCode}
                   maxLength={4}
@@ -1424,16 +1327,12 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     setDialogError(null)
                   }}
                   placeholder="2-4 karakter"
-                  className={
-                    gl
-                      ? 'glass-input mt-1 w-full uppercase'
-                      : 'mt-1 w-full rounded-lg border border-black/22 bg-white px-3 py-2 text-sm uppercase dark:border-white/15 dark:bg-black/80'
-                  }
+                  className={appDialogFieldClass}
                 />
               </label>
 
               <label>
-                <span className="text-xs font-medium text-black/75 dark:text-white/80">Başlangıç tarihi</span>
+                <span className={appDialogLabelClass}>Başlangıç tarihi</span>
                 <input
                   type="date"
                   value={dialogDraft.startDate}
@@ -1441,16 +1340,12 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     setDialogDraft((prev) => ({ ...prev, startDate: event.target.value }))
                     setDialogError(null)
                   }}
-                  className={
-                    gl
-                      ? 'glass-input mt-1 w-full'
-                      : 'mt-1 w-full rounded-lg border border-black/22 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-black/80'
-                  }
+                  className={appDialogFieldClass}
                 />
               </label>
 
               <label>
-                <span className="text-xs font-medium text-black/75 dark:text-white/80">Termin tarihi</span>
+                <span className={appDialogLabelClass}>Termin tarihi</span>
                 <input
                   type="date"
                   value={dialogDraft.dueDate}
@@ -1458,44 +1353,17 @@ export function ProjectManagementModuleView({ onNavigate }: Props) {
                     setDialogDraft((prev) => ({ ...prev, dueDate: event.target.value }))
                     setDialogError(null)
                   }}
-                  className={
-                    gl
-                      ? 'glass-input mt-1 w-full'
-                      : 'mt-1 w-full rounded-lg border border-black/22 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-black/80'
-                  }
+                  className={appDialogFieldClass}
                 />
               </label>
             </div>
 
             {dialogError ? (
-              <p className="mt-3 text-xs font-semibold text-rose-600 dark:text-rose-300">{dialogError}</p>
+              <p className="mt-3 text-xs font-semibold text-rose-600">{dialogError}</p>
             ) : null}
 
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setIsProjectDialogOpen(false)}
-                className={
-                  gl
-                    ? ['glass-btn', 'secondary', 'small'].join(' ')
-                    : 'rounded-lg border border-black/22 px-3 py-2 text-sm font-semibold text-black dark:border-white/15 dark:text-white'
-                }
-              >
-                Vazgeç
-              </button>
-              <button
-                type="button"
-                onClick={saveProjectDialog}
-                className={eiSplitHeaderButtonPassive}
-              >
-                {dialogMode === 'create' ? 'Projeyi oluştur' : 'Değişiklikleri kaydet'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      , document.body)
-      : null}
-    </div>
+
+      </AppDialog>
+    </>
   )
 }

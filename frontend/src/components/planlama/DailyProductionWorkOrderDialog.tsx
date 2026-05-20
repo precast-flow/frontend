@@ -86,12 +86,11 @@ export function DailyProductionWorkOrderDialog({
 
   return (
     <PmStyleDialog
-      variant="planning"
       title={t('productionPlanning.dailyOrder.title')}
       subtitle={t('productionPlanning.dailyOrder.subtitle')}
       closeLabel={t('productionPlanning.dailyOrder.cancel')}
       onClose={onClose}
-      maxWidthClass="max-w-2xl"
+      size="md"
       footer={
         <DialogFooter
           previewCount={previewCount}

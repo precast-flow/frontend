@@ -13,8 +13,8 @@ export function SettingsPage() {
   const settingsCrumbs = accountPageBreadcrumbSegments('settings')
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-0 py-1 md:px-1 md:py-2 gm-glass-main-canvas--okan-liquid h-[calc(100dvh-12.5rem)] min-h-[calc(100dvh-12.5rem)] max-h-[calc(100dvh-12.5rem)]">
-      <div className="mb-2 shrink-0 pb-2 ps-[0.6875rem] pe-[0.6875rem]">
+    <div className="gm-glass-main-canvas project-mgmt-page-root flex min-h-0 flex-1 flex-col overflow-hidden px-0 pt-0 pb-1 md:px-1 md:pt-0 md:pb-2 gm-glass-main-canvas--okan-liquid h-full min-h-0">
+      <div className="mb-2 shrink-0 pt-1 pb-2 md:pt-1.5 ps-[0.6875rem] pe-[0.6875rem]">
         <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-50 md:text-2xl">
           {t('settings.pageTitle')}
         </h1>

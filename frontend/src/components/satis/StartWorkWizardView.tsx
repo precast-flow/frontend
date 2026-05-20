@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { CheckCircle2, FileSignature, Send, X } from 'lucide-react'
+import { CheckCircle2, FileSignature, Send } from 'lucide-react'
+import { AppDialog, AppDialogButton } from '../shared/AppDialog'
 import { quotes } from '../../data/quotesMock'
 import {
   DEFAULT_START_WORK,
@@ -238,38 +239,28 @@ export function StartWorkWizardView({ onNavigate }: Props) {
       </div>
 
       {preview ? (
-        <div className="gm-glass-modal-shell fixed inset-0 z-50 flex items-center justify-center bg-gray-900/35 p-4 backdrop-blur-[2px]">
-          <div
-            className="relative w-full max-w-md rounded-2xl bg-pf-surface p-5 shadow-neo-out"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="wo-preview-title"
-          >
-            <button
-              type="button"
-              className="absolute right-3 top-3 rounded-xl p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
-              onClick={() => setPreview(null)}
-              aria-label="Kapat"
-            >
-              <X className="size-5" />
-            </button>
-            <h2 id="wo-preview-title" className="pr-10 text-lg font-semibold text-gray-900 dark:text-gray-50">
-              İş emri önizlemesi
-            </h2>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Mühendislik birimine iletildi (mock).</p>
-            <div className="mt-4 rounded-xl bg-gray-50 p-4 shadow-neo-in dark:bg-gray-950/80">
-              <p className="font-mono text-sm font-semibold text-gray-900 dark:text-gray-50">{preview.workOrderNo}</p>
-              <p className="mt-2 text-sm text-gray-800 dark:text-gray-100">{preview.projectName}</p>
-              <p className="mt-1 font-mono text-xs text-gray-600 dark:text-gray-400">{preview.projectCode}</p>
-              <p className="mt-3 text-sm text-gray-700 dark:text-gray-200">
-                Tür: <strong>Üretim öncesi mühendislik</strong>
-              </p>
-            </div>
-            <button type="button" className={`${btnPrimary} mt-5 w-full`} onClick={() => setPreview(null)}>
+        <AppDialog
+          open
+          size="sm"
+          title="İş emri önizlemesi"
+          subtitle="Mühendislik birimine iletildi (mock)."
+          closeLabel="Kapat"
+          onClose={() => setPreview(null)}
+          footer={
+            <AppDialogButton variant="primary" onClick={() => setPreview(null)}>
               Tamam
-            </button>
+            </AppDialogButton>
+          }
+        >
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="font-mono text-sm font-semibold text-slate-900">{preview.workOrderNo}</p>
+            <p className="mt-2 text-sm text-slate-800">{preview.projectName}</p>
+            <p className="mt-1 font-mono text-xs text-slate-600">{preview.projectCode}</p>
+            <p className="mt-3 text-sm text-slate-700">
+              Tür: <strong>Üretim öncesi mühendislik</strong>
+            </p>
           </div>
-        </div>
+        </AppDialog>
       ) : null}
     </div>
   )

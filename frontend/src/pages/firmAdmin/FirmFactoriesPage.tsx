@@ -1,4 +1,4 @@
-import { useCallback, useId, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { MapPin, Pencil, Plus, Users, X } from 'lucide-react'
 import {
@@ -8,6 +8,7 @@ import {
 } from '../../data/firmFactoriesMock'
 import { FACTORY_OPS_SUMMARY, MOLD_ROWS, WORKER_ROWS } from '../../data/productionFactoryOpsMock'
 import { useI18n } from '../../i18n/I18nProvider'
+import { AppDialog, AppDialogButton, appDialogFieldClass, appDialogLabelClass } from '../../components/shared/AppDialog'
 
 const inset =
   'w-full rounded-xl border-0 bg-gray-100 px-3 py-2.5 text-sm text-gray-900 shadow-neo-in focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:bg-gray-950 dark:text-gray-100'
@@ -15,17 +16,10 @@ const inset =
 const btnPrimary =
   'rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-neo-out-sm hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white'
 
-const btnSecondary =
-  'rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-800 shadow-neo-out-sm hover:bg-gray-200/90 dark:bg-gray-800 dark:text-gray-100'
-
-const btnDanger =
-  'rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-900 shadow-neo-out-sm hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-100'
-
 let newId = 0
 
 export function FirmFactoriesPage() {
   const { t } = useI18n()
-  const baseId = useId()
   const [rows, setRows] = useState<FirmFactoryRow[]>(() => buildFirmFactoriesSeed())
   const [defaultCode, setDefaultCode] = useState(FIRM_FACTORIES_DEFAULT_CODE)
   const [addOpen, setAddOpen] = useState(false)
@@ -196,103 +190,103 @@ export function FirmFactoriesPage() {
         </table>
       </div>
 
-      {/* Ekle — modal */}
-      {addOpen ? (
-        <div
-          className="gm-glass-modal-shell fixed inset-0 z-[80] flex items-end justify-center bg-gray-900/40 p-4 backdrop-blur-[2px] sm:items-center"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={`${baseId}-add-title`}
-        >
-          <div className="w-full max-w-md rounded-3xl bg-pf-surface p-6 shadow-neo-out">
-            <h3 id={`${baseId}-add-title`} className="text-lg font-semibold text-gray-900 dark:text-gray-50">
-              {t('firmFactory.addTitle')}
-            </h3>
-            <div className="mt-4 space-y-3">
-              <label className="block">
-                <span className="text-xs font-semibold uppercase text-gray-500">{t('firmFactory.form.code')}</span>
-                <input
-                  className={`${inset} mt-1 font-mono uppercase`}
-                  value={addForm.code}
-                  onChange={(e) => setAddForm((f) => ({ ...f, code: e.target.value }))}
-                />
-              </label>
-              <label className="block">
-                <span className="text-xs font-semibold uppercase text-gray-500">{t('firmFactory.form.name')}</span>
-                <input
-                  className={`${inset} mt-1`}
-                  value={addForm.name}
-                  onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))}
-                />
-              </label>
-              <label className="block">
-                <span className="text-xs font-semibold uppercase text-gray-500">{t('firmFactory.form.city')}</span>
-                <input className={`${inset} mt-1`} value={addForm.city} onChange={(e) => setAddForm((f) => ({ ...f, city: e.target.value }))} />
-              </label>
-              <label className="block">
-                <span className="text-xs font-semibold uppercase text-gray-500">{t('firmFactory.form.address')}</span>
-                <textarea
-                  className={`${inset} mt-1 min-h-[5rem] resize-y`}
-                  value={addForm.address}
-                  onChange={(e) => setAddForm((f) => ({ ...f, address: e.target.value }))}
-                />
-              </label>
-            </div>
-            <div className="mt-6 flex flex-wrap justify-end gap-2">
-              <button type="button" className={btnSecondary} onClick={() => setAddOpen(false)}>
-                {t('firmGeneral.cancel')}
-              </button>
-              <button type="button" className={btnPrimary} onClick={addFactory}>
-                {t('firmFactory.addSave')}
-              </button>
-            </div>
-          </div>
+      <AppDialog
+        open={addOpen}
+        size="sm"
+        title={t('firmFactory.addTitle')}
+        closeLabel={t('firmGeneral.cancel')}
+        onClose={() => setAddOpen(false)}
+        footer={
+          <>
+            <AppDialogButton variant="secondary" onClick={() => setAddOpen(false)}>
+              {t('firmGeneral.cancel')}
+            </AppDialogButton>
+            <AppDialogButton variant="primary" onClick={addFactory}>
+              {t('firmFactory.addSave')}
+            </AppDialogButton>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <label className="block">
+            <span className={appDialogLabelClass}>{t('firmFactory.form.code')}</span>
+            <input
+              className={`${appDialogFieldClass} font-mono uppercase`}
+              value={addForm.code}
+              onChange={(e) => setAddForm((f) => ({ ...f, code: e.target.value }))}
+            />
+          </label>
+          <label className="block">
+            <span className={appDialogLabelClass}>{t('firmFactory.form.name')}</span>
+            <input
+              className={appDialogFieldClass}
+              value={addForm.name}
+              onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))}
+            />
+          </label>
+          <label className="block">
+            <span className={appDialogLabelClass}>{t('firmFactory.form.city')}</span>
+            <input
+              className={appDialogFieldClass}
+              value={addForm.city}
+              onChange={(e) => setAddForm((f) => ({ ...f, city: e.target.value }))}
+            />
+          </label>
+          <label className="block">
+            <span className={appDialogLabelClass}>{t('firmFactory.form.address')}</span>
+            <textarea
+              className={`${appDialogFieldClass} min-h-[5rem] resize-y`}
+              value={addForm.address}
+              onChange={(e) => setAddForm((f) => ({ ...f, address: e.target.value }))}
+            />
+          </label>
         </div>
-      ) : null}
+      </AppDialog>
 
-      {/* Pasifleştir — onay (birden fazla aktif fabrika varken) */}
-      {deactivateTarget && !lastFactoryWarn ? (
-        <div
-          className="gm-glass-modal-shell fixed inset-0 z-[85] flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-[2px]"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="max-w-md rounded-3xl bg-pf-surface p-6 shadow-neo-out">
-            <p className="text-sm text-gray-800 dark:text-gray-100">{t('firmFactory.confirmDeactivate')}</p>
-            <p className="mt-2 font-mono text-sm font-semibold text-gray-900 dark:text-gray-50">{deactivateTarget.code}</p>
-            <div className="mt-6 flex flex-wrap justify-end gap-2">
-              <button type="button" className={btnSecondary} onClick={() => setDeactivateTarget(null)}>
-                {t('firmGeneral.cancel')}
-              </button>
-              <button type="button" className={btnDanger} onClick={confirmDeactivate}>
-                {t('firmFactory.confirmDeactivateOk')}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <AppDialog
+        open={Boolean(deactivateTarget && !lastFactoryWarn)}
+        size="sm"
+        title={t('firmFactory.confirmDeactivate')}
+        closeLabel={t('firmGeneral.cancel')}
+        onClose={() => setDeactivateTarget(null)}
+        footer={
+          <>
+            <AppDialogButton variant="secondary" onClick={() => setDeactivateTarget(null)}>
+              {t('firmGeneral.cancel')}
+            </AppDialogButton>
+            <AppDialogButton variant="danger" onClick={confirmDeactivate}>
+              {t('firmFactory.confirmDeactivateOk')}
+            </AppDialogButton>
+          </>
+        }
+      >
+        {deactivateTarget ? (
+          <p className="font-mono text-sm font-semibold text-slate-900">{deactivateTarget.code}</p>
+        ) : null}
+      </AppDialog>
 
-      {/* Son aktif fabrika — uyarı */}
-      {deactivateTarget && lastFactoryWarn ? (
-        <div
-          className="gm-glass-modal-shell fixed inset-0 z-[90] flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-[2px]"
-          role="alertdialog"
-          aria-modal="true"
-        >
-          <div className="max-w-md rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-neo-out dark:border-amber-800 dark:bg-amber-950/50">
-            <p className="text-sm font-medium text-amber-950 dark:text-amber-100">{t('firmFactory.lastFactoryWarn')}</p>
-            <p className="mt-2 text-xs text-amber-900/90 dark:text-amber-100/90">{t('firmFactory.lastFactoryHint')}</p>
-            <div className="mt-6 flex flex-wrap justify-end gap-2">
-              <button type="button" className={btnSecondary} onClick={() => setDeactivateTarget(null)}>
-                {t('firmFactory.lastFactoryCancel')}
-              </button>
-              <button type="button" className={btnDanger} onClick={confirmDeactivate}>
-                {t('firmFactory.lastFactoryForce')}
-              </button>
-            </div>
-          </div>
+      <AppDialog
+        open={Boolean(deactivateTarget && lastFactoryWarn)}
+        size="sm"
+        title={t('firmFactory.lastFactoryWarn')}
+        subtitle={t('firmFactory.lastFactoryHint')}
+        closeLabel={t('firmFactory.lastFactoryCancel')}
+        onClose={() => setDeactivateTarget(null)}
+        footer={
+          <>
+            <AppDialogButton variant="secondary" onClick={() => setDeactivateTarget(null)}>
+              {t('firmFactory.lastFactoryCancel')}
+            </AppDialogButton>
+            <AppDialogButton variant="danger" onClick={confirmDeactivate}>
+              {t('firmFactory.lastFactoryForce')}
+            </AppDialogButton>
+          </>
+        }
+      >
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-950">
+          {t('firmFactory.lastFactoryWarn')}
         </div>
-      ) : null}
+      </AppDialog>
 
       {/* P1 — drawer */}
       {drawerFactory ? (

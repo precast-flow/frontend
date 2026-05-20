@@ -70,7 +70,6 @@ export const navGroups: NavGroup[] = [
     id: 'configuration',
     titleKey: 'nav.sidebar.section.configuration',
     items: [
-      { id: 'configuration-center', labelKey: 'nav.configurationCenter', slug: 'tanimlar' },
       { id: 'element-identity', labelKey: 'nav.elementIdentity', slug: 'eleman-kimlik' },
       { id: 'material-catalog', labelKey: 'nav.materialCatalog', slug: 'malzeme-katalogu' },
       {

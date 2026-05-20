@@ -2,9 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { ALL_ELEMENT_TYPES } from '../../elementIdentity/catalog/allElementTypes'
 import { TYPOLOGIES_BY_ID } from '../../elementIdentity/catalog/typologies'
 import { useI18n } from '../../i18n/I18nProvider'
-import { PmStyleDialog } from '../shared/PmStyleDialog'
+import { PmStyleDialog, AppDialogButton } from '../shared/PmStyleDialog'
 import { useElementIdentity } from './elementIdentityContextValue'
-import { eiSplitHeaderButtonPassive } from './ElementIdentityPieceCodesLikeSplit'
 
 type Props = {
   open: boolean
@@ -51,16 +50,12 @@ export function NewProductDialog({ open, projectId, onClose }: Props) {
   const canSave = Boolean(code.trim() && name.trim() && elementTypeId && typologyId && parsedQuantity >= 1)
 
   const footer = (
-    <div className="flex justify-end gap-2">
-      <button
-        type="button"
-        onClick={onClose}
-        className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200"
-      >
+    <>
+      <AppDialogButton variant="secondary" onClick={onClose}>
         {t('elementIdentity.cancel')}
-      </button>
-      <button
-        type="button"
+      </AppDialogButton>
+      <AppDialogButton
+        variant="primary"
         disabled={!canSave}
         onClick={() => {
           addProjectProduct({
@@ -81,11 +76,10 @@ export function NewProductDialog({ open, projectId, onClose }: Props) {
           setTypologyId('')
           onClose()
         }}
-        className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm disabled:opacity-40`}
       >
         {t('elementIdentity.dialog.manualSave')}
-      </button>
-    </div>
+      </AppDialogButton>
+    </>
   )
 
   return (

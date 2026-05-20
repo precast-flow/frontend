@@ -11,7 +11,15 @@ import {
 import '../proje/projectManagementGlassLight.css'
 import { eiSplitFilterToggleClass } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import { SplitListPaginationNav } from './SplitListPaginationNav'
-import { splitDetailHeaderClass, splitListCardClass, splitTabPill } from './splitModuleStyles'
+import {
+  clampSplitPaneRatio,
+  splitDetailHeaderClass,
+  splitListCardClass,
+  splitTabPill,
+  useSplitPaneDrag,
+  useSplitPaneRatio,
+  writeSplitPaneRatio,
+} from './splitModuleStyles'
 
 export type DocumentExplorerProjectContext = {
   name: string
@@ -23,7 +31,6 @@ export type DocumentExplorerProjectContext = {
 type DocDetailTabId = 'gecmis' | 'onizleme'
 
 const DOC_LIST_PAGE_SIZE = 6
-const DEFAULT_DOC_SPLIT_RATIO = 40
 
 type PersistShape = {
   docDetailTab?: DocDetailTabId
@@ -35,6 +42,7 @@ type PersistShape = {
   docSort?: 'date-desc' | 'date-asc' | 'name-asc'
   docPage?: number
   docPageSize?: number
+  /** @deprecated split-pane anahtarına taşındı */
   docSplitRatio?: number
 }
 
@@ -71,14 +79,25 @@ export function DocumentExplorerSplit({
   const [docSort, setDocSort] = useState<'date-desc' | 'date-asc' | 'name-asc'>('date-desc')
   const [docPage, setDocPage] = useState(1)
   const docPageSize = DOC_LIST_PAGE_SIZE
-  const [docSplitRatio, setDocSplitRatio] = useState(DEFAULT_DOC_SPLIT_RATIO)
-  const [isDocResizing, setIsDocResizing] = useState(false)
+  const docSplitPaneKey = `document-explorer:${persistKey}`
+  const {
+    isResizing: isDocResizing,
+    setIsResizing: setIsDocResizing,
+    resetRatio: resetDocSplitRatio,
+    leftWidthStyle: docLeftWidthStyle,
+    setRatioFromPointer: setDocRatioFromPointer,
+  } = useSplitPaneRatio(docSplitPaneKey)
   const [isDocResizerHover, setIsDocResizerHover] = useState(false)
   const [selectedDocId, setSelectedDocId] = useState(() => documents[0]?.id ?? '')
   const [hydrated, setHydrated] = useState(false)
 
   const docSplitRef = useRef<HTMLDivElement | null>(null)
   const docListRef = useRef<HTMLUListElement | null>(null)
+  useSplitPaneDrag(docSplitRef, {
+    isResizing: isDocResizing,
+    setIsResizing: setIsDocResizing,
+    setRatioFromPointer: setDocRatioFromPointer,
+  })
 
   useEffect(() => {
     try {
@@ -95,8 +114,9 @@ export function DocumentExplorerSplit({
       if (parsed.docExtFilter) setDocExtFilter(parsed.docExtFilter)
       if (parsed.docSort) setDocSort(parsed.docSort)
       if (typeof parsed.docPage === 'number' && parsed.docPage > 0) setDocPage(parsed.docPage)
-      if (typeof parsed.docSplitRatio === 'number')
-        setDocSplitRatio(Math.min(55, Math.max(30, parsed.docSplitRatio)))
+      if (typeof parsed.docSplitRatio === 'number') {
+        writeSplitPaneRatio(docSplitPaneKey, clampSplitPaneRatio(parsed.docSplitRatio))
+      }
       if (typeof parsed.selectedDocId === 'string' && documents.some((d) => d.id === parsed.selectedDocId)) {
         setSelectedDocId(parsed.selectedDocId)
       }
@@ -104,7 +124,7 @@ export function DocumentExplorerSplit({
       /* ignore */
     }
     setHydrated(true)
-  }, [persistKey, documents])
+  }, [docSplitPaneKey, persistKey, documents])
 
   useEffect(() => {
     if (!documents.some((d) => d.id === selectedDocId) && documents[0]) {
@@ -176,29 +196,6 @@ export function DocumentExplorerSplit({
   }, [isDocFilterOpen])
 
   useEffect(() => {
-    if (!isDocResizing) return
-    const onMouseMove = (event: MouseEvent) => {
-      const host = docSplitRef.current
-      if (!host) return
-      const rect = host.getBoundingClientRect()
-      if (rect.width <= 0) return
-      const next = ((event.clientX - rect.left) / rect.width) * 100
-      setDocSplitRatio(Math.min(55, Math.max(30, Number(next.toFixed(2)))))
-    }
-    const onMouseUp = () => setIsDocResizing(false)
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', onMouseUp)
-    return () => {
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('mouseup', onMouseUp)
-    }
-  }, [isDocResizing])
-
-  useEffect(() => {
     if (!hydrated) return
     const next: PersistShape = {
       docDetailTab,
@@ -209,7 +206,6 @@ export function DocumentExplorerSplit({
       docExtFilter,
       docSort,
       docPage: safeDocPage,
-      docSplitRatio,
     }
     sessionStorage.setItem(persistKey, JSON.stringify(next))
   }, [
@@ -217,7 +213,6 @@ export function DocumentExplorerSplit({
     docExtFilter,
     docQuery,
     docSort,
-    docSplitRatio,
     docTypeFilter,
     hydrated,
     isDocFilterOpen,
@@ -264,7 +259,7 @@ export function DocumentExplorerSplit({
           'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden',
           gl ? 'glass-card glass-card--static project-mgmt-split-panel min-h-0' : 'p-3',
         ].join(' ')}
-        style={{ width: `calc(${docSplitRatio}% - 5px)` }}
+        style={docLeftWidthStyle}
       >
         <div className="mb-2 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
           <h2
@@ -571,7 +566,7 @@ export function DocumentExplorerSplit({
           onDoubleClick={(e) => {
             e.preventDefault()
             setIsDocResizing(false)
-            setDocSplitRatio(DEFAULT_DOC_SPLIT_RATIO)
+            resetDocSplitRatio()
           }}
           onMouseEnter={() => setIsDocResizerHover(true)}
           onMouseLeave={() => setIsDocResizerHover(false)}

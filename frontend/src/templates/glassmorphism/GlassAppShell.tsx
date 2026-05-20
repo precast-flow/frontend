@@ -66,12 +66,36 @@ function GlassAppShellInner() {
     effectiveActiveId === 'production-planning' ||
     effectiveActiveId === 'dispatch-planning'
 
-  /** Proje liste (`/`, `/proje`) ve birim iş kuyruğu: üst `padding` / dış `gap` proje ile aynı (navbar altı hizası). */
+  /** Proje / Görev / Müşteri liste modülleri: üst padding ve dış gap aynı (navbar altı hizası). */
   const isProjectListRoute =
     location.pathname === '/proje' || location.pathname === '/proje/' || location.pathname === '/'
   const isWorkQueueListRoute =
     location.pathname === '/birim-is-kuyrugu' || location.pathname === '/birim-is-kuyrugu/'
-  const isTightListShellRoute = isProjectListRoute || isWorkQueueListRoute
+  const isCrmListRoute = location.pathname === '/crm' || location.pathname === '/crm/'
+  const isSystemListRoute =
+    location.pathname === '/onay-akisi' ||
+    location.pathname === '/onay-akisi/' ||
+    location.pathname === '/roller-izinler' ||
+    location.pathname === '/roller-izinler/' ||
+    location.pathname === '/kullanicilar' ||
+    location.pathname === '/kullanicilar/'
+  const isDefinitionsListRoute =
+    location.pathname.startsWith('/eleman-kimlik') ||
+    location.pathname.startsWith('/malzeme-katalogu') ||
+    location.pathname.startsWith('/standart-seri-urunler')
+  const isAccountListRoute =
+    location.pathname === '/profile' ||
+    location.pathname === '/profile/' ||
+    location.pathname === '/settings' ||
+    location.pathname === '/settings/' ||
+    location.pathname.startsWith('/admin/eleman-kimlik')
+  const isTightListShellRoute =
+    isProjectListRoute ||
+    isWorkQueueListRoute ||
+    isCrmListRoute ||
+    isSystemListRoute ||
+    isDefinitionsListRoute ||
+    isAccountListRoute
   /**
    * Tam sayfa detay (kalite raporu): kabuk viewport’ta sabit, kaydırma üst sütunda;
    * main/outlet flex-1 ile içeriği kırpmaz — başlık + kart birlikte kayar.

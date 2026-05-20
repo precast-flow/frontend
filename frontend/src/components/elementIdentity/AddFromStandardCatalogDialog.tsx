@@ -1,9 +1,8 @@
 import { useMemo, useState } from 'react'
 import { ALL_ELEMENT_TYPES } from '../../elementIdentity/catalog/allElementTypes'
 import { useI18n } from '../../i18n/I18nProvider'
-import { PmStyleDialog } from '../shared/PmStyleDialog'
+import { PmStyleDialog, AppDialogButton } from '../shared/PmStyleDialog'
 import { useElementIdentity } from './elementIdentityContextValue'
-import { eiSplitHeaderButtonPassive } from './ElementIdentityPieceCodesLikeSplit'
 
 type Props = {
   open: boolean
@@ -48,18 +47,14 @@ export function AddFromStandardCatalogDialog({ open, projectId, onClose }: Props
       subtitle={t('standardSeries.addFromCatalogSubtitle')}
       closeLabel={t('elementIdentity.cancel')}
       onClose={onClose}
-      maxWidthClass="max-w-lg"
+      size="md"
       footer={
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold dark:border-slate-600"
-          >
+        <>
+          <AppDialogButton variant="secondary" onClick={onClose}>
             {t('elementIdentity.cancel')}
-          </button>
-          <button
-            type="button"
+          </AppDialogButton>
+          <AppDialogButton
+            variant="primary"
             disabled={!canSave}
             onClick={() => {
               if (!selected) return
@@ -73,11 +68,10 @@ export function AddFromStandardCatalogDialog({ open, projectId, onClose }: Props
               setName('')
               onClose()
             }}
-            className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm disabled:opacity-40`}
           >
             {t('standardSeries.addConfirm')}
-          </button>
-        </div>
+          </AppDialogButton>
+        </>
       }
     >
       <div className="grid gap-3 text-sm">
