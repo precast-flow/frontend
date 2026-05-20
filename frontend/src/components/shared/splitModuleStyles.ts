@@ -5,7 +5,7 @@ type SplitTabOpts = { gl?: boolean }
 export function splitTabPill(active: boolean, opts?: SplitTabOpts) {
   const gl = opts?.gl ?? false
   return [
-    'shrink-0 rounded-full border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50',
+    'shrink-0 rounded-full border px-2.5 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50',
     active
       ? gl
         ? 'border-sky-400/45 bg-sky-500/14 text-slate-900 shadow-sm dark:border-sky-400/40 dark:bg-sky-500/22 dark:text-slate-50'
@@ -67,4 +67,5 @@ export {
   managementModuleDetailPanelClass,
   managementModuleListToolbarClass,
   managementModuleListTitleClass,
+  splitPanePanelMinHeightClass,
 } from './layout/ManagementModuleShell'

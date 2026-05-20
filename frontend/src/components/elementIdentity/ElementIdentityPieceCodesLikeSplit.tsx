@@ -2,6 +2,8 @@ import { ChevronsLeftRight, Filter, GripVertical, X } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useThemeMode } from '../../theme/ThemeProvider'
 import { managementModuleSplitRowClass } from '../shared/layout/ManagementModuleShell'
+import { SplitListCollapseToggle } from '../shared/layout/SplitListCollapseToggle'
+import { SPLIT_LIST_RAIL_PX, useSplitListCollapsed } from '../shared/layout/useSplitListCollapsed'
 import { useSplitPaneDrag } from '../shared/layout/useSplitPaneDrag'
 import { useSplitPaneRatio } from '../shared/layout/useSplitPaneRatio'
 
@@ -66,6 +68,8 @@ export type ElementIdentityPieceCodesLikeSplitProps = {
   fillParentHeight?: boolean
   /** Üst kabuk zaten cam kart içindeyse (proje / eleman kimlik detay) ekstra sarmalayıcı kullanma */
   embedded?: boolean
+  /** Sol liste panelini daralt/genişlet (project-mgmt varsayılan: true). */
+  collapsible?: boolean
 }
 
 /**
@@ -91,13 +95,19 @@ export function ElementIdentityPieceCodesLikeSplit({
   splitPanePersistKey,
   visualVariant = 'legacy',
   neutralChrome = false,
-  fillParentHeight = false,
+  fillParentHeight: fillParentHeightProp,
   embedded = false,
+  collapsible: collapsibleProp,
 }: ElementIdentityPieceCodesLikeSplitProps) {
   const { mode } = useThemeMode()
   const gl = mode === 'light'
   const isPm = visualVariant === 'project-mgmt'
+  const fillParentHeight = fillParentHeightProp ?? isPm
   const fillFull = isPm && fillParentHeight
+  const collapsible = collapsibleProp ?? isPm
+  const { collapsed: listCollapsed, toggle: toggleListCollapsed } = useSplitListCollapsed(
+    `split-list:${splitPanePersistKey ?? persistKey}`,
+  )
   const splitRef = useRef<HTMLDivElement | null>(null)
   const internalListRef = useRef<HTMLUListElement | null>(null)
   const ulRef = listRef ?? internalListRef
@@ -148,6 +158,10 @@ export function ElementIdentityPieceCodesLikeSplit({
 
   const filterBtnClass = eiSplitFilterToggleClass(isFilterOpen)
 
+  const listPanelStyle: React.CSSProperties = listCollapsed
+    ? { width: SPLIT_LIST_RAIL_PX, minWidth: SPLIT_LIST_RAIL_PX, maxWidth: SPLIT_LIST_RAIL_PX }
+    : leftWidthStyle
+
   const sectionClass = !isPm
     ? 'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden p-3'
     : 'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 self-stretch flex-col overflow-hidden glass-card glass-card--static project-mgmt-split-panel min-h-0'
@@ -169,18 +183,29 @@ export function ElementIdentityPieceCodesLikeSplit({
       <section
         ref={leftColumnRef}
         className={sectionClass}
-        style={leftWidthStyle}
+        style={listPanelStyle}
       >
+        {listCollapsed && collapsible ? (
+          <div className="flex h-full flex-col items-center gap-2 py-2">
+            <SplitListCollapseToggle collapsed={listCollapsed} onToggle={toggleListCollapsed} />
+          </div>
+        ) : (
+          <>
         <div className="mb-2 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
-          <h3
-            className={
-              isPm
-                ? 'shrink-0 text-sm font-semibold text-black dark:text-white'
-                : 'shrink-0 text-sm font-semibold text-slate-900 dark:text-slate-50'
-            }
-          >
-            {listTitle}
-          </h3>
+          <div className="flex min-w-0 items-center gap-1.5">
+            {collapsible ? (
+              <SplitListCollapseToggle collapsed={listCollapsed} onToggle={toggleListCollapsed} />
+            ) : null}
+            <h3
+              className={
+                isPm
+                  ? 'min-w-0 shrink text-sm font-semibold text-black dark:text-white'
+                  : 'min-w-0 shrink text-sm font-semibold text-slate-900 dark:text-slate-50'
+              }
+            >
+              {listTitle}
+            </h3>
+          </div>
           <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
             {filterToolbarSearch}
             <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
@@ -228,8 +253,11 @@ export function ElementIdentityPieceCodesLikeSplit({
             </div>
           )
         ) : null}
+          </>
+        )}
       </section>
 
+      {!listCollapsed ? (
       <div className="relative z-10 mx-1 hidden w-2 shrink-0 cursor-col-resize lg:flex">
         <button
           type="button"
@@ -275,6 +303,7 @@ export function ElementIdentityPieceCodesLikeSplit({
           </span>
         </button>
       </div>
+      ) : null}
 
       <aside
         ref={rightPanelRef}

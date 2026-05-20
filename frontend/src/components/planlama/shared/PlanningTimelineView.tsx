@@ -11,9 +11,7 @@ import {
   Filter,
   Lock,
   GripVertical,
-  Layers,
   ListOrdered,
-  Package,
   PauseCircle,
   PlayCircle,
   History,
@@ -40,6 +38,8 @@ import {
   usePlanningWizardOptional,
 } from '../PlanningWizardContext'
 import { PlanningActionsHost } from './actions/PlanningActionsHost'
+import { PlanningItemProgress } from './PlanningItemProgress'
+import { PlanningTimelineCardWrapper } from './PlanningTimelineCardWrapper'
 import {
   planCardToneClasses,
   type PlanCardDisplayMode,
@@ -83,6 +83,7 @@ import {
   STATUS_META,
   ZOOM_PRESETS,
   buildNDays,
+  computeStackLayers,
   hourToShiftIndexUtc,
   isoFromSlotVisibleForMode,
   itemsOverlapSlotRange,
@@ -137,6 +138,8 @@ function planItemsEqual(a: PlanItem[], b: PlanItem[]): boolean {
 const MOLD_COL_PX = 200
 /** Kartın minimum yüksekliği (minHeight ile aynı). */
 const CELL_ROW_HEIGHT_PX = 56
+const PRODUCTION_CELL_ROW_HEIGHT_PX = 68
+const CARD_STACK_GAP_PX = 2
 /** Boş / tek katman satır için taban (hücre + etiket). */
 const BODY_ROW_BASE_MIN = CELL_ROW_HEIGHT_PX
 
@@ -244,6 +247,9 @@ function generalToPlanItem(g: GeneralPlanItem): TimelineDisplayItem {
     orderId: g.orderId,
     tags: g.tags,
     warnings: g.warnings,
+    unit: g.unit,
+    productionStage: g.productionStage,
+    productionStageProgress: g.productionStageProgress,
     visualTone: tone,
     isPreview: tone === 'preview',
   }
@@ -297,6 +303,11 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
     variant === 'dispatch' || (isGeneral && gp?.activeUnit === 'dispatch')
   const isProductionTimeline =
     variant === 'production' || (isGeneral && gp?.activeUnit === 'production')
+  const showDailyProductionActions = variant === 'production'
+  const showProductionProgress = isProductionTimeline
+  const cardRowHeightPx = showProductionProgress
+    ? PRODUCTION_CELL_ROW_HEIGHT_PX
+    : CELL_ROW_HEIGHT_PX
   const slotsPerDay = PLANNING_SHIFTS.length
   const PLANNING_RESOURCES: TimelineResourceRow[] = isGeneral && gp
     ? resourcesForUnit(gp.activeUnit).map((r) => ({
@@ -462,8 +473,6 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   const [truckLoadOpen, setTruckLoadOpen] = useState<{ moldId: string; slotStart: number } | null>(
     null,
   )
-  /** Sevkiyat: false → özet kart + modal; true → klasik görünüm (ürün başına ayrı kart). */
-  const [dispatchExpandedTimeline, setDispatchExpandedTimeline] = useState(false)
   const [nonProdModal, setNonProdModal] = useState<{ moldId: string; slot: number; itemId: string } | null>(
     null,
   )
@@ -478,7 +487,6 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
 
   useEffect(() => {
     setProjectFilter([])
-    setDispatchExpandedTimeline(false)
   }, [gp?.activeUnit])
 
   const projectFilterOptions = useMemo(() => {
@@ -688,10 +696,51 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   const moldRowHeights = useMemo(() => {
     const heights: Record<string, number> = {}
     for (const mold of PLANNING_RESOURCES) {
-      heights[mold.moldId] = BODY_ROW_BASE_MIN
+      const rowItems = filteredItems.filter((it) => it.moldId === mold.moldId)
+      const placementInputs: { id: string; slotStart: number; span: number }[] = []
+      for (const it of rowItems) {
+        const p = placementByItem.get(it.id)
+        if (!p || p.slotStart < 0) continue
+        placementInputs.push({
+          id: it.id,
+          slotStart: snapTimelineSlot(p.slotStart, timelineUsesShifts),
+          span: p.span,
+        })
+      }
+      const layers = computeStackLayers(placementInputs)
+      let maxLayer = 0
+      for (const layer of layers.values()) maxLayer = Math.max(maxLayer, layer)
+      heights[mold.moldId] =
+        cardRowHeightPx + maxLayer * (cardRowHeightPx + CARD_STACK_GAP_PX)
     }
     return heights
-  }, [PLANNING_RESOURCES])
+  }, [
+    PLANNING_RESOURCES,
+    filteredItems,
+    placementByItem,
+    timelineUsesShifts,
+    cardRowHeightPx,
+  ])
+
+  const stackLayersByItem = useMemo(() => {
+    const layerOf = new Map<string, number>()
+    for (const mold of PLANNING_RESOURCES) {
+      const rowItems = filteredItems.filter((it) => it.moldId === mold.moldId)
+      const placementInputs: { id: string; slotStart: number; span: number }[] = []
+      for (const it of rowItems) {
+        const p = placementByItem.get(it.id)
+        if (!p || p.slotStart < 0) continue
+        placementInputs.push({
+          id: it.id,
+          slotStart: snapTimelineSlot(p.slotStart, timelineUsesShifts),
+          span: p.span,
+        })
+      }
+      const layers = computeStackLayers(placementInputs)
+      for (const [id, layer] of layers) layerOf.set(id, layer)
+    }
+    return layerOf
+  }, [PLANNING_RESOURCES, filteredItems, placementByItem, timelineUsesShifts])
 
   const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), [])
 
@@ -1337,31 +1386,6 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                   </button>
                   ) : null}
                   {isDispatchTimeline ? (
-                    <button
-                      type="button"
-                      onClick={() => setDispatchExpandedTimeline((v) => !v)}
-                      aria-pressed={dispatchExpandedTimeline}
-                      title={
-                        dispatchExpandedTimeline
-                          ? t('dispatchPlanning.timelineView.compactHint')
-                          : t('dispatchPlanning.timelineView.expandedHint')
-                      }
-                      className={[
-                        'inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
-                        dispatchExpandedTimeline
-                          ? 'border-sky-300/70 bg-sky-100/70 text-sky-900 dark:border-sky-600/60 dark:bg-sky-900/35 dark:text-sky-100'
-                          : 'border-slate-200/70 bg-white/70 text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/45 dark:text-slate-200',
-                      ].join(' ')}
-                    >
-                      <Layers className="size-3.5 shrink-0" aria-hidden />
-                      <span className="hidden sm:inline">
-                        {dispatchExpandedTimeline
-                          ? t('dispatchPlanning.timelineView.compact')
-                          : t('dispatchPlanning.timelineView.expanded')}
-                      </span>
-                    </button>
-                  ) : null}
-                  {isDispatchTimeline && !dispatchExpandedTimeline ? (
                     <div
                       className="hidden items-center gap-2 border-l border-slate-200/70 pl-2 dark:border-slate-700/70 lg:flex"
                       aria-label={t('dispatchPlanning.vehicleType.legendAria')}
@@ -1413,14 +1437,14 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                   </button>
                 </div>
                 <div className="flex min-w-0 flex-wrap items-center justify-end justify-self-end gap-1.5 md:gap-2">
-                  {isProductionTimeline ? (
+                  {showDailyProductionActions ? (
                     <>
                       <button
                         type="button"
                         onClick={() => setDailyWorkOrderOpen(true)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-sky-300/70 bg-sky-600 px-2 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:border-sky-500/60 dark:bg-sky-500 dark:hover:bg-sky-600 md:py-2 md:text-sm"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/70 bg-white/80 px-2 py-1.5 text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:border-slate-600/60 dark:bg-slate-900/50 dark:text-slate-100 dark:hover:bg-slate-800/80 md:py-2 md:text-sm"
                       >
-                        <ClipboardList className="size-3.5 shrink-0" aria-hidden />
+                        <ClipboardList className="size-3.5 shrink-0 text-sky-600 dark:text-sky-400" aria-hidden />
                         <span className="hidden lg:inline">{t('productionPlanning.dailyOrder.cta')}</span>
                         <span className="lg:hidden">{t('productionPlanning.dailyOrder.ctaShort')}</span>
                       </button>
@@ -2289,7 +2313,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
               const prevMold = PLANNING_RESOURCES[moldIdx - 1]
               const isHatStart = !prevMold || prevMold.hatNo !== mold.hatNo
               const rowVehicleTone =
-                isDispatchTimeline && !dispatchExpandedTimeline && mold.vehicleType
+                isDispatchTimeline && mold.vehicleType
                   ? DISPATCH_VEHICLE_TONES[mold.vehicleType]
                   : null
 
@@ -2442,27 +2466,23 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                         ? dispatchTripGroups.get(`${it.moldId}:${slotSnapped}`)
                         : null
                       const tripCount = tripGroup?.length ?? 1
-                      const useCompactDispatch =
-                        isDispatchTimeline && !dispatchExpandedTimeline
-                      if (useCompactDispatch && tripGroup && tripGroup[0]?.id !== it.id) {
-                        return null
-                      }
-                      const isMultiTrip = Boolean(useCompactDispatch && tripCount > 1)
-                      const summaryTone =
-                        isMultiTrip && mold.vehicleType
+                      const stackLayer = stackLayersByItem.get(it.id) ?? 0
+                      const groupTone =
+                        isDispatchTimeline && tripCount > 1 && mold.vehicleType
                           ? DISPATCH_VEHICLE_TONES[mold.vehicleType]
                           : null
-                      const tripIndex = tripGroup?.findIndex((x) => x.id === it.id) ?? 0
-                      const cardZIndex =
-                        isDispatchTimeline && dispatchExpandedTimeline && tripCount > 1
-                          ? 20 + tripIndex
-                          : 20
+                      const cardZIndex = 20 + stackLayer
                       return (
-                        <div
+                        <PlanningTimelineCardWrapper
                           key={it.id}
+                          item={it}
+                          locale={locale}
+                          unit={gp?.activeUnit}
+                          groupItems={tripCount > 1 ? (tripGroup ?? undefined) : undefined}
+                          moldName={mold.name}
                           className={`relative flex h-full min-h-0 flex-col rounded-xl border border-slate-200/70 ${
-                            summaryTone
-                              ? summaryTone.card
+                            groupTone
+                              ? groupTone.card
                               : `${st.borderClass} border-l-4 ${st.bgClass}`
                           } shadow-neo-out-sm dark:border-slate-600/45 ${planCardToneClasses(it.visualTone)} ${
                             cap ? 'ring-2 ring-red-500/70' : ''
@@ -2471,19 +2491,11 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                             gridColumn: `${p.slotStart + 1} / span ${p.span}`,
                             gridRow: '1 / 2',
                             zIndex: cardZIndex,
-                            height: `${CELL_ROW_HEIGHT_PX}px`,
-                            minHeight: `${CELL_ROW_HEIGHT_PX}px`,
+                            marginTop: `${stackLayer * (cardRowHeightPx + CARD_STACK_GAP_PX)}px`,
+                            height: `${cardRowHeightPx}px`,
+                            minHeight: `${cardRowHeightPx}px`,
                           }}
-                          title={
-                            isMultiTrip
-                              ? t('dispatchPlanning.truckLoad.summaryTitle', {
-                                  count: String(tripCount),
-                                  vehicle: it.moldId,
-                                })
-                              : `${it.title} · ${it.durationHours} saat · öncelik ${it.priority}`
-                          }
                           onClick={(e) => {
-                            if (isMultiTrip) return
                             e.stopPropagation()
                             setDayDetailDate(null)
                             setHistoryDrawerOpen(false)
@@ -2499,9 +2511,8 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                               moldId: it.moldId,
                             })
                           }}
-                          draggable={canEdit && !isMultiTrip && !it.isPreview}
+                          draggable={canEdit && !it.isPreview}
                           onDragStart={(e) => {
-                            if (isMultiTrip) return
                             e.dataTransfer.setData('text/plain', it.id)
                             e.dataTransfer.setData('text/plan-item-id', it.id)
                             e.dataTransfer.effectAllowed = 'move'
@@ -2513,72 +2524,54 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                           }}
                         >
                           <div className="flex min-h-0 flex-1 items-stretch gap-0">
-                            {canEdit && !isMultiTrip ? (
+                            {canEdit ? (
                               <span className="flex w-5 shrink-0 cursor-grab items-center justify-center text-gray-400">
                                 <GripVertical className="h-4 w-4" />
                               </span>
                             ) : null}
-                            <div
-                              className={`min-w-0 flex-1 ${isMultiTrip ? 'py-0.5' : 'py-1 pr-1'}`}
-                            >
-                              {isMultiTrip ? (
-                                <>
-                                  <div className="flex items-center gap-1">
-                                    <Package
-                                      className={`size-3.5 shrink-0 ${summaryTone?.icon ?? 'text-sky-700 dark:text-sky-300'}`}
-                                      aria-hidden
-                                    />
-                                    <span
-                                      className={`truncate text-[11px] font-semibold leading-tight ${summaryTone?.title ?? 'text-sky-950 dark:text-sky-50'}`}
-                                    >
-                                      {t('dispatchPlanning.truckLoad.summaryLabel', {
-                                        count: String(tripCount),
-                                      })}
-                                    </span>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    className={`mt-0.5 w-full rounded-md border px-1.5 py-0.5 text-[10px] font-semibold shadow-sm transition ${
-                                      summaryTone?.button ??
-                                      'border-sky-400/60 bg-white/90 text-sky-800 hover:bg-sky-100 dark:border-sky-500/50 dark:bg-sky-900/60 dark:text-sky-100 dark:hover:bg-sky-900'
+                            <div className="min-w-0 flex-1 py-1 pr-1">
+                              <div className="flex items-center gap-1">
+                                {!it.isPreview ? statusIcon(it.status) : null}
+                                <span className="truncate text-[11px] font-semibold leading-tight text-gray-900 dark:text-gray-50">
+                                  {it.title}
+                                </span>
+                                {it.isPreview ? (
+                                  <span className="shrink-0 rounded bg-sky-500/20 px-1 py-0.5 text-[9px] font-bold uppercase text-sky-800 dark:text-sky-100">
+                                    {t('planningActions.previewBadge')}
+                                  </span>
+                                ) : null}
+                                {tripCount > 1 ? (
+                                  <span
+                                    className={`shrink-0 rounded px-1 py-0.5 text-[9px] font-bold ${
+                                      groupTone?.title ?? 'text-sky-800 dark:text-sky-100'
                                     }`}
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      openTruckLoadDrawer({
-                                        moldId: it.moldId,
-                                        slotStart: slotSnapped,
-                                      })
-                                    }}
+                                    title={t('dispatchPlanning.truckLoad.badgeTitle', {
+                                      count: String(tripCount),
+                                    })}
                                   >
-                                    {t('dispatchPlanning.truckLoad.viewProducts')}
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="flex items-center gap-1">
-                                    {!it.isPreview ? statusIcon(it.status) : null}
-                                    <span className="truncate text-[11px] font-semibold leading-tight text-gray-900 dark:text-gray-50">
-                                      {it.title}
-                                    </span>
-                                    {it.isPreview ? (
-                                      <span className="shrink-0 rounded bg-sky-500/20 px-1 py-0.5 text-[9px] font-bold uppercase text-sky-800 dark:text-sky-100">
-                                        {t('planningActions.previewBadge')}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                  {cardDisplayMode === 'ops' && it.orderId ? (
-                                    <div className="truncate text-[10px] text-gray-500 dark:text-gray-400">
-                                      {it.orderId}
-                                    </div>
-                                  ) : cardDisplayMode === 'coordinator' && it.projectId ? (
-                                    <div className="truncate text-[10px] text-gray-500 dark:text-gray-400">
-                                      {it.projectId}
-                                    </div>
-                                  ) : null}
-                                </>
-                              )}
+                                    {(tripGroup?.findIndex((x) => x.id === it.id) ?? 0) + 1}/{tripCount}
+                                  </span>
+                                ) : null}
+                              </div>
+                              {cardDisplayMode === 'ops' && it.orderId ? (
+                                <div className="truncate text-[10px] text-gray-500 dark:text-gray-400">
+                                  {it.orderId}
+                                </div>
+                              ) : cardDisplayMode === 'coordinator' && it.projectId ? (
+                                <div className="truncate text-[10px] text-gray-500 dark:text-gray-400">
+                                  {it.projectId}
+                                </div>
+                              ) : null}
+                              {showProductionProgress && it.productionStage ? (
+                                <div className="mt-0.5">
+                                  <PlanningItemProgress
+                                    stage={it.productionStage}
+                                    stageProgress={it.productionStageProgress}
+                                  />
+                                </div>
+                              ) : null}
                             </div>
-                            {canEdit && !isMultiTrip ? (
+                            {canEdit ? (
                               <div
                                 role="separator"
                                 aria-orientation="vertical"
@@ -2589,7 +2582,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                               />
                             ) : null}
                           </div>
-                        </div>
+                        </PlanningTimelineCardWrapper>
                       )
                     })}
                   </div>
@@ -2651,7 +2644,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
       </div>
     </div>
 
-      {isProductionTimeline ? (
+      {showDailyProductionActions ? (
         <>
           <DailyProductionWorkOrderDialog
             open={dailyWorkOrderOpen}
@@ -2660,6 +2653,10 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
             moldNameById={moldNameById}
             defaultDayIso={dailyWorkOrderDefaultDay}
             visibleDayRange={dailyWorkOrderVisibleRange}
+            onOpenDailyReport={() => {
+              setDailyWorkOrderOpen(false)
+              setDailyReportOpen(true)
+            }}
             onConfirmed={(count) =>
               setDailyWorkOrderToast(
                 t('productionPlanning.dailyOrder.toast', { count: String(count) }),

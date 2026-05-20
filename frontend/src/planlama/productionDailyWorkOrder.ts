@@ -184,6 +184,15 @@ export function buildDailyProductionPreview(
   return groupPreviewByShift(lines)
 }
 
+/** Önizleme adımı — appendItems çağrılmadan oluşturulacak iş emirlerini döner. */
+export function previewWorkOrdersFromDay(
+  shiftGroups: ShiftProductionGroup[],
+  opts: { planDayIso: string; factoryCode: string },
+): WorkQueueItem[] {
+  const flat = shiftGroups.flatMap((g) => g.lines)
+  return buildWorkQueueItemsFromPreview(flat, opts)
+}
+
 /**
  * Günlük emir modalı varsayılan günü — takvimde görünen aralıkla hizalı (mock + gerçek tarih).
  * Öncelik: açık gün detayı → gerçek bugün (görünür aralıktaysa) → görünürde dolu ilk gün → ilk görünür gün.

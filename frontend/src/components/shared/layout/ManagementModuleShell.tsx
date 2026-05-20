@@ -23,15 +23,19 @@ export function managementModuleContentClass(gl: boolean): string {
 /** Liste + ayırıcı + detay satırı. */
 export function managementModuleSplitRowClass(gl: boolean): string {
   return [
-    'relative flex h-full min-h-0 min-w-0 overflow-hidden',
+    'relative flex h-full min-h-0 min-w-0 flex-1 overflow-hidden',
     gl ? 'gap-3 rounded-3xl lg:gap-4' : 'gap-0',
   ].join(' ')
 }
 
+/** Split panel iç gövdesi — viewport yüksekliğini doldurur. */
+export const splitPanePanelMinHeightClass =
+  'min-h-0 flex flex-1 flex-col overflow-hidden'
+
 /** Sol liste paneli (%40). */
 export function managementModuleListPanelClass(gl: boolean): string {
   return [
-    'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden',
+    'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 flex-1 shrink-0 flex-col overflow-hidden',
     gl ? 'glass-card glass-card--static project-mgmt-split-panel min-h-0' : 'p-3',
   ].join(' ')
 }

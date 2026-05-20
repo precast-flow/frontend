@@ -1,24 +1,34 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { ChevronRight, Factory } from 'lucide-react'
+import { ChevronRight, ChevronsLeftRight, Factory, Filter, GripVertical } from 'lucide-react'
 import { activeModuleIdFromPathname } from '../../data/navigation'
 import { useFactoryContext } from '../../context/FactoryContext'
 import { useI18n } from '../../i18n/I18nProvider'
 import { useThemeMode } from '../../theme/ThemeProvider'
+import { NeoSwitch } from '../NeoSwitch'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
 import {
   ManagementModuleShell,
+  managementModuleDetailPanelClass,
+  managementModuleListPanelClass,
+  managementModuleListTitleClass,
+  managementModuleListToolbarClass,
+  managementModuleSplitRowClass,
   splitDetailHeaderClass,
   splitListCardClass,
   splitListEmptyClass,
   splitTabPill,
   StickyDetailTabBar,
+  useSplitPaneDrag,
+  useSplitPaneRatio,
 } from '../shared/splitModuleStyles'
 import {
   ElementIdentityFilterSheetHeader,
-  ElementIdentityPieceCodesLikeSplit,
+  eiSplitFilterToggleClass,
 } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import { SplitListCollapseToggle } from '../shared/layout/SplitListCollapseToggle'
+import { SPLIT_LIST_RAIL_PX, useSplitListCollapsed } from '../shared/layout/useSplitListCollapsed'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 import '../proje/projectManagementGlassLight.css'
 import { useWorkQueue } from '../../context/WorkQueueContext'
@@ -94,8 +104,26 @@ export function UnitWorkQueueModuleView(_props: Props) {
   const location = useLocation()
   const baseId = useId()
   const { isFactoryInScope } = useFactoryContext()
-  const rightRef = useRef<HTMLDivElement | null>(null)
+  const detailPanelRef = useRef<HTMLElement | null>(null)
   const listRef = useRef<HTMLUListElement | null>(null)
+  const splitRef = useRef<HTMLDivElement | null>(null)
+  const {
+    isResizing,
+    setIsResizing,
+    resetRatio,
+    leftWidthStyle,
+    setRatioFromPointer,
+  } = useSplitPaneRatio('unit-work-queue', undefined, {
+    legacyViewStateKey: 'ei-piece-split:unit-work-queue',
+    legacySplitPanePersistKey: 'ei-piece-split:unit-work-queue',
+  })
+  const [isResizerHover, setIsResizerHover] = useState(false)
+  useSplitPaneDrag(splitRef, { isResizing, setIsResizing, setRatioFromPointer })
+  const { collapsed: listCollapsed, toggle: toggleListCollapsed } =
+    useSplitListCollapsed('split-list:unit-work-queue')
+  const listPanelStyle = listCollapsed
+    ? { width: SPLIT_LIST_RAIL_PX, minWidth: SPLIT_LIST_RAIL_PX, maxWidth: SPLIT_LIST_RAIL_PX }
+    : leftWidthStyle
 
   const [perspective, setPerspective] = useState<WorkQueuePerspective>('to_me')
   const [unit, setUnit] = useState<WorkQueueOrgUnit | 'all'>('all')
@@ -174,15 +202,24 @@ export function UnitWorkQueueModuleView(_props: Props) {
     setSelectedId(workQueueId)
     setListPage(1)
     setFilterOpen(false)
-    requestAnimationFrame(() => rightRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
+    requestAnimationFrame(() => detailPanelRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
   }
 
   useEffect(() => {
     if (!productionParentDetail && !productionChildDetail && !nonconformanceDetail) {
       setDetailTab('summary')
     }
-    requestAnimationFrame(() => rightRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
+    requestAnimationFrame(() => detailPanelRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
   }, [selectedId, productionParentDetail, productionChildDetail, nonconformanceDetail])
+
+  useEffect(() => {
+    if (!filterOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setFilterOpen(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [filterOpen])
 
   useEffect(() => {
     const workQueueIdFromNav = (location.state as { workQueueId?: string } | null)?.workQueueId
@@ -243,233 +280,307 @@ export function UnitWorkQueueModuleView(_props: Props) {
         </nav>
       }
     >
-      <ElementIdentityPieceCodesLikeSplit
-          persistKey="unit-work-queue"
-          splitPanePersistKey="unit-work-queue"
-          listRef={listRef}
-          listTitle={t('unitWorkQueue.listTitle')}
-          visualVariant="project-mgmt"
-          fillParentHeight
-          embedded
-          neutralChrome={neutralShell}
-          listIndentWhenFilterOpen="18.5rem"
-          isFilterOpen={filterOpen}
-          onFilterOpenChange={setFilterOpen}
-          headerActions={
-            <label
-              className={
-                gl
-                  ? 'flex items-center gap-2 text-[11px] font-medium text-black/70 dark:text-white/75'
-                  : 'flex items-center gap-2 text-[11px] font-medium text-slate-600 dark:text-slate-300'
-              }
-            >
-              <span className="sr-only">{t('unitWorkQueue.orgFilter')}</span>
-              <select
-                className={gl ? glassSelectCls : selectCls}
-                value={unit}
-                onChange={(e) =>
-                  setUnit(e.target.value === 'all' ? 'all' : (e.target.value as WorkQueueOrgUnit))
-                }
-                aria-label={t('unitWorkQueue.orgFilter')}
-              >
-                <option value="all">{t('unitWorkQueue.unit.all')}</option>
-                {WORK_QUEUE_ORG_SEQUENCE.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {t(u.labelKey)}
-                  </option>
-                ))}
-              </select>
-            </label>
-          }
-          filterToolbarSearch={
-            <FilterToolbarSearch
-              id={`${baseId}-wq-search`}
-              value={search}
-              onValueChange={setSearch}
-              placeholder={t('unitWorkQueue.searchPlaceholder')}
-              ariaLabel={t('unitWorkQueue.searchPlaceholder')}
-              className={gl ? 'project-mgmt-toolbar-search' : ''}
-              inputClassName={gl ? 'glass-input' : ''}
-            />
-          }
-          filterAside={
-            <div className="space-y-4">
-              <ElementIdentityFilterSheetHeader
-                title={t('nav.unitWorkQueue')}
-                subtitle={t('unitWorkQueue.rbacNote')}
-                onClose={() => setFilterOpen(false)}
-                glass={gl}
-              />
-              <fieldset className="space-y-2">
-                <legend
-                  className={
-                    gl
-                      ? 'text-xs font-semibold text-black dark:text-white'
-                      : 'text-xs font-semibold text-slate-800 dark:text-slate-100'
-                  }
-                >
-                  {t('unitWorkQueue.filterPerspective')}
-                </legend>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className={splitTabPill(perspective === 'to_me')}
-                    onClick={() => setPerspective('to_me')}
-                  >
-                    {t('unitWorkQueue.tabToMe')}
-                  </button>
-                  <button
-                    type="button"
-                    className={splitTabPill(perspective === 'by_me')}
-                    onClick={() => setPerspective('by_me')}
-                  >
-                    {t('unitWorkQueue.tabByMe')}
-                  </button>
-                </div>
-              </fieldset>
-              <fieldset className="space-y-2">
-                <legend
-                  className={
-                    gl
-                      ? 'text-xs font-semibold text-black dark:text-white'
-                      : 'text-xs font-semibold text-slate-800 dark:text-slate-100'
-                  }
-                >
-                  {t('unitWorkQueue.factoryScope')}
-                </legend>
-                <label
-                  className={
-                    gl
-                      ? 'flex cursor-pointer items-center gap-2 text-xs text-black/80 dark:text-white/80'
-                      : 'flex cursor-pointer items-center gap-2 text-xs text-slate-700 dark:text-slate-300'
-                  }
-                >
-                  <input
-                    type="checkbox"
-                    checked={factoryRestricted}
-                    onChange={(e) => setFactoryRestricted(e.target.checked)}
-                    className={
-                      gl
-                        ? 'size-4 rounded border-black/25 text-black dark:border-white/25 dark:bg-black/40'
-                        : 'size-4 rounded border-slate-300 text-sky-600 dark:border-slate-600 dark:bg-slate-950'
-                    }
-                  />
-                  {t('unitWorkQueue.filterFactoryScope')}
-                </label>
-              </fieldset>
-              <p
-                className={
-                  gl
-                    ? 'text-[11px] leading-relaxed text-black/55 dark:text-white/60'
-                    : 'text-[11px] leading-relaxed text-slate-500 dark:text-slate-400'
-                }
-              >
-                {t('unitWorkQueue.trackingHint')}
-              </p>
-              <p
-                className={
-                  gl
-                    ? 'text-[11px] leading-relaxed text-sky-900/80 dark:text-sky-100/85'
-                    : 'text-[11px] leading-relaxed text-sky-800 dark:text-sky-200/90'
-                }
-              >
-                {t('unitWorkQueue.productionFlow.dailyOrderHint')}
-              </p>
+      <div
+        ref={splitRef}
+        data-split-dragging={isResizing ? 'true' : undefined}
+        className={managementModuleSplitRowClass(gl)}
+      >
+        <section className={managementModuleListPanelClass(gl)} style={listPanelStyle}>
+          {listCollapsed ? (
+            <div className="flex h-full flex-col items-center gap-2 py-2">
+              <SplitListCollapseToggle collapsed={listCollapsed} onToggle={toggleListCollapsed} />
             </div>
-          }
-          listBody={
-            filtered.length === 0 ? (
-              <li className={splitListEmptyClass}>{t('unitWorkQueue.empty')}</li>
-            ) : (
-              pagedItems.map((row) => (
-                <li
-                  key={row.id}
-                  className={splitListCardClass(
-                    row.id === selectedId,
-                    'flex min-h-0 shrink-0 items-stretch gap-1.5 px-2 py-1.5',
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSelectedId(row.id)}
-                    aria-current={row.id === selectedId ? 'true' : undefined}
-                    className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-0.5 py-0.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40"
-                  >
-                    <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold leading-snug text-black dark:text-white">
-                      {row.title}
-                    </p>
-                    <p className="mt-0.5 truncate text-xs text-black/70 dark:text-white/70">
-                      {row.orderNo} · {unitLabel(row.targetUnit, t)}
-                      {row.parentWorkQueueId ? (
-                        <span className="text-black/50 dark:text-white/55">
-                          {' '}
-                          · {t(childOrderRoleLabelKey(row.kind))}
-                        </span>
-                      ) : null}
-                    </p>
-                    <p className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                      <span className={statusClass(row.status)}>{t(`unitWorkQueue.status.${row.status}`)}</span>
-                      {row.dueToday ? (
-                        <span className="inline-flex rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-900 dark:text-amber-100">
-                          {t('unitWorkQueue.dueBadge')}
-                        </span>
-                      ) : null}
-                    </p>
-                    </div>
-                    <WorkOrderListProgress item={row} />
-                  </button>
-                </li>
-              ))
-            )
-          }
-          footer={
-            <div
-              className={
-                gl
-                  ? 'flex flex-col gap-2 px-2 py-1 text-[11px] text-black/70 dark:text-white/75 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between'
-                  : 'flex flex-col gap-2 px-2 text-[11px] text-slate-500 dark:text-slate-400 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between'
-              }
-            >
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                {filtered.length > 0 ? (
-                  <span className="tabular-nums">
-                    {t('unitWorkQueue.pagination.footerRange', {
-                      start: String(listPageStart),
-                      end: String(listPageEnd),
-                      total: String(filtered.length),
-                    })}
-                  </span>
-                ) : (
-                  <span className="tabular-nums">{t('unitWorkQueue.pagination.emptyFooter')}</span>
-                )}
-                <span className="hidden sm:inline">
-                  {t('unitWorkQueue.demoViewer', { name: resolveWorkQueueName(MOCK_WORK_QUEUE_VIEWER_ID) })}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {filtered.length > 0 ? (
-                  <>
-                    <SplitListPaginationNav
-                      safePage={safeListPage}
-                      pageCount={listTotalPages}
-                      onPrev={() => setListPage((p) => Math.max(1, p - 1))}
-                      onNext={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
-                      gl={gl}
-                      locale={locale}
-                      buttonStyle={gl ? 'glass' : 'legacy-slate'}
-                      pageIndicatorClassName={
-                        gl ? 'tabular-nums text-black/80 dark:text-white/75' : 'tabular-nums text-slate-600 dark:text-slate-300'
+          ) : (
+            <>
+              <div className={managementModuleListToolbarClass}>
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <SplitListCollapseToggle collapsed={listCollapsed} onToggle={toggleListCollapsed} />
+                  <h2 className={managementModuleListTitleClass}>{t('unitWorkQueue.listTitle')}</h2>
+                </div>
+                <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
+                  <FilterToolbarSearch
+                    id={`${baseId}-wq-search`}
+                    value={search}
+                    onValueChange={setSearch}
+                    placeholder={t('unitWorkQueue.searchPlaceholder')}
+                    ariaLabel={t('unitWorkQueue.searchPlaceholder')}
+                    className={gl ? 'project-mgmt-toolbar-search' : ''}
+                    inputClassName={gl ? 'glass-input' : ''}
+                  />
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <NeoSwitch
+                      id={`${baseId}-wq-perspective`}
+                      checked={perspective === 'by_me'}
+                      onChange={(next) => setPerspective(next ? 'by_me' : 'to_me')}
+                      label={
+                        perspective === 'by_me'
+                          ? t('unitWorkQueue.tabByMe')
+                          : t('unitWorkQueue.tabToMe')
                       }
                     />
-                  </>
-                ) : null}
+                    <label className="inline-flex min-w-0 items-center">
+                      <span className="sr-only">{t('unitWorkQueue.orgFilter')}</span>
+                      <select
+                        className={gl ? glassSelectCls : selectCls}
+                        value={unit}
+                        onChange={(e) =>
+                          setUnit(e.target.value === 'all' ? 'all' : (e.target.value as WorkQueueOrgUnit))
+                        }
+                        aria-label={t('unitWorkQueue.orgFilter')}
+                      >
+                        <option value="all">{t('unitWorkQueue.unit.all')}</option>
+                        {WORK_QUEUE_ORG_SEQUENCE.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {t(u.labelKey)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setFilterOpen((v) => !v)}
+                      aria-expanded={filterOpen}
+                      className={eiSplitFilterToggleClass(filterOpen)}
+                    >
+                      <Filter className="size-3.5 shrink-0" aria-hidden />
+                      <span>Filtrele</span>
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          }
-          rightPanelRef={rightRef}
-          rightAside={
-            selected ? (
+
+              <div className="relative min-h-0 flex-1 overflow-hidden">
+                <aside
+                  className={[
+                    'absolute inset-y-0 left-0 z-20 w-72 overflow-y-auto shadow-xl backdrop-blur-sm transition-transform duration-150 ease-out',
+                    gl
+                      ? 'glass-card glass-card--static project-mgmt-split-panel project-mgmt-filter-drawer'
+                      : 'rounded-xl border border-black/15 bg-white/95 p-3 dark:border-white/12 dark:bg-black/70',
+                    filterOpen ? 'translate-x-0' : '-translate-x-[105%]',
+                  ].join(' ')}
+                  aria-hidden={!filterOpen}
+                >
+                  <div className="space-y-4">
+                    <ElementIdentityFilterSheetHeader
+                      title={t('nav.unitWorkQueue')}
+                      subtitle={t('unitWorkQueue.rbacNote')}
+                      onClose={() => setFilterOpen(false)}
+                      glass={gl}
+                    />
+                    <fieldset className="space-y-2">
+                      <legend
+                        className={
+                          gl
+                            ? 'text-xs font-semibold text-black dark:text-white'
+                            : 'text-xs font-semibold text-slate-800 dark:text-slate-100'
+                        }
+                      >
+                        {t('unitWorkQueue.factoryScope')}
+                      </legend>
+                      <label
+                        className={
+                          gl
+                            ? 'flex cursor-pointer items-center gap-2 text-xs text-black/80 dark:text-white/80'
+                            : 'flex cursor-pointer items-center gap-2 text-xs text-slate-700 dark:text-slate-300'
+                        }
+                      >
+                        <input
+                          type="checkbox"
+                          checked={factoryRestricted}
+                          onChange={(e) => setFactoryRestricted(e.target.checked)}
+                          className={
+                            gl
+                              ? 'size-4 rounded border-black/25 text-black dark:border-white/25 dark:bg-black/40'
+                              : 'size-4 rounded border-slate-300 text-sky-600 dark:border-slate-600 dark:bg-slate-950'
+                          }
+                        />
+                        {t('unitWorkQueue.filterFactoryScope')}
+                      </label>
+                    </fieldset>
+                    <p
+                      className={
+                        gl
+                          ? 'text-[11px] leading-relaxed text-black/55 dark:text-white/60'
+                          : 'text-[11px] leading-relaxed text-slate-500 dark:text-slate-400'
+                      }
+                    >
+                      {t('unitWorkQueue.trackingHint')}
+                    </p>
+                    <p
+                      className={
+                        gl
+                          ? 'text-[11px] leading-relaxed text-sky-900/80 dark:text-sky-100/85'
+                          : 'text-[11px] leading-relaxed text-sky-800 dark:text-sky-200/90'
+                      }
+                    >
+                      {t('unitWorkQueue.productionFlow.dailyOrderHint')}
+                    </p>
+                  </div>
+                </aside>
+
+                <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+                  <ul
+                    ref={listRef}
+                    className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1 transition-[padding] duration-100 ease-out"
+                    style={{ paddingLeft: filterOpen ? '18.5rem' : '0' }}
+                  >
+                    {filtered.length === 0 ? (
+                      <li className={splitListEmptyClass}>{t('unitWorkQueue.empty')}</li>
+                    ) : (
+                      pagedItems.map((row) => (
+                        <li
+                          key={row.id}
+                          className={splitListCardClass(
+                            row.id === selectedId,
+                            'flex min-h-0 shrink-0 items-stretch gap-1.5 px-2 py-1.5',
+                          )}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setSelectedId(row.id)}
+                            aria-current={row.id === selectedId ? 'true' : undefined}
+                            className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-0.5 py-0.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold leading-snug text-black dark:text-white">
+                                {row.title}
+                              </p>
+                              <p className="mt-0.5 truncate text-xs text-black/70 dark:text-white/70">
+                                {row.orderNo} · {unitLabel(row.targetUnit, t)}
+                                {row.parentWorkQueueId ? (
+                                  <span className="text-black/50 dark:text-white/55">
+                                    {' '}
+                                    · {t(childOrderRoleLabelKey(row.kind))}
+                                  </span>
+                                ) : null}
+                              </p>
+                              <p className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                                <span className={statusClass(row.status)}>
+                                  {t(`unitWorkQueue.status.${row.status}`)}
+                                </span>
+                                {row.dueToday ? (
+                                  <span className="inline-flex rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-900 dark:text-amber-100">
+                                    {t('unitWorkQueue.dueBadge')}
+                                  </span>
+                                ) : null}
+                              </p>
+                            </div>
+                            <WorkOrderListProgress item={row} />
+                          </button>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                  {gl ? (
+                    <div className="glass-card glass-card--static project-mgmt-footer-panel sticky bottom-0 z-10 mt-2 shrink-0 text-xs">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-black dark:text-white/80">
+                          {filtered.length > 0 ? (
+                            <span className="tabular-nums">
+                              {t('unitWorkQueue.pagination.footerRange', {
+                                start: String(listPageStart),
+                                end: String(listPageEnd),
+                                total: String(filtered.length),
+                              })}
+                            </span>
+                          ) : (
+                            <span className="tabular-nums">{t('unitWorkQueue.pagination.emptyFooter')}</span>
+                          )}
+                          <span className="hidden sm:inline">
+                            {t('unitWorkQueue.demoViewer', {
+                              name: resolveWorkQueueName(MOCK_WORK_QUEUE_VIEWER_ID),
+                            })}
+                          </span>
+                        </div>
+                        {filtered.length > 0 ? (
+                          <SplitListPaginationNav
+                            safePage={safeListPage}
+                            pageCount={listTotalPages}
+                            onPrev={() => setListPage((p) => Math.max(1, p - 1))}
+                            onNext={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
+                            gl
+                            locale={locale}
+                          />
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-1.5 flex shrink-0 flex-col gap-2 border-t border-black/15 px-2 pt-2.5 text-[11px] text-black/75 dark:border-white/12 dark:text-white/80 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        {filtered.length > 0 ? (
+                          <span className="tabular-nums">
+                            {t('unitWorkQueue.pagination.footerRange', {
+                              start: String(listPageStart),
+                              end: String(listPageEnd),
+                              total: String(filtered.length),
+                            })}
+                          </span>
+                        ) : (
+                          <span className="tabular-nums">{t('unitWorkQueue.pagination.emptyFooter')}</span>
+                        )}
+                        <span className="hidden sm:inline">
+                          {t('unitWorkQueue.demoViewer', {
+                            name: resolveWorkQueueName(MOCK_WORK_QUEUE_VIEWER_ID),
+                          })}
+                        </span>
+                      </div>
+                      {filtered.length > 0 ? (
+                        <SplitListPaginationNav
+                          safePage={safeListPage}
+                          pageCount={listTotalPages}
+                          onPrev={() => setListPage((p) => Math.max(1, p - 1))}
+                          onNext={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
+                          buttonStyle="legacy"
+                          locale={locale}
+                          pageIndicatorClassName="tabular-nums text-black/70 dark:text-white/75"
+                        />
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </section>
+
+        {!listCollapsed ? (
+          <div className="relative z-10 mx-1 hidden w-2 shrink-0 cursor-col-resize lg:flex">
+            <button
+              type="button"
+              aria-label="Paneller arası genişliği ayarla"
+              title="Çift tıklayarak varsayılan sütun genişliğine dön"
+              onMouseDown={() => setIsResizing(true)}
+              onDoubleClick={(e) => {
+                e.preventDefault()
+                setIsResizing(false)
+                resetRatio()
+              }}
+              onMouseEnter={() => setIsResizerHover(true)}
+              onMouseLeave={() => setIsResizerHover(false)}
+              className={[
+                'group absolute inset-y-3 left-1/2 -translate-x-1/2 rounded-full border transition',
+                isResizing || isResizerHover
+                  ? gl
+                    ? 'w-6 border-black/35 bg-black/12 dark:border-white/18 dark:bg-black/60'
+                    : neutralShell
+                      ? 'w-6 border-black/35 bg-black/12 dark:border-white/18 dark:bg-black/60'
+                      : 'w-6 border-black/25 bg-black/8 dark:border-white/20 dark:bg-black/50'
+                  : 'w-3 border-black/18 bg-white/70 dark:border-white/12 dark:bg-black/55',
+              ].join(' ')}
+            >
+              <span className="pointer-events-none flex h-full items-center justify-center text-black/55 dark:text-white/70">
+                {isResizing || isResizerHover ? (
+                  <ChevronsLeftRight className="size-3.5" />
+                ) : (
+                  <GripVertical className="size-3.5" />
+                )}
+              </span>
+            </button>
+          </div>
+        ) : null}
+
+        <aside ref={detailPanelRef} className={managementModuleDetailPanelClass(gl)}>
+            {selected ? (
               <div key={selected.id} className="okan-project-detail-column flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                   <header className={`shrink-0 ${splitDetailHeaderClass}`}>
                     <p className="text-xs font-semibold uppercase tracking-wide text-black/60 dark:text-white/65">
@@ -683,10 +794,9 @@ export function UnitWorkQueueModuleView(_props: Props) {
               >
                 {t('unitWorkQueue.empty')}
               </div>
-            )
-          }
-
-      />
+            )}
+        </aside>
+      </div>
     </ManagementModuleShell>
   )
 }

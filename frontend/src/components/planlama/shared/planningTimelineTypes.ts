@@ -1,9 +1,13 @@
-import type { PlanVisualTone } from '../../../data/generalPlanningMock'
+import type { PlanVisualTone, PlanningUnitKey } from '../../../data/generalPlanningMock'
+import type { PlanningProductionStage } from '../../../data/planningProductionStage'
 import type { PlanItem } from '../../../data/planningDesignMock'
 
 export type TimelineDisplayItem = PlanItem & {
   visualTone: PlanVisualTone
   isPreview: boolean
+  unit?: PlanningUnitKey
+  productionStage?: PlanningProductionStage
+  productionStageProgress?: number
 }
 
 export type PlanCardDisplayMode = 'coordinator' | 'ops'
