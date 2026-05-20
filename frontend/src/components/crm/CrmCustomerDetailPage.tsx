@@ -313,7 +313,9 @@ export function CrmCustomerDetailPage() {
                 >
                   <QuoteModuleView
                     embedded
+                    customerId={customer.id}
                     customerName={customer.name}
+                    customerContacts={customer.iletisim.kisiler}
                     storageKeyPrefix={`crm:detail:${customer.id}:quotes`}
                   />
                 </div>

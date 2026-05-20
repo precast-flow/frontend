@@ -1,3 +1,5 @@
+import type { QuoteTrackingOutcome } from './quoteTracking'
+
 export type QuoteStatus = 'taslak' | 'onay_bekliyor' | 'onayli' | 'red'
 
 export type QuoteLine = {
@@ -50,6 +52,18 @@ export type Quote = {
   versionSnapshots: Record<'v1' | 'v2', VersionSnapshot>
   /** P2 — tutar eşiği; doluysa bilgi bandı */
   thresholdWarning?: string
+  /** CRM — müşteri kartı */
+  customerId?: string
+  quoteDateIso?: string
+  issuedByUserId?: string
+  issuedByName?: string
+  customerContactId?: string
+  customerContactName?: string
+  workQueueId?: string
+  trackingOutcome?: QuoteTrackingOutcome
+  rejectionReasonId?: string
+  rejectionReasonLabel?: string
+  rejectionNote?: string
 }
 
 const lines5v2: QuoteLine[] = [

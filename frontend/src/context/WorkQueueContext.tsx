@@ -85,6 +85,7 @@ type SaveNonconformanceInput = {
 type WorkQueueContextValue = {
   items: WorkQueueItem[]
   appendItems: (rows: WorkQueueItem[]) => void
+  patchWorkQueueItem: (id: string, patch: Partial<WorkQueueItem>) => void
   getProductionFlowState: (workQueueId: string) => ProductionWorkOrderFlowState
   togglePrePourCheck: (workQueueId: string, checkId: PrePourCheckId) => void
   approvePourSpawn: (parent: WorkQueueItem) => boolean
@@ -405,6 +406,10 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       }
       return next
     })
+  }, [])
+
+  const patchWorkQueueItem = useCallback((id: string, patch: Partial<WorkQueueItem>) => {
+    setItems((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)))
   }, [])
 
   const getProductionFlowState = useCallback(
@@ -1269,6 +1274,7 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
     () => ({
       items,
       appendItems,
+      patchWorkQueueItem,
       getProductionFlowState,
       togglePrePourCheck,
       approvePourSpawn,
@@ -1326,6 +1332,7 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
     [
       items,
       appendItems,
+      patchWorkQueueItem,
       getProductionFlowState,
       togglePrePourCheck,
       approvePourSpawn,

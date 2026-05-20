@@ -53,6 +53,7 @@ import { SampleOrderDetailPanel } from './SampleOrderDetailPanel'
 import { WorkOrderListProgress } from './WorkOrderListProgress'
 import { NonconformanceWorkOrderDetailPanel } from './NonconformanceWorkOrderDetailPanel'
 import { ProductionWorkOrderDetailPanel } from './ProductionWorkOrderDetailPanel'
+import { QuoteWorkQueueDetailPanel } from './QuoteWorkQueueDetailPanel'
 import { isNonconformanceOrder } from '../../data/productionQualityControl'
 import { BLANK_PRODUCTION_WORK_ORDER_ID } from '../../data/productionWorkOrderBlankDemo'
 
@@ -191,7 +192,9 @@ export function UnitWorkQueueModuleView(_props: Props) {
   const productionParentDetail = selected != null && isProductionParentOrder(selected)
   const productionChildDetail = selected != null && isProductionChildOrder(selected)
   const nonconformanceDetail = selected != null && isNonconformanceOrder(selected)
-  const flowDetailPanel = productionParentDetail || productionChildDetail || nonconformanceDetail
+  const quoteFollowupDetail = selected != null && selected.kind === 'quote_followup'
+  const flowDetailPanel =
+    productionParentDetail || productionChildDetail || nonconformanceDetail || quoteFollowupDetail
 
   const openWorkOrderInList = (
     workQueueId: string,
@@ -206,11 +209,11 @@ export function UnitWorkQueueModuleView(_props: Props) {
   }
 
   useEffect(() => {
-    if (!productionParentDetail && !productionChildDetail && !nonconformanceDetail) {
+    if (!productionParentDetail && !productionChildDetail && !nonconformanceDetail && !quoteFollowupDetail) {
       setDetailTab('summary')
     }
     requestAnimationFrame(() => detailPanelRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
-  }, [selectedId, productionParentDetail, productionChildDetail, nonconformanceDetail])
+  }, [selectedId, productionParentDetail, productionChildDetail, nonconformanceDetail, quoteFollowupDetail])
 
   useEffect(() => {
     if (!filterOpen) return
@@ -680,6 +683,9 @@ export function UnitWorkQueueModuleView(_props: Props) {
                     ) : null}
                     {nonconformanceDetail ? (
                       <NonconformanceWorkOrderDetailPanel item={selected} gl={gl} />
+                    ) : null}
+                    {quoteFollowupDetail ? (
+                      <QuoteWorkQueueDetailPanel item={selected} gl={gl} />
                     ) : null}
                     {!flowDetailPanel && detailTab === 'summary' ? (
                       <div className="flex flex-col divide-y divide-slate-200/25 dark:divide-white/10">

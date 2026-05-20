@@ -30,6 +30,7 @@ export type WorkQueueKind =
   | 'sample_order'
   | 'curing_order'
   | 'nonconformance'
+  | 'quote_followup'
 
 export type WorkQueueStatus = 'beklemede' | 'islemde' | 'bloke' | 'tamamlandi'
 
@@ -75,6 +76,8 @@ export type WorkQueueItem = {
   nonconformanceId?: string
   controlPhase?: ControlPhase
   sourceMarkerId?: string
+  /** Teklif takip işi — ilgili teklif kaydı */
+  quoteId?: string
 }
 
 /** Sol üst birim seçicide sıra — tüm birimleri demoda kapsamak için. */
