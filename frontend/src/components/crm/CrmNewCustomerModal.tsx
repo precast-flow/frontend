@@ -1,7 +1,8 @@
-import { useEffect, useId, useState } from 'react'
-import { MapPin, Trash2, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { MapPin, Trash2 } from 'lucide-react'
 import type { CrmCustomer, CrmLocationRow } from '../../data/crmCustomers'
 import { eiSplitHeaderButtonPassive } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import { AppDialog, AppDialogButton } from '../shared/AppDialog'
 
 type Props = {
   open: boolean
@@ -40,7 +41,6 @@ export function CrmNewCustomerModal({
   onSave,
   onClose,
 }: Props) {
-  const titleId = useId()
   const [draft, setDraft] = useState<CustomerDraft>(EMPTY_DRAFT)
   const [error, setError] = useState<string | null>(null)
   const [newLocationName, setNewLocationName] = useState('')
@@ -68,17 +68,6 @@ export function CrmNewCustomerModal({
       setDraft(EMPTY_DRAFT)
     }
   }, [open, mode, initialCustomer])
-
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [open, onClose])
-
-  if (!open) return null
 
   const addLocation = () => {
     const name = newLocationName.trim()
@@ -129,39 +118,24 @@ export function CrmNewCustomerModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[95] flex items-end justify-center p-3 sm:items-center sm:p-6"
-      role="presentation"
+    <AppDialog
+      open={open}
+      size="md"
+      title={mode === 'edit' ? 'Müşteri düzenle' : 'Yeni müşteri'}
+      subtitle="Genel bilgileri tek formda doldurun."
+      closeLabel="Pencereyi kapat"
+      onClose={onClose}
+      footer={
+        <>
+          <AppDialogButton variant="secondary" onClick={onClose}>
+            Vazgeç
+          </AppDialogButton>
+          <AppDialogButton variant="primary" onClick={save}>
+            {mode === 'edit' ? 'Değişiklikleri kaydet' : 'Müşteriyi oluştur'}
+          </AppDialogButton>
+        </>
+      }
     >
-      <button
-        type="button"
-        className="absolute inset-0 bg-slate-950/30 backdrop-blur-[2px]"
-        aria-label="Müşteri dialog kapat"
-        onClick={onClose}
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="relative z-10 w-full max-w-2xl rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xl dark:border-slate-700/70 dark:bg-slate-900"
-      >
-        <div className="mb-4 flex items-start justify-between gap-2">
-          <div>
-            <h2 id={titleId} className="text-base font-semibold text-slate-900 dark:text-slate-50">
-              {mode === 'edit' ? 'Müşteri düzenle' : 'Yeni müşteri'}
-            </h2>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Genel bilgileri tek formda doldurun.</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-            aria-label="Pencereyi kapat"
-          >
-            <X className="size-4" aria-hidden />
-          </button>
-        </div>
-
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="sm:col-span-2">
             <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Ticari unvan</span>
@@ -309,23 +283,6 @@ export function CrmNewCustomerModal({
 
         {error ? <p className="mt-3 text-xs font-semibold text-rose-600 dark:text-rose-300">{error}</p> : null}
 
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200"
-          >
-            Vazgeç
-          </button>
-          <button
-            type="button"
-            onClick={save}
-            className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm`}
-          >
-            {mode === 'edit' ? 'Değişiklikleri kaydet' : 'Müşteriyi oluştur'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </AppDialog>
   )
 }

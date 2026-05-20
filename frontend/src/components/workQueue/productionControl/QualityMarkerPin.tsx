@@ -3,45 +3,48 @@ import type { MarkerKind, QualityMarker } from '../../../data/productionQualityC
 
 type Props = {
   marker: QualityMarker
-  onSelect?: (marker: QualityMarker) => void
+  selected?: boolean
 }
 
-const KIND_STYLES: Record<MarkerKind, { ring: string; bg: string; Icon: typeof Check }> = {
+const KIND_STYLES: Record<
+  MarkerKind,
+  { ring: string; bg: string; Icon: typeof Check }
+> = {
   pass: {
-    ring: 'ring-emerald-500/50',
-    bg: 'bg-emerald-500 text-white',
+    ring: 'ring-emerald-600/75',
+    bg: 'bg-emerald-500/50 text-white',
     Icon: Check,
   },
   warning: {
-    ring: 'ring-amber-500/50',
-    bg: 'bg-amber-500 text-white',
+    ring: 'ring-amber-600/75',
+    bg: 'bg-amber-500/50 text-white',
     Icon: AlertTriangle,
   },
   error: {
-    ring: 'ring-red-500/50',
-    bg: 'bg-red-600 text-white',
+    ring: 'ring-red-600/75',
+    bg: 'bg-red-600/50 text-white',
     Icon: X,
   },
 }
 
-export function QualityMarkerPin({ marker, onSelect }: Props) {
+export function QualityMarkerPin({ marker, selected = false }: Props) {
   const style = KIND_STYLES[marker.kind]
   const { Icon } = style
-
   const hasNote = Boolean(marker.note?.trim())
 
   return (
-    <button
-      type="button"
-      className={`absolute z-10 flex size-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full shadow-md ring-2 ${style.ring} ${style.bg} transition hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${hasNote ? 'ring-offset-1 ring-offset-white dark:ring-offset-slate-900' : ''}`}
-      style={{ left: `${marker.xPct}%`, top: `${marker.yPct}%` }}
-      onClick={(e) => {
-        e.stopPropagation()
-        onSelect?.(marker)
-      }}
+    <span
+      role="img"
       aria-label={marker.kind}
+      className={[
+        'pointer-events-none relative z-10 flex size-7 items-center justify-center rounded-full shadow-sm ring-2',
+        style.ring,
+        style.bg,
+        selected ? 'scale-110 ring-offset-1 ring-offset-white/90 dark:ring-offset-slate-900/90' : '',
+        hasNote ? 'ring-[2.5px]' : '',
+      ].join(' ')}
     >
-      <Icon className="size-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
-    </button>
+      <Icon className="size-3.5 shrink-0 drop-shadow-sm" strokeWidth={2.75} aria-hidden />
+    </span>
   )
 }

@@ -15,7 +15,8 @@ import { roleLabel, userNameById } from '../../data/mockUsers'
 import { activeModuleIdFromPathname } from '../../data/navigation'
 import { useI18n } from '../../i18n/I18nProvider'
 import { useThemeMode } from '../../theme/ThemeProvider'
-import { PmStyleDialog } from '../shared/PmStyleDialog'
+import { PmStyleDialog, AppDialogButton } from '../shared/PmStyleDialog'
+import { ManagementModuleShell } from '../shared/splitModuleStyles'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import {
   eiSplitHeaderButtonPassive,
@@ -83,21 +84,12 @@ export function UserManagementModuleView(props: UserManagementState) {
 
   return (
     <>
-      <div
-        className="project-mgmt-glass-light flex min-h-0 min-w-0 flex-1 basis-0 flex-col gap-0 overflow-hidden rounded-3xl"
-        data-neutral-shell={neutralShell ? 'true' : undefined}
-      >
-        <div className="grid min-h-0 min-w-0 flex-1 grid-rows-[minmax(0,1fr)] overflow-hidden">
-          <div
-            className={[
-              'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
-              gl
-                ? 'rounded-3xl bg-transparent p-0'
-                : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
-            ].join(' ')}
-          >
+      <ManagementModuleShell neutralShell={neutralShell} gl={gl}>
             <ElementIdentityPieceCodesLikeSplit
               persistKey="user-management"
+              splitPanePersistKey="user-management"
+              fillParentHeight
+              embedded
               visualVariant="project-mgmt"
               neutralChrome={neutralShell}
               listIndentWhenFilterOpen="18.5rem"
@@ -646,9 +638,7 @@ export function UserManagementModuleView(props: UserManagementState) {
           </div>
         }
           />
-          </div>
-        </div>
-      </div>
+      </ManagementModuleShell>
 
       {toast ? (
         <div
@@ -664,24 +654,19 @@ export function UserManagementModuleView(props: UserManagementState) {
           title={t('userManagement.deactivateTitle')}
           closeLabel={t('userManagement.cancel')}
           onClose={() => setDeactivateOpen(false)}
-          maxWidthClass="max-w-md"
+          size="sm"
           footer={
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setDeactivateOpen(false)}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold dark:border-slate-600"
-              >
+            <>
+              <AppDialogButton variant="secondary" onClick={() => setDeactivateOpen(false)}>
                 {t('userManagement.cancel')}
-              </button>
-              <button
-                type="button"
-                className="rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700"
+              </AppDialogButton>
+              <AppDialogButton
+                variant="danger"
                 onClick={() => confirmDeactivate(t('userManagement.toastDeactivated'))}
               >
                 {t('userManagement.confirm')}
-              </button>
-            </div>
+              </AppDialogButton>
+            </>
           }
         >
           <p className="text-sm text-slate-600 dark:text-slate-300">

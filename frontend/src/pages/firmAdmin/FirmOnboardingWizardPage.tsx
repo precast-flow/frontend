@@ -7,6 +7,7 @@ import {
   type FirmWizardFormState,
 } from '../../data/firmOnboardingWizardMock'
 import { useI18n } from '../../i18n/I18nProvider'
+import { AppDialog, AppDialogButton } from '../../components/shared/AppDialog'
 
 const STEP_KEYS = ['welcome', 'company', 'shift', 'factory', 'admin', 'summary'] as const
 type StepIndex = 0 | 1 | 2 | 3 | 4 | 5
@@ -413,31 +414,26 @@ export function FirmOnboardingWizardPage() {
         </div>
       </div>
 
-      {/* P2 — davet e-postası modal */}
-      {inviteOpen ? (
-        <div
-          className="gm-glass-modal-shell fixed inset-0 z-[80] flex items-end justify-center bg-gray-900/40 p-4 backdrop-blur-[2px] sm:items-center"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="firm-wizard-invite-title"
-        >
-          <div className="max-h-[85vh] w-full max-w-lg overflow-auto rounded-3xl bg-pf-surface p-6 shadow-neo-out">
-            <h3 id="firm-wizard-invite-title" className="text-lg font-semibold text-gray-900 dark:text-gray-50">
-              {t('firmWizard.inviteModalTitle')}
-            </h3>
-            <pre className="mt-4 whitespace-pre-wrap rounded-xl bg-gray-100 p-4 font-sans text-xs text-gray-800 shadow-neo-in dark:bg-gray-950 dark:text-gray-200">
-              {t('firmWizard.inviteModalBody', {
-                admin: form.adminName,
-                email: form.adminEmail,
-                company: form.shortName,
-              })}
-            </pre>
-            <button type="button" className={`${btnPrimary} mt-6 w-full sm:w-auto`} onClick={() => setInviteOpen(false)}>
-              {t('firmWizard.inviteModalClose')}
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <AppDialog
+        open={inviteOpen}
+        size="sm"
+        title={t('firmWizard.inviteModalTitle')}
+        closeLabel={t('firmWizard.inviteModalClose')}
+        onClose={() => setInviteOpen(false)}
+        footer={
+          <AppDialogButton variant="primary" onClick={() => setInviteOpen(false)}>
+            {t('firmWizard.inviteModalClose')}
+          </AppDialogButton>
+        }
+      >
+        <pre className="whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 font-sans text-xs text-slate-800">
+          {t('firmWizard.inviteModalBody', {
+            admin: form.adminName,
+            email: form.adminEmail,
+            company: form.shortName,
+          })}
+        </pre>
+      </AppDialog>
 
       {toast ? (
         <div

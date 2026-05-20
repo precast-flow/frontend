@@ -6,15 +6,25 @@ const SYSTEM_PAGE_KEY: Record<string, string> = {
   'user-management': 'nav.users',
 }
 
+const DEFINITIONS_PAGE_KEY: Record<string, string> = {
+  'element-identity': 'nav.elementIdentity',
+  'material-catalog': 'nav.materialCatalog',
+  'standard-series-catalog': 'nav.standardSeriesCatalog',
+}
+
 const ADMIN_PAGE_KEY: Record<string, string> = {
   'element-identity-admin': 'nav.elementIdentityAdmin',
 }
 
-/** MainCanvas’ta yalnızca başlık olan modüller için üst breadcrumb (CRM/Proje/Eleman kimlik/Malzeme kataloğu/Standart seri kendi içinde çizer). */
+/** MainCanvas üst breadcrumb (Proje/CRM/Planlama modülleri kendi iç breadcrumb’ını kullanır). */
 export function mainCanvasBreadcrumbSegments(activeId: string): BreadcrumbSegment[] | null {
   const sys = SYSTEM_PAGE_KEY[activeId]
   if (sys) {
     return [{ labelKey: 'nav.sidebar.section.system' }, { labelKey: sys }]
+  }
+  const def = DEFINITIONS_PAGE_KEY[activeId]
+  if (def) {
+    return [{ labelKey: 'nav.sidebar.section.configuration' }, { labelKey: def }]
   }
   const admin = ADMIN_PAGE_KEY[activeId]
   if (admin) {

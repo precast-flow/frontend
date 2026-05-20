@@ -54,9 +54,13 @@ export function PostPourControlTab({
     togglePostPourLabeling,
     togglePostPourSurfaceCleaning,
     approveWarehouseTransfer,
+    updateMarkerPosition,
+    updateMarkerNote,
+    deleteMarker,
   } = useWorkQueue()
 
   const [noteDialog, setNoteDialog] = useState<MarkerNoteDialogState | null>(null)
+  const [focusMarkerId, setFocusMarkerId] = useState<string | null>(null)
   const [warehouseOpen, setWarehouseOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
@@ -80,13 +84,15 @@ export function PostPourControlTab({
   }, [linkedReports])
 
   const handleMarkerSelect = (marker: QualityMarker) => {
-    if (onMarkerSelect) {
-      onMarkerSelect(marker)
+    if (marker.kind === 'error') {
+      if (onMarkerSelect) {
+        onMarkerSelect(marker)
+        return
+      }
+      setNoteDialog({ mode: 'existing', marker })
       return
     }
-    if (marker.kind === 'warning' || marker.kind === 'error') {
-      setNoteDialog({ mode: 'existing', marker })
-    }
+    setFocusMarkerId(marker.id)
   }
 
   const handlePrintLabel = () => {
@@ -167,11 +173,28 @@ export function PostPourControlTab({
           markers={markers}
           disabled={!interactive || warehouseDone}
           gl={gl}
-          onAddPassMarker={(x, y) => addMarker(item.id, 'post_pour', 'pass', x, y)}
-          onRequestAnnotation={(kind, x, y) =>
-            setNoteDialog(openNewMarkerNote(kind, 'post_pour', x, y))
+          focusMarkerId={focusMarkerId}
+          onAddPassMarker={(x, y) => {
+            const marker = addMarker(item.id, 'post_pour', 'pass', x, y)
+            setFocusMarkerId(marker.id)
+            return marker.id
+          }}
+          onRequestWarning={(x, y) => {
+            const marker = addMarker(item.id, 'post_pour', 'warning', x, y)
+            setFocusMarkerId(marker.id)
+            return marker.id
+          }}
+          onRequestError={(x, y) =>
+            setNoteDialog(openNewMarkerNote('error', 'post_pour', x, y))
           }
           onMarkerSelect={handleMarkerSelect}
+          onUpdateMarkerPosition={(id, x, y) => updateMarkerPosition(item.id, id, x, y)}
+          onUpdateMarkerNote={(id, note) => updateMarkerNote(item.id, id, note)}
+          onDeleteMarker={(id) => {
+            deleteMarker(item.id, id)
+            setFocusMarkerId(null)
+          }}
+          onOpenNcForMarker={(m) => setNoteDialog({ mode: 'existing', marker: m })}
           onGenerateReport={onGenerateReport}
           hasQualityReport={hasQualityReport}
           totalMarkerCount={totalMarkerCount}
@@ -323,6 +346,18 @@ export function PostPourControlTab({
               saveWarningMarkerNote,
               saveNonconformanceFromMarker,
             })
+            if (noteDialog.mode === 'new') {
+              const { placement } = noteDialog
+              if (placement.kind === 'error') {
+                const markersAfter = getMarkers(item.id, placement.phase)
+                const latest = markersAfter
+                  .filter((m) => m.kind === 'error')
+                  .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
+                if (latest) setFocusMarkerId(latest.id)
+              }
+            } else if (noteDialog.marker) {
+              setFocusMarkerId(noteDialog.marker.id)
+            }
             setNoteDialog(null)
           }}
         />

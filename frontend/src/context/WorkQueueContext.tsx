@@ -17,12 +17,20 @@ import {
   canCompleteCuring,
   completeCuringFlow,
   createInitialCuringFlowState,
+  createInitialPourFlowState,
   createInitialPostPourState,
   createInitialProductionFlowState,
+  createInitialSampleFlowState,
+  pauseCuringFlow,
+  resumeCuringFlow,
+  shouldAutoCompleteCuring,
+  normalizeCuringFlowState,
   startCuringFlow,
   type CuringFlowState,
+  type PourOrderFlowState,
   type PrePourCheckId,
   type ProductionWorkOrderFlowState,
+  type SampleOrderFlowState,
 } from '../data/productionWorkOrderFlow'
 import { buildCuringReport, type CuringReport } from '../data/curingReport'
 import { buildNcOrderNo, buildNonconformanceReportNo } from '../data/nonconformanceReport'
@@ -85,8 +93,18 @@ type WorkQueueContextValue = {
   approveWarehouseTransfer: (parent: WorkQueueItem, warehouseId: string) => boolean
   getCuringFlowState: (workQueueId: string) => CuringFlowState
   startCuring: (workQueueId: string) => void
+  pauseCuring: (workQueueId: string, reason: string) => boolean
+  resumeCuring: (workQueueId: string) => void
   acknowledgeCuringSteamOff: (workQueueId: string) => void
   completeCuringWithReport: (curingItem: WorkQueueItem) => CuringReport | null
+  getPourFlowState: (workQueueId: string) => PourOrderFlowState
+  approvePourOrder: (pourItem: WorkQueueItem) => boolean
+  reportPourDelay: (pourItem: WorkQueueItem, note: string) => boolean
+  cancelPourOrder: (pourItem: WorkQueueItem, note: string) => boolean
+  getSampleFlowState: (workQueueId: string) => SampleOrderFlowState
+  printSampleLabel: (sampleItem: WorkQueueItem) => string | null
+  linkExistingSample: (sampleItem: WorkQueueItem, sampleId: string) => boolean
+  completeSampleOrder: (sampleItem: WorkQueueItem) => boolean
   getCuringReport: (curingWorkQueueId: string) => CuringReport | undefined
   getCuringReportsForProductionOrder: (productionWorkQueueId: string) => CuringReport[]
   getCuringReportsForProduct: (productCode: string) => CuringReport[]
@@ -99,6 +117,9 @@ type WorkQueueContextValue = {
     xPct: number,
     yPct: number,
   ) => QualityMarker
+  updateMarkerPosition: (productionWorkQueueId: string, markerId: string, xPct: number, yPct: number) => void
+  updateMarkerNote: (productionWorkQueueId: string, markerId: string, note: string) => void
+  deleteMarker: (productionWorkQueueId: string, markerId: string) => void
   saveWarningMarkerNote: (
     productionWorkQueueId: string,
     markerId: string,
@@ -194,6 +215,8 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
   const [curingById, setCuringById] = useState<Record<string, CuringFlowState>>(() => ({
     ...QUALITY_CONTROL_DEMO_SEED.curingById,
   }))
+  const [pourById, setPourById] = useState<Record<string, PourOrderFlowState>>({})
+  const [sampleById, setSampleById] = useState<Record<string, SampleOrderFlowState>>({})
   const [reportsByCuringId, setReportsByCuringId] = useState<Record<string, CuringReport>>(() => {
     const next: Record<string, CuringReport> = {}
     for (const [id, report] of Object.entries(QUALITY_CONTROL_DEMO_SEED.reportsByCuringId)) {
@@ -363,8 +386,22 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       const next = { ...prev }
       for (const row of rows) {
         if (row.kind === 'curing_order' && !next[row.id]) {
-          next[row.id] = createInitialCuringFlowState()
+          next[row.id] = createInitialCuringFlowState(Date.now())
         }
+      }
+      return next
+    })
+    setPourById((prev) => {
+      const next = { ...prev }
+      for (const row of rows) {
+        if (row.kind === 'pour_order' && !next[row.id]) next[row.id] = createInitialPourFlowState()
+      }
+      return next
+    })
+    setSampleById((prev) => {
+      const next = { ...prev }
+      for (const row of rows) {
+        if (row.kind === 'sample_order' && !next[row.id]) next[row.id] = createInitialSampleFlowState()
       }
       return next
     })
@@ -535,7 +572,8 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
 
   const getCuringFlowState = useCallback(
     (workQueueId: string): CuringFlowState => {
-      return curingById[workQueueId] ?? createInitialCuringFlowState()
+      const raw = curingById[workQueueId]
+      return raw ? normalizeCuringFlowState(raw) : createInitialCuringFlowState()
     },
     [curingById],
   )
@@ -545,6 +583,137 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       const current = prev[workQueueId] ?? createInitialCuringFlowState()
       return { ...prev, [workQueueId]: startCuringFlow(current) }
     })
+    setItems((prev) =>
+      prev.map((row) =>
+        row.id === workQueueId && row.status === 'beklemede'
+          ? { ...row, status: 'islemde' as const }
+          : row,
+      ),
+    )
+  }, [])
+
+  const pauseCuring = useCallback((workQueueId: string, reason: string): boolean => {
+    let ok = false
+    setCuringById((prev) => {
+      const current = prev[workQueueId] ?? createInitialCuringFlowState()
+      const next = pauseCuringFlow(current, reason.trim())
+      ok = next !== current
+      return { ...prev, [workQueueId]: next }
+    })
+    return ok
+  }, [])
+
+  const resumeCuring = useCallback((workQueueId: string) => {
+    setCuringById((prev) => {
+      const current = prev[workQueueId] ?? createInitialCuringFlowState()
+      return { ...prev, [workQueueId]: resumeCuringFlow(current) }
+    })
+  }, [])
+
+  const getPourFlowState = useCallback(
+    (workQueueId: string) => pourById[workQueueId] ?? createInitialPourFlowState(),
+    [pourById],
+  )
+
+  const getSampleFlowState = useCallback(
+    (workQueueId: string) => sampleById[workQueueId] ?? createInitialSampleFlowState(),
+    [sampleById],
+  )
+
+  const approvePourOrder = useCallback((pourItem: WorkQueueItem): boolean => {
+    if (pourItem.kind !== 'pour_order') return false
+    setPourById((prev) => ({
+      ...prev,
+      [pourItem.id]: { status: 'onaylandi', actionAt: Date.now() },
+    }))
+    setItems((prev) =>
+      prev.map((row) =>
+        row.id === pourItem.id ? { ...row, status: 'tamamlandi' as const } : row,
+      ),
+    )
+    return true
+  }, [])
+
+  const reportPourDelay = useCallback((pourItem: WorkQueueItem, note: string): boolean => {
+    const trimmed = note.trim()
+    if (!trimmed || pourItem.kind !== 'pour_order') return false
+    setPourById((prev) => ({
+      ...prev,
+      [pourItem.id]: { status: 'gecikme', note: trimmed, actionAt: Date.now() },
+    }))
+    setItems((prev) =>
+      prev.map((row) =>
+        row.id === pourItem.id ? { ...row, status: 'bloke' as const } : row,
+      ),
+    )
+    return true
+  }, [])
+
+  const cancelPourOrder = useCallback((pourItem: WorkQueueItem, note: string): boolean => {
+    const trimmed = note.trim()
+    if (!trimmed || pourItem.kind !== 'pour_order') return false
+    setPourById((prev) => ({
+      ...prev,
+      [pourItem.id]: { status: 'iptal', note: trimmed, actionAt: Date.now() },
+    }))
+    setItems((prev) =>
+      prev.map((row) =>
+        row.id === pourItem.id ? { ...row, status: 'bloke' as const } : row,
+      ),
+    )
+    return true
+  }, [])
+
+  const printSampleLabel = useCallback((sampleItem: WorkQueueItem): string | null => {
+    if (sampleItem.kind !== 'sample_order') return null
+    const code = `NM-${sampleItem.orderNo.replace(/[^A-Z0-9]/gi, '')}-${String(Date.now()).slice(-4)}`
+    setSampleById((prev) => ({
+      ...prev,
+      [sampleItem.id]: {
+        status: 'etiket_yazdirildi',
+        sampleLabelCode: code,
+        actionAt: Date.now(),
+      },
+    }))
+    setItems((prev) =>
+      prev.map((row) =>
+        row.id === sampleItem.id && row.status === 'beklemede'
+          ? { ...row, status: 'islemde' as const }
+          : row,
+      ),
+    )
+    return code
+  }, [])
+
+  const linkExistingSample = useCallback((sampleItem: WorkQueueItem, sampleId: string): boolean => {
+    if (!sampleId.trim() || sampleItem.kind !== 'sample_order') return false
+    setSampleById((prev) => ({
+      ...prev,
+      [sampleItem.id]: {
+        status: 'mevcut_numune_baglandi',
+        linkedSampleId: sampleId.trim(),
+        actionAt: Date.now(),
+      },
+    }))
+    return true
+  }, [])
+
+  const completeSampleOrder = useCallback((sampleItem: WorkQueueItem): boolean => {
+    if (sampleItem.kind !== 'sample_order') return false
+    setSampleById((prev) => ({
+      ...prev,
+      [sampleItem.id]: {
+        ...(prev[sampleItem.id] ?? createInitialSampleFlowState()),
+        status: 'tamamlandi',
+        actionAt: Date.now(),
+      },
+    }))
+    setItems((prev) =>
+      prev.map((row) =>
+        row.id === sampleItem.id ? { ...row, status: 'tamamlandi' as const } : row,
+      ),
+    )
+    return true
   }, [])
 
   const acknowledgeCuringSteamOff = useCallback((workQueueId: string) => {
@@ -678,6 +847,46 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
     },
     [items, attachMarkerSpotSnapshot],
   )
+
+  const updateMarkerPosition = useCallback(
+    (productionWorkQueueId: string, markerId: string, xPct: number, yPct: number) => {
+      setMarkersByProductionId((prev) => {
+        const list = prev[productionWorkQueueId] ?? []
+        return {
+          ...prev,
+          [productionWorkQueueId]: list.map((m) =>
+            m.id === markerId ? { ...m, xPct, yPct } : m,
+          ),
+        }
+      })
+    },
+    [],
+  )
+
+  const updateMarkerNote = useCallback(
+    (productionWorkQueueId: string, markerId: string, note: string) => {
+      setMarkersByProductionId((prev) => {
+        const list = prev[productionWorkQueueId] ?? []
+        return {
+          ...prev,
+          [productionWorkQueueId]: list.map((m) =>
+            m.id === markerId ? { ...m, note: note.trim() || undefined } : m,
+          ),
+        }
+      })
+    },
+    [],
+  )
+
+  const deleteMarker = useCallback((productionWorkQueueId: string, markerId: string) => {
+    setMarkersByProductionId((prev) => {
+      const list = prev[productionWorkQueueId] ?? []
+      return {
+        ...prev,
+        [productionWorkQueueId]: list.filter((m) => m.id !== markerId),
+      }
+    })
+  }, [])
 
   const saveWarningMarkerNote = useCallback(
     (
@@ -1043,10 +1252,18 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
         }
         return changed ? next : prev
       })
+
+      for (const row of items) {
+        if (row.kind !== 'curing_order') continue
+        const flow = curingById[row.id]
+        if (!flow || !shouldAutoCompleteCuring(flow, now)) continue
+        if (reportsByCuringId[row.id]) continue
+        completeCuringWithReport(row)
+      }
     }
     const id = window.setInterval(tick, 1000)
     return () => window.clearInterval(id)
-  }, [prependNotification])
+  }, [prependNotification, items, curingById, reportsByCuringId, completeCuringWithReport])
 
   const value = useMemo(
     () => ({
@@ -1060,14 +1277,27 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       approveWarehouseTransfer,
       getCuringFlowState,
       startCuring,
+      pauseCuring,
+      resumeCuring,
       acknowledgeCuringSteamOff,
       completeCuringWithReport,
+      getPourFlowState,
+      approvePourOrder,
+      reportPourDelay,
+      cancelPourOrder,
+      getSampleFlowState,
+      printSampleLabel,
+      linkExistingSample,
+      completeSampleOrder,
       getCuringReport,
       getCuringReportsForProductionOrder,
       getCuringReportsForProduct,
       getSpawnedChildren,
       getMarkers,
       addMarker,
+      updateMarkerPosition,
+      updateMarkerNote,
+      deleteMarker,
       saveWarningMarkerNote,
       saveNonconformanceFromMarker,
       getNonconformance,
@@ -1104,14 +1334,27 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       approveWarehouseTransfer,
       getCuringFlowState,
       startCuring,
+      pauseCuring,
+      resumeCuring,
       acknowledgeCuringSteamOff,
       completeCuringWithReport,
+      getPourFlowState,
+      approvePourOrder,
+      reportPourDelay,
+      cancelPourOrder,
+      getSampleFlowState,
+      printSampleLabel,
+      linkExistingSample,
+      completeSampleOrder,
       getCuringReport,
       getCuringReportsForProductionOrder,
       getCuringReportsForProduct,
       getSpawnedChildren,
       getMarkers,
       addMarker,
+      updateMarkerPosition,
+      updateMarkerNote,
+      deleteMarker,
       saveWarningMarkerNote,
       saveNonconformanceFromMarker,
       getNonconformance,

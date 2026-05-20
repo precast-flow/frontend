@@ -1,6 +1,6 @@
-import { ChevronRight, Package, Plus, Trash2 } from 'lucide-react'
+import { Package, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
 import '../proje/projectManagementGlassLight.css'
 import { ALL_ELEMENT_TYPES } from '../../elementIdentity/catalog/allElementTypes'
@@ -16,7 +16,7 @@ import { useI18n } from '../../i18n/I18nProvider'
 import { activeModuleIdFromPathname } from '../../data/navigation'
 import { useThemeMode } from '../../theme/ThemeProvider'
 import { mergeTemplateFromProductPartial, templateToProductForEditor } from '../../standardSeriesCatalog/templateProductAdapter'
-import { PmStyleDialog } from '../shared/PmStyleDialog'
+import { PmStyleDialog, AppDialogButton, appDialogFieldClass, appDialogLabelClass } from '../shared/PmStyleDialog'
 import { ProductActivityTab } from '../elementIdentity/ProductActivityTab'
 import { ProductDimensionsTab } from '../elementIdentity/ProductDimensionsTab'
 import { ProductDrawingsTab } from '../elementIdentity/ProductDrawingsTab'
@@ -32,6 +32,7 @@ import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
 import { eiSplitListRowButton, eiTabPill } from '../elementIdentity/elementIdentitySplitUi'
 import { StandardSeriesAssemblyTab } from './StandardSeriesAssemblyTab'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
+import { ManagementModuleShell } from '../shared/splitModuleStyles'
 
 type DetailTab = 'general' | 'dimensions' | 'materials' | 'rebar' | 'drawings' | 'activity' | 'assembly'
 
@@ -267,47 +268,16 @@ export function StandardSeriesCatalogModuleView() {
 
   return (
     <>
-    <div
-      className="project-mgmt-glass-light flex min-h-0 min-w-0 flex-1 basis-0 flex-col gap-0 overflow-hidden rounded-3xl"
-      data-neutral-shell={neutralShell ? 'true' : undefined}
-    >
-      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-1">
-          <div className="px-[0.6875rem] pt-0 pb-0.5">
-            <nav aria-label={t('project.breadcrumbAria')} className="mb-0">
-              <ol className="flex flex-wrap items-center gap-1 text-xs text-black/60 dark:text-white/65">
-                <li>
-                  <Link
-                    to="/tanimlar"
-                    className="font-medium text-black/75 underline-offset-2 transition hover:text-black hover:underline dark:text-white/75 dark:hover:text-white"
-                  >
-                    {t('elementIdentity.detail.breadcrumbHub')}
-                  </Link>
-                </li>
-                <li className="flex items-center gap-1" aria-hidden>
-                  <ChevronRight className="size-3.5 shrink-0 opacity-70" />
-                </li>
-                <li className="font-semibold text-black dark:text-white" aria-current="page">
-                  {t('nav.standardSeriesCatalog')}
-                </li>
-              </ol>
-            </nav>
-          </div>
-
-        <div
-          className={[
-            'min-h-0 flex min-h-0 flex-1 flex-col overflow-hidden',
-            gl
-              ? 'rounded-3xl bg-transparent p-0'
-              : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
-          ].join(' ')}
-        >
+    <ManagementModuleShell neutralShell={neutralShell} gl={gl}>
           <ElementIdentityPieceCodesLikeSplit
               persistKey="standard-series-catalog"
+              splitPanePersistKey="standard-series-catalog"
+              fillParentHeight
+              embedded
               visualVariant="project-mgmt"
               neutralChrome={neutralShell}
               listRef={listScrollRef}
               listIndentWhenFilterOpen="18.5rem"
-              defaultSplitRatio={38}
               listTitle={t('standardSeries.listTitle')}
               filterToolbarSearch={
                 <FilterToolbarSearch
@@ -751,9 +721,7 @@ export function StandardSeriesCatalogModuleView() {
                 </div>
               }
             />
-          </div>
-        </div>
-      </div>
+    </ManagementModuleShell>
 
       {addToProjectOpen && selected ? (
         <PmStyleDialog
@@ -761,36 +729,27 @@ export function StandardSeriesCatalogModuleView() {
           subtitle={selected.code}
           closeLabel={t('elementIdentity.cancel')}
           onClose={() => setAddToProjectOpen(false)}
-          maxWidthClass="max-w-md"
+          size="sm"
           footer={
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setAddToProjectOpen(false)}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold dark:border-slate-600"
-              >
+            <>
+              <AppDialogButton variant="secondary" onClick={() => setAddToProjectOpen(false)}>
                 {t('elementIdentity.cancel')}
-              </button>
-              <button
-                type="button"
-                disabled={!addProjectId}
-                onClick={confirmAddToProject}
-                className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm disabled:opacity-40`}
-              >
+              </AppDialogButton>
+              <AppDialogButton variant="primary" disabled={!addProjectId} onClick={confirmAddToProject}>
                 {t('standardSeries.addConfirm')}
-              </button>
-            </div>
+              </AppDialogButton>
+            </>
           }
         >
           <div className="grid gap-3 text-sm">
             <label className="block">
-              <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
+              <span className={appDialogLabelClass}>
                 {t('standardSeries.targetProject')}
               </span>
               <select
                 value={addProjectId}
                 onChange={(e) => setAddProjectId(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
+                className={appDialogFieldClass}
               >
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>

@@ -57,17 +57,56 @@ export type CuringFlowStatus =
   | 'kurleme_basladi'
   | 'buhar_kapatma_bekleniyor'
   | 'bekleme_suresi'
+  | 'duraklatildi'
   | 'tamamlandi'
+
+export type CuringPauseEntry = {
+  at: number
+  reason: string
+  resumedAt?: number
+}
+
+export type CuringProcessHistoryEntry = {
+  at: number
+  key: string
+  note?: string
+}
 
 export type CuringFlowState = {
   status: CuringFlowStatus
   startedAt: number | null
   steamOffDueAt: number | null
-  /** Buhar kapatma uyarısının verildiği an (planlanan veya fiili geçiş). */
   steamWarningAt: number | null
   completeDueAt: number | null
   steamAcknowledgedAt: number | null
   completedAt: number | null
+  plannedCuringStartAt: number | null
+  expectedCuringEndAt: number | null
+  pauseHistory: CuringPauseEntry[]
+  processHistory: CuringProcessHistoryEntry[]
+  earlySteamShutdownAt: number | null
+  earlySteamShutdownWarning: boolean
+}
+
+export type PourOrderFlowStatus = 'beklemede' | 'onaylandi' | 'gecikme' | 'iptal' | 'tamamlandi'
+
+export type PourOrderFlowState = {
+  status: PourOrderFlowStatus
+  note?: string
+  actionAt?: number
+}
+
+export type SampleOrderFlowStatus =
+  | 'beklemede'
+  | 'etiket_yazdirildi'
+  | 'mevcut_numune_baglandi'
+  | 'tamamlandi'
+
+export type SampleOrderFlowState = {
+  status: SampleOrderFlowStatus
+  sampleLabelCode?: string
+  linkedSampleId?: string
+  actionAt?: number
 }
 
 export function createInitialProductionFlowState(): ProductionWorkOrderFlowState {
@@ -119,7 +158,18 @@ export function alreadyWarehouseApproved(state: ProductionWorkOrderFlowState): b
   return state.postPour.warehouseTransfer !== null
 }
 
-export function createInitialCuringFlowState(): CuringFlowState {
+export function normalizeCuringFlowState(state: Partial<CuringFlowState>): CuringFlowState {
+  const base = createInitialCuringFlowState(state.plannedCuringStartAt)
+  return {
+    ...base,
+    ...state,
+    pauseHistory: state.pauseHistory ?? base.pauseHistory,
+    processHistory: state.processHistory ?? base.processHistory,
+  }
+}
+
+export function createInitialCuringFlowState(plannedStartAt?: number | null): CuringFlowState {
+  const planned = plannedStartAt ?? null
   return {
     status: 'beklemede',
     startedAt: null,
@@ -128,6 +178,35 @@ export function createInitialCuringFlowState(): CuringFlowState {
     completeDueAt: null,
     steamAcknowledgedAt: null,
     completedAt: null,
+    plannedCuringStartAt: planned,
+    expectedCuringEndAt:
+      planned != null
+        ? planned + CURING_STEAM_OFF_DELAY_MS + CURING_COMPLETE_DELAY_MS
+        : null,
+    pauseHistory: [],
+    processHistory: [],
+    earlySteamShutdownAt: null,
+    earlySteamShutdownWarning: false,
+  }
+}
+
+export function createInitialPourFlowState(): PourOrderFlowState {
+  return { status: 'beklemede' }
+}
+
+export function createInitialSampleFlowState(): SampleOrderFlowState {
+  return { status: 'beklemede' }
+}
+
+function pushCuringHistory(
+  state: CuringFlowState,
+  key: string,
+  note?: string,
+  at = Date.now(),
+): CuringFlowState {
+  return {
+    ...state,
+    processHistory: [...state.processHistory, { at, key, note }],
   }
 }
 
@@ -230,45 +309,103 @@ export function advanceCuringByTime(
   state: CuringFlowState,
   now = Date.now(),
 ): CuringFlowState {
+  if (state.status === 'duraklatildi' || state.status === 'tamamlandi') return state
   if (state.status === 'kurleme_basladi' && state.steamOffDueAt !== null && now >= state.steamOffDueAt) {
-    return {
-      ...state,
-      status: 'buhar_kapatma_bekleniyor',
-      steamWarningAt: state.steamWarningAt ?? state.steamOffDueAt,
-    }
-  }
-  if (
-    state.status === 'bekleme_suresi' &&
-    state.completeDueAt !== null &&
-    now >= state.completeDueAt
-  ) {
-    return state
+    return pushCuringHistory(
+      {
+        ...state,
+        status: 'buhar_kapatma_bekleniyor',
+        steamWarningAt: state.steamWarningAt ?? state.steamOffDueAt,
+      },
+      'steam_off_due',
+    )
   }
   return state
 }
 
+export function shouldAutoCompleteCuring(state: CuringFlowState, now = Date.now()): boolean {
+  return (
+    state.status === 'bekleme_suresi' &&
+    state.completeDueAt !== null &&
+    now >= state.completeDueAt
+  )
+}
+
 export function startCuringFlow(state: CuringFlowState, now = Date.now()): CuringFlowState {
-  if (state.status !== 'beklemede') return state
-  return {
-    ...state,
-    status: 'kurleme_basladi',
-    startedAt: now,
-    steamOffDueAt: now + CURING_STEAM_OFF_DELAY_MS,
-    steamWarningAt: null,
-    steamAcknowledgedAt: null,
-    completeDueAt: null,
-    completedAt: null,
-  }
+  if (state.status !== 'beklemede' && state.status !== 'duraklatildi') return state
+  const base = pushCuringHistory(
+    {
+      ...state,
+      status: 'kurleme_basladi',
+      startedAt: state.startedAt ?? now,
+      steamOffDueAt: now + CURING_STEAM_OFF_DELAY_MS,
+      steamWarningAt: null,
+      steamAcknowledgedAt: null,
+      completeDueAt: null,
+      completedAt: null,
+      expectedCuringEndAt: now + CURING_STEAM_OFF_DELAY_MS + CURING_COMPLETE_DELAY_MS,
+    },
+    'curing_started',
+  )
+  return base
+}
+
+export function pauseCuringFlow(state: CuringFlowState, reason: string, now = Date.now()): CuringFlowState {
+  if (state.status === 'tamamlandi' || state.status === 'beklemede') return state
+  const trimmed = reason.trim()
+  return pushCuringHistory(
+    {
+      ...state,
+      status: 'duraklatildi',
+      pauseHistory: [...state.pauseHistory, { at: now, reason: trimmed }],
+    },
+    'curing_paused',
+    trimmed || undefined,
+    now,
+  )
+}
+
+export function resumeCuringFlow(state: CuringFlowState, now = Date.now()): CuringFlowState {
+  if (state.status !== 'duraklatildi') return state
+  const pauseHistory = state.pauseHistory.map((entry, i, arr) =>
+    i === arr.length - 1 && entry.resumedAt == null ? { ...entry, resumedAt: now } : entry,
+  )
+  const resumedStatus: CuringFlowStatus =
+    state.steamAcknowledgedAt != null
+      ? 'bekleme_suresi'
+      : state.steamOffDueAt != null && now >= state.steamOffDueAt
+        ? 'buhar_kapatma_bekleniyor'
+        : 'kurleme_basladi'
+  return pushCuringHistory(
+    {
+      ...state,
+      status: resumedStatus,
+      pauseHistory,
+    },
+    'curing_resumed',
+    undefined,
+    now,
+  )
 }
 
 export function acknowledgeSteamOff(state: CuringFlowState, now = Date.now()): CuringFlowState {
-  if (state.status !== 'buhar_kapatma_bekleniyor') return state
-  return {
-    ...state,
-    status: 'bekleme_suresi',
-    steamAcknowledgedAt: now,
-    completeDueAt: now + CURING_COMPLETE_DELAY_MS,
-  }
+  if (state.status !== 'buhar_kapatma_bekleniyor' && state.status !== 'kurleme_basladi') return state
+  const early =
+    state.steamOffDueAt != null && now < state.steamOffDueAt
+  return pushCuringHistory(
+    {
+      ...state,
+      status: 'bekleme_suresi',
+      steamAcknowledgedAt: now,
+      completeDueAt: now + CURING_COMPLETE_DELAY_MS,
+      earlySteamShutdownAt: early ? now : state.earlySteamShutdownAt,
+      earlySteamShutdownWarning: early || state.earlySteamShutdownWarning,
+      expectedCuringEndAt: now + CURING_COMPLETE_DELAY_MS,
+    },
+    early ? 'steam_off_early' : 'steam_off_ack',
+    early ? 'Erken buhar kapatma' : undefined,
+    now,
+  )
 }
 
 export function completeCuringFlow(state: CuringFlowState, now = Date.now()): CuringFlowState {

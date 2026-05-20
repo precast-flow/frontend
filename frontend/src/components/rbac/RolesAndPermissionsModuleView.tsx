@@ -11,7 +11,8 @@ import {
 import { activeModuleIdFromPathname } from '../../data/navigation'
 import { useI18n } from '../../i18n/I18nProvider'
 import { useThemeMode } from '../../theme/ThemeProvider'
-import { PmStyleDialog } from '../shared/PmStyleDialog'
+import { PmStyleDialog, AppDialogButton } from '../shared/PmStyleDialog'
+import { ManagementModuleShell } from '../shared/splitModuleStyles'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import {
   ElementIdentityFilterSheetHeader,
@@ -95,20 +96,12 @@ export function RolesAndPermissionsModuleView(props: RolesPermissionsState) {
 
   return (
     <>
-      <div
-        className="project-mgmt-glass-light flex min-h-0 min-w-0 flex-1 basis-0 flex-col gap-2 overflow-hidden rounded-3xl"
-        data-neutral-shell={neutralShell ? 'true' : undefined}
-      >
-        <div
-          className={[
-            'flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
-            gl
-              ? 'gap-2 rounded-3xl bg-transparent p-1 md:p-1.5'
-              : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
-          ].join(' ')}
-        >
+      <ManagementModuleShell neutralShell={neutralShell} gl={gl}>
           <ElementIdentityPieceCodesLikeSplit
             persistKey="roles-permissions"
+            splitPanePersistKey="roles-permissions"
+            fillParentHeight
+            embedded
             visualVariant="project-mgmt"
             neutralChrome={neutralShell}
             listIndentWhenFilterOpen="18.5rem"
@@ -629,8 +622,7 @@ export function RolesAndPermissionsModuleView(props: RolesPermissionsState) {
           </div>
         }
           />
-        </div>
-      </div>
+      </ManagementModuleShell>
 
       {deleteOpen && role && !role.isSystem ? (
         <PmStyleDialog
@@ -639,22 +631,14 @@ export function RolesAndPermissionsModuleView(props: RolesPermissionsState) {
           closeLabel={t('rolesPermissions.cancel')}
           onClose={() => setDeleteOpen(false)}
           footer={
-            <div className="flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setDeleteOpen(false)}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 dark:border-slate-600 dark:text-slate-200"
-              >
+            <>
+              <AppDialogButton variant="secondary" onClick={() => setDeleteOpen(false)}>
                 {t('rolesPermissions.cancel')}
-              </button>
-              <button
-                type="button"
-                onClick={confirmDelete}
-                className="rounded-lg border border-rose-300 bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700 dark:border-rose-700 dark:bg-rose-700 dark:hover:bg-rose-600"
-              >
+              </AppDialogButton>
+              <AppDialogButton variant="danger" onClick={confirmDelete}>
                 {t('rolesPermissions.confirm')}
-              </button>
-            </div>
+              </AppDialogButton>
+            </>
           }
         >
           <p className="text-sm text-slate-700 dark:text-slate-300">

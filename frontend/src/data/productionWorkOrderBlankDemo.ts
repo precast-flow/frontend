@@ -2,7 +2,7 @@
  * Birim iş kuyruğu — sıfırdan doldurulacak test üretim emri.
  * flowById içine EKLENMEZ; döküm öncesi/sonrası, kürleme ve alt emirler kullanıcı adımlarıyla oluşur.
  */
-import { DEFAULT_DRAWING_ASSET } from './productionDrawingMock'
+import { S2_KOLON_DRAWING_PDF } from './productionDrawingMock'
 import { MOCK_WORK_QUEUE_VIEWER_ID, type WorkQueueItem } from './workQueueMock'
 
 export const BLANK_PRODUCTION_WORK_ORDER_ID = 'wq-blank-sandbox'
@@ -30,8 +30,8 @@ export const BLANK_PRODUCTION_WORK_ORDER: WorkQueueItem = {
   daysOnDesk: 0,
   lastUpdatedLabel: 'Bugün — yeni',
   dueToday: true,
-  productCode: 'PRD-SANDBOX-01',
-  productName: 'Kolon K-TEST-01',
+  productCode: 'S2-KOLON',
+  productName: 'S2 Kolon',
   moldId: 'MOLD-SBX-01',
   moldName: 'Test kalıbı SBX-01',
   shiftLabel: 'Sabah',
@@ -40,5 +40,5 @@ export const BLANK_PRODUCTION_WORK_ORDER: WorkQueueItem = {
   recipeId: 'R-C30-01',
   planDayIso: new Date().toISOString().slice(0, 10),
   fieldNotes: 'Boş akış testi — tüm adımlar sizin tarafınızdan tamamlanacak.',
-  drawingPreviewUrl: DEFAULT_DRAWING_ASSET,
+  drawingPreviewUrl: S2_KOLON_DRAWING_PDF,
 }

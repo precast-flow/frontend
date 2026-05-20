@@ -70,8 +70,8 @@ export function ProductionProcessStepper({ flow, hasCuringReport, gl }: Props) {
     <div
       className={
         gl
-          ? 'flex flex-wrap items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-black/[0.02] px-2 py-2 dark:border-white/10'
-          : 'flex flex-wrap items-center justify-center gap-1.5 rounded-xl border border-slate-200/70 bg-white/50 px-2 py-2 dark:border-slate-600/50 dark:bg-slate-900/30'
+          ? 'flex flex-wrap items-center justify-start gap-2 rounded-xl border border-black/10 bg-black/[0.02] px-3 py-2.5 dark:border-white/10'
+          : 'flex flex-wrap items-center justify-start gap-2 rounded-xl border border-slate-200/70 bg-white/50 px-3 py-2.5 dark:border-slate-600/50 dark:bg-slate-900/30'
       }
       role="list"
       aria-label={t('unitWorkQueue.processStep.list')}

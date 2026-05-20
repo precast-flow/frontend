@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { eiSplitHeaderButtonPassive } from '../../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import { SplitListPaginationNav } from '../../shared/SplitListPaginationNav'
-import { PmStyleDialog } from '../../shared/PmStyleDialog'
+import { PmStyleDialog, AppDialogButton } from '../../shared/PmStyleDialog'
 
 export { eiSplitHeaderButtonPassive }
 
@@ -286,25 +286,16 @@ export function AdminFormModal({
       subtitle={subtitle}
       closeLabel="Pencereyi kapat"
       onClose={onClose}
-      maxWidthClass="max-w-4xl"
+      size="lg"
       footer={
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl border border-slate-300/70 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600/70 dark:text-slate-200 dark:hover:bg-slate-800"
-          >
+        <>
+          <AppDialogButton variant="secondary" onClick={onClose}>
             Vazgeç
-          </button>
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={submitDisabled}
-            className={`${eiSplitHeaderButtonPassive} disabled:opacity-50`}
-          >
+          </AppDialogButton>
+          <AppDialogButton variant="primary" onClick={onSubmit} disabled={submitDisabled}>
             Kaydet
-          </button>
-        </div>
+          </AppDialogButton>
+        </>
       }
     >
       {children}

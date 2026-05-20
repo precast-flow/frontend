@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Building2, ChevronsLeftRight, ChevronRight, Factory, Filter, GripVertical, Home, Route, X } from 'lucide-react'
+import { Building2, ChevronRight, ChevronsLeftRight, Factory, Filter, GripVertical, Home, Route, X } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   projectManagementActivitiesMock,
@@ -18,10 +18,21 @@ import {
   eiSplitHeaderButtonPassive,
 } from './ElementIdentityPieceCodesLikeSplit'
 import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
+import {
+  ManagementModuleShell,
+  managementModuleDetailPanelClass,
+  managementModuleListPanelClass,
+  managementModuleListTitleClass,
+  managementModuleListToolbarClass,
+  managementModuleSplitRowClass,
+  useSplitPaneDrag,
+  useSplitPaneRatio,
+} from '../shared/splitModuleStyles'
 import { eiSplitListRowShell, eiTabPill } from './elementIdentitySplitUi'
 import { useElementIdentity } from './elementIdentityContextValue'
 
 const VIEW_STATE_KEY = 'element-identity:list:view'
+const ELEMENT_IDENTITY_LIST_SPLIT_PANE_KEY = 'element-identity-projects'
 
 function statusLabel(status: ProjectStatus) {
   if (status === 'planlama') return 'Planlama'
@@ -91,18 +102,17 @@ export function ElementIdentityProjectListView() {
   const detailPanelRef = useRef<HTMLDivElement | null>(null)
   const listRef = useRef<HTMLUListElement | null>(null)
 
-  const [splitRatio, setSplitRatio] = useState(() => {
-    try {
-      const raw = sessionStorage.getItem(VIEW_STATE_KEY)
-      if (!raw) return 40
-      const v = JSON.parse(raw) as { splitRatio?: number }
-      return typeof v.splitRatio === 'number' ? Math.min(55, Math.max(30, v.splitRatio)) : 40
-    } catch {
-      return 40
-    }
+  const {
+    isResizing,
+    setIsResizing,
+    resetRatio,
+    leftWidthStyle,
+    setRatioFromPointer,
+  } = useSplitPaneRatio(ELEMENT_IDENTITY_LIST_SPLIT_PANE_KEY, 40, {
+    legacyViewStateKey: VIEW_STATE_KEY,
   })
-  const [isResizing, setIsResizing] = useState(false)
   const [isResizerHover, setIsResizerHover] = useState(false)
+  useSplitPaneDrag(splitRef, { isResizing, setIsResizing, setRatioFromPointer })
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [listPage, setListPage] = useState(() => {
@@ -206,29 +216,6 @@ export function ElementIdentityProjectListView() {
   )
 
   useEffect(() => {
-    if (!isResizing) return
-    const onMouseMove = (event: MouseEvent) => {
-      const host = splitRef.current
-      if (!host) return
-      const rect = host.getBoundingClientRect()
-      if (rect.width <= 0) return
-      const next = ((event.clientX - rect.left) / rect.width) * 100
-      setSplitRatio(Math.min(55, Math.max(30, Number(next.toFixed(2)))))
-    }
-    const onMouseUp = () => setIsResizing(false)
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', onMouseUp)
-    return () => {
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('mouseup', onMouseUp)
-    }
-  }, [isResizing])
-
-  useEffect(() => {
     if (!filtersOpen) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setFiltersOpen(false)
@@ -247,7 +234,6 @@ export function ElementIdentityProjectListView() {
       sessionStorage.setItem(
         VIEW_STATE_KEY,
         JSON.stringify({
-          splitRatio,
           detailTab,
           selectedId: activeProjectId,
           listPage: safeListPage,
@@ -256,66 +242,20 @@ export function ElementIdentityProjectListView() {
     } catch {
       /* ignore */
     }
-  }, [splitRatio, detailTab, activeProjectId, safeListPage])
+  }, [detailTab, activeProjectId, safeListPage])
 
   const activeFilterCount = searchQuery.trim() ? 1 : 0
 
   return (
-    <div
-      className="project-mgmt-glass-light flex min-h-0 flex-1 flex-col gap-0 overflow-hidden rounded-3xl"
-      data-neutral-shell={neutralShell ? 'true' : undefined}
-    >
-      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-1">
-        <div className="px-[0.6875rem] pt-0 pb-0.5">
-          <nav aria-label={t('project.breadcrumbAria')} className="mb-0">
-            <ol className="flex flex-wrap items-center gap-1 text-xs text-black/60 dark:text-white/65">
-              <li>
-                <Link
-                  to="/tanimlar"
-                  className="font-medium text-black/75 underline-offset-2 transition hover:text-black hover:underline dark:text-white/75 dark:hover:text-white"
-                >
-                  {t('elementIdentity.detail.breadcrumbHub')}
-                </Link>
-              </li>
-              <li className="flex items-center gap-1" aria-hidden>
-                <ChevronRight className="size-3.5 shrink-0 opacity-70" />
-              </li>
-              <li className="font-semibold text-black dark:text-white" aria-current="page">
-                {t('nav.elementIdentity')}
-              </li>
-            </ol>
-          </nav>
-        </div>
-
-        <div
-          className={[
-            'min-h-0 overflow-hidden',
-            gl
-              ? 'flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-3xl bg-transparent p-1 md:p-1.5'
-              : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
-          ].join(' ')}
-        >
-          <div
-            ref={splitRef}
-            data-split-dragging={isResizing ? 'true' : undefined}
-            className={[
-              'relative flex h-full min-h-0 min-w-0 overflow-hidden',
-              gl ? 'gap-3 rounded-3xl lg:gap-4' : 'gap-0',
-            ].join(' ')}
-          >
-            <section
-              className={[
-                'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden',
-                gl
-                  ? 'glass-card glass-card--static project-mgmt-split-panel min-h-0'
-                  : 'p-3',
-              ].join(' ')}
-              style={{ width: `calc(${splitRatio}% - 5px)` }}
-            >
-              <div className="mb-2 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
-                <h2 className="min-w-0 shrink-0 text-sm font-semibold text-black dark:text-white sm:text-base">
-                  {t('elementIdentity.list.title')}
-                </h2>
+    <ManagementModuleShell neutralShell={neutralShell} gl={gl}>
+      <div
+        ref={splitRef}
+        data-split-dragging={isResizing ? 'true' : undefined}
+        className={managementModuleSplitRowClass(gl)}
+      >
+        <section className={managementModuleListPanelClass(gl)} style={leftWidthStyle}>
+          <div className={managementModuleListToolbarClass}>
+            <h2 className={managementModuleListTitleClass}>{t('elementIdentity.list.title')}</h2>
                 <div className="flex min-w-0 w-full flex-wrap items-stretch justify-end gap-2 sm:w-auto sm:flex-1 sm:justify-end">
                   <FilterToolbarSearch
                     id="ei-project-list-search"
@@ -600,7 +540,7 @@ export function ElementIdentityProjectListView() {
                 onDoubleClick={(e) => {
                   e.preventDefault()
                   setIsResizing(false)
-                  setSplitRatio(40)
+                  resetRatio()
                 }}
                 onMouseEnter={() => setIsResizerHover(true)}
                 onMouseLeave={() => setIsResizerHover(false)}
@@ -627,11 +567,7 @@ export function ElementIdentityProjectListView() {
 
             <aside
               ref={detailPanelRef}
-              className={
-                gl
-                  ? 'okan-project-split-aside glass-card glass-card--static project-mgmt-split-panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
-                  : 'okan-project-split-aside flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:pl-2'
-              }
+              className={managementModuleDetailPanelClass(gl)}
             >
               {selected ? (
                 <div key={selected.id} className="okan-project-detail-column flex min-h-0 min-w-0 flex-1 flex-col">
@@ -801,9 +737,7 @@ export function ElementIdentityProjectListView() {
                 </div>
               ) : null}
             </aside>
-          </div>
-        </div>
       </div>
-    </div>
+    </ManagementModuleShell>
   )
 }

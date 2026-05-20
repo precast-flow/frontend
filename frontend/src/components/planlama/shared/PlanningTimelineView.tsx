@@ -34,6 +34,7 @@ import {
   eiSplitFilterToggleClass,
   eiSplitHeaderButtonPassive,
 } from '../../elementIdentity/ElementIdentityPieceCodesLikeSplit'
+import { AppDialog, AppDialogButton } from '../../shared/AppDialog'
 import {
   previewItemsForUnit,
   usePlanningWizardOptional,
@@ -2779,24 +2780,20 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
       ) : null}
 
       {assignOpen && canEdit ? (
-        <div className="gm-glass-modal-shell fixed inset-0 z-[55] flex items-center justify-center p-4" role="presentation">
-          <button
-            type="button"
-            className="absolute inset-0 cursor-default border-0 p-0 bg-gray-900/25 backdrop-blur-[2px]"
-            aria-label="Kapat"
-            onClick={() => setAssignOpen(null)}
-          />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={planningAssignMockTitleId}
-            className="gm-glass-modal-shell relative z-10 w-full max-w-sm rounded-2xl border border-gray-200/90 bg-gray-100 p-4 shadow-neo-out dark:border-gray-700 dark:bg-gray-900"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 id={planningAssignMockTitleId} className="font-semibold text-gray-900 dark:text-gray-50">
-              Buraya ata (mock)
-            </h3>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+        <AppDialog
+          open
+          size="sm"
+          title="Buraya ata (mock)"
+          closeLabel="Kapat"
+          onClose={() => setAssignOpen(null)}
+          ariaLabel={planningAssignMockTitleId}
+          footer={
+            <AppDialogButton variant="secondary" onClick={() => setAssignOpen(null)}>
+              Kapat
+            </AppDialogButton>
+          }
+        >
+            <p className="text-sm text-slate-700">
               {isDispatchTimeline
                 ? `${resourceColumnLabel} ${assignOpen.moldId}`
                 : `Kalıp ${assignOpen.moldId}, slot ${assignOpen.slot}.`}
@@ -2879,41 +2876,21 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                 </li>
               ))}
             </ul>
-            <button
-              type="button"
-              onClick={() => setAssignOpen(null)}
-              className={`${eiSplitHeaderButtonPassive} mt-3 w-full justify-center py-2 text-sm`}
-            >
-              Kapat
-            </button>
-          </div>
-        </div>
+        </AppDialog>
       ) : null}
 
       {nonProdModal ? (
-        <div className="gm-glass-modal-shell fixed inset-0 z-[70] flex items-center justify-center p-4" role="presentation">
-          <button
-            type="button"
-            className="absolute inset-0 cursor-default border-0 p-0 bg-gray-900/25 backdrop-blur-[2px]"
-            aria-label="Kapat"
-            onClick={() => setNonProdModal(null)}
-          />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={planningNonProdMockTitleId}
-            className="gm-glass-modal-shell relative z-10 w-full max-w-md rounded-2xl border border-gray-200/90 bg-gray-100 p-5 shadow-neo-out dark:border-gray-700 dark:bg-gray-900"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 id={planningNonProdMockTitleId} className="text-lg font-semibold text-gray-900 dark:text-gray-50">
-              Üretim dışı gün (mock)
-            </h3>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-              Bu gün üretim dışıdır. Yine de yerleştirmek istiyor musunuz?
-            </p>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
+        <AppDialog
+          open
+          size="sm"
+          title="Üretim dışı gün (mock)"
+          closeLabel="Kapat"
+          onClose={() => setNonProdModal(null)}
+          ariaLabel={planningNonProdMockTitleId}
+          footer={
+            <>
+              <AppDialogButton
+                variant="secondary"
                 onClick={() => {
                   appendCheckpoint(
                     itemsRef.current.filter((x) => x.id !== nonProdModal.itemId),
@@ -2921,20 +2898,17 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                   )
                   setNonProdModal(null)
                 }}
-                className="gm-glass-btn-secondary rounded-xl px-4 py-2 text-sm font-medium"
               >
                 İptal (geri al)
-              </button>
-              <button
-                type="button"
-                onClick={() => setNonProdModal(null)}
-                className={`${eiSplitHeaderButtonPassive} px-4 py-2 text-sm`}
-              >
+              </AppDialogButton>
+              <AppDialogButton variant="primary" onClick={() => setNonProdModal(null)}>
                 Onayla
-              </button>
-            </div>
-          </div>
-        </div>
+              </AppDialogButton>
+            </>
+          }
+        >
+          <p>Bu gün üretim dışıdır. Yine de yerleştirmek istiyor musunuz?</p>
+        </AppDialog>
       ) : null}
             </>,
             document.body,

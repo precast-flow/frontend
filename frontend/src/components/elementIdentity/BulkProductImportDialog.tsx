@@ -3,9 +3,8 @@ import { mapIfcBatch } from '../../elementIdentity/ifc/ifcMapper'
 import { MOCK_IFC_FILES, type MockIfcFile } from '../../elementIdentity/ifc/mockIfcData'
 import type { ProjectProduct } from '../../elementIdentity/types'
 import { useI18n } from '../../i18n/I18nProvider'
-import { PmStyleDialog } from '../shared/PmStyleDialog'
+import { PmStyleDialog, AppDialogButton } from '../shared/PmStyleDialog'
 import { useElementIdentity } from './elementIdentityContextValue'
-import { eiSplitHeaderButtonPassive } from './ElementIdentityPieceCodesLikeSplit'
 
 type Step = 0 | 1 | 2
 
@@ -116,43 +115,26 @@ export function BulkProductImportDialog({ open, projectId, onClose }: Props) {
   if (!open) return null
 
   const footer = (
-    <div className="flex flex-wrap items-center justify-end gap-2">
-      <button
-        type="button"
-        onClick={resetAndClose}
-        className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200"
-      >
+    <>
+      <AppDialogButton variant="secondary" onClick={resetAndClose}>
         {t('elementIdentity.cancel')}
-      </button>
+      </AppDialogButton>
       {step === 0 ? (
-        <button
-          type="button"
-          disabled={!file}
-          onClick={parse}
-          className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm disabled:opacity-40`}
-        >
+        <AppDialogButton variant="primary" disabled={!file} onClick={parse}>
           {t('elementIdentity.ifc.parse')}
-        </button>
+        </AppDialogButton>
       ) : null}
       {step === 1 ? (
-        <button
-          type="button"
-          onClick={() => setStep(2)}
-          className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm`}
-        >
+        <AppDialogButton variant="primary" onClick={() => setStep(2)}>
           {t('elementIdentity.ifc.next')}
-        </button>
+        </AppDialogButton>
       ) : null}
       {step === 2 ? (
-        <button
-          type="button"
-          onClick={confirm}
-          className={`${eiSplitHeaderButtonPassive} px-3 py-2 text-sm`}
-        >
+        <AppDialogButton variant="primary" onClick={confirm}>
           {t('elementIdentity.dialog.confirm')}
-        </button>
+        </AppDialogButton>
       ) : null}
-    </div>
+    </>
   )
 
   return (
@@ -162,7 +144,7 @@ export function BulkProductImportDialog({ open, projectId, onClose }: Props) {
       closeLabel={t('elementIdentity.cancel')}
       onClose={resetAndClose}
       footer={footer}
-      maxWidthClass="max-w-3xl"
+      size="lg"
       ariaLabel={t('elementIdentity.dialog.bulkTitle')}
     >
       <div className="min-h-0 text-sm">

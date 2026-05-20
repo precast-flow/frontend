@@ -22,6 +22,7 @@ import { useThemeMode } from '../../theme/ThemeProvider'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
 import { eiSplitFilterToggleClass } from '../elementIdentity/ElementIdentityPieceCodesLikeSplit'
 import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
+import { useSplitPaneDrag, useSplitPaneRatio } from '../shared/splitModuleStyles'
 
 const projectStatusLabel: Record<ProjectStatus, string> = {
   planlama: 'Planlama',
@@ -90,7 +91,6 @@ type CommercialTabId = 'ozet' | 'butce' | 'faturalar' | 'riskler'
 
 type ProjectSortMode = 'updated-desc' | 'due-asc' | 'progress-desc' | 'name-asc'
 
-const DEFAULT_SPLIT = 40
 const COMMERCIAL_LIST_PAGE_SIZE = 6
 
 export function CustomerProjectsCommercialPanel({ customerId }: { customerId: string }) {
@@ -121,12 +121,18 @@ export function CustomerProjectsCommercialPanel({ customerId }: { customerId: st
 
   const [selectedProjectCardId, setSelectedProjectCardId] = useState(() => rows[0]?.card.id ?? '')
   const [detailTab, setDetailTab] = useState<CommercialTabId>('ozet')
-  const [splitRatio, setSplitRatio] = useState(DEFAULT_SPLIT)
-  const [isResizing, setIsResizing] = useState(false)
+  const {
+    isResizing,
+    setIsResizing,
+    resetRatio,
+    leftWidthStyle,
+    setRatioFromPointer,
+  } = useSplitPaneRatio(`crm-customer-projects:${customerId}`)
   const [isResizerHover, setIsResizerHover] = useState(false)
   const panelRef = useRef<HTMLDivElement | null>(null)
   const splitRef = useRef<HTMLDivElement | null>(null)
   const listRef = useRef<HTMLUListElement | null>(null)
+  useSplitPaneDrag(splitRef, { isResizing, setIsResizing, setRatioFromPointer })
 
   const filteredRows = useMemo(() => {
     let out = rows.slice()
@@ -195,29 +201,6 @@ export function CustomerProjectsCommercialPanel({ customerId }: { customerId: st
     setListPage((p) => Math.min(p, listPageCount))
   }, [listPageCount])
 
-  useEffect(() => {
-    if (!isResizing) return
-    const onMouseMove = (event: MouseEvent) => {
-      const host = splitRef.current
-      if (!host) return
-      const rect = host.getBoundingClientRect()
-      if (rect.width <= 0) return
-      const next = ((event.clientX - rect.left) / rect.width) * 100
-      setSplitRatio(Math.min(55, Math.max(30, Number(next.toFixed(2)))))
-    }
-    const onMouseUp = () => setIsResizing(false)
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', onMouseUp)
-    return () => {
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('mouseup', onMouseUp)
-    }
-  }, [isResizing])
-
   const scrollPanelTop = () => {
     requestAnimationFrame(() => {
       panelRef.current?.scrollTo({ top: 0, behavior: 'auto' })
@@ -256,7 +239,7 @@ export function CustomerProjectsCommercialPanel({ customerId }: { customerId: st
           'okan-project-split-list okan-split-list-active-lift flex h-full min-h-0 shrink-0 flex-col overflow-hidden',
           gl ? 'glass-card glass-card--static project-mgmt-split-panel min-h-0' : 'p-3',
         ].join(' ')}
-        style={{ width: `calc(${splitRatio}% - 5px)` }}
+        style={leftWidthStyle}
       >
         <div className="mb-2 flex min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-2">
           <h2 className="min-w-0 shrink-0 text-sm font-semibold text-black dark:text-white sm:text-base">Projeler</h2>
@@ -623,7 +606,7 @@ export function CustomerProjectsCommercialPanel({ customerId }: { customerId: st
           onDoubleClick={(e) => {
             e.preventDefault()
             setIsResizing(false)
-            setSplitRatio(DEFAULT_SPLIT)
+            resetRatio()
           }}
           onMouseEnter={() => setIsResizerHover(true)}
           onMouseLeave={() => setIsResizerHover(false)}

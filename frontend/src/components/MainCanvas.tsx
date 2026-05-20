@@ -35,7 +35,7 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
   const isProject = activeId === 'project'
   const isPlanningHub = activeId === 'planning-hub'
   const isUnitWorkQueue = activeId === 'unit-work-queue'
-  const isConfigurationCenter = activeId === 'configuration-center'
+  const isManagementModule = isProject || isCrm || isUnitWorkQueue
   const isElementIdentity = activeId === 'element-identity'
   const isElementIdentityAdmin = activeId === 'element-identity-admin'
   const isMaterialCatalog = activeId === 'material-catalog'
@@ -46,6 +46,10 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
   const isApprovalFlow = activeId === 'approval-flow'
   const isRolesPermissions = activeId === 'roles-permissions'
   const isUserManagement = activeId === 'user-management'
+  const isSystemModule = isApprovalFlow || isRolesPermissions || isUserManagement
+  const isDefinitionsModule = isElementIdentity || isMaterialCatalog || isStandardSeriesCatalog
+  const isAdminModule = isElementIdentityAdmin
+  const isSplitModulePage = isManagementModule || isSystemModule || isDefinitionsModule || isAdminModule
 
   const fullBleedInMainModule =
     isGeneralPlanning ||
@@ -59,9 +63,8 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
     isProject ||
     isCrm ||
     isUnitWorkQueue ||
-    isElementIdentity ||
-    isMaterialCatalog ||
-    isStandardSeriesCatalog
+    isDefinitionsModule ||
+    isAdminModule
 
   const okanSplitHeadingAlign =
     isProject ||
@@ -69,13 +72,12 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
     isGeneralPlanning ||
     isProductionPlanning ||
     isDispatchPlanning ||
-    isMaterialCatalog ||
-    isStandardSeriesCatalog ||
+    isDefinitionsModule ||
+    isAdminModule ||
     isApprovalFlow ||
     isRolesPermissions ||
     isUserManagement ||
     isElementIdentity ||
-    isElementIdentityAdmin ||
     isUnitWorkQueue
 
   return (
@@ -88,32 +90,17 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
                 isProject ||
                 isCrm ||
                 isUnitWorkQueue ||
-                isElementIdentity ||
-                isMaterialCatalog ||
-                isStandardSeriesCatalog ||
-                isApprovalFlow ||
-                isRolesPermissions ||
-                isUserManagement
+                isSplitModulePage
                   ? 'project-mgmt-page-root overflow-hidden '
                   : ''
               }${
-                isUserManagement
-                  ? 'px-0 py-0 md:px-1 md:py-0'
-                  : isProject || isElementIdentity || isMaterialCatalog || isStandardSeriesCatalog
-                    ? 'px-0 pt-0 pb-1 md:px-1 md:pt-0 md:pb-2'
-                    : isCrm ||
-                        isApprovalFlow ||
-                        isRolesPermissions ||
-                        isElementIdentityAdmin ||
-                        isUnitWorkQueue
-                      ? 'px-0 py-1 md:px-1 md:py-2'
-                      : 'p-5 md:p-6'
+                isSplitModulePage
+                  ? 'px-0 pt-0 pb-1 md:px-1 md:pt-0 md:pb-2'
+                  : 'p-5 md:p-6'
               }`,
               fillsMainCanvasViewportHeight
                 ? 'gm-glass-main-canvas--okan-liquid h-full min-h-0 flex-1 overflow-hidden'
-                : isApprovalFlow || isRolesPermissions || isElementIdentityAdmin
-                  ? 'gm-glass-main-canvas--okan-liquid h-[calc(100dvh-12.5rem)] min-h-[calc(100dvh-12.5rem)] max-h-[calc(100dvh-12.5rem)]'
-                  : isPlanningHub || isConfigurationCenter
+                : isPlanningHub
                     ? 'gm-glass-main-canvas--okan-liquid min-h-[min(100%,42rem)]'
                     : 'bg-pf-surface shadow-neo-out',
             ].join(' ')
@@ -123,11 +110,9 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
         className={[
           fullBleedInMainModule
             ? 'mb-2 shrink-0 pb-2'
-            : isUnitWorkQueue
-              ? 'mb-2 shrink-0 pb-0'
-              : isProject || isElementIdentity || isMaterialCatalog || isStandardSeriesCatalog
-                ? 'mb-2 shrink-0 pt-1 pb-2 md:pt-1.5'
-                : 'mb-2 pb-2',
+            : isSplitModulePage
+              ? 'mb-2 shrink-0 pt-1 pb-2 md:pt-1.5'
+              : 'mb-2 pb-2',
           okanSplitHeadingAlign ? 'ps-[0.6875rem] pe-[0.6875rem]' : '',
         ]
           .filter(Boolean)
@@ -161,39 +146,14 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <ProjectManagementModuleView onNavigate={onNavigate} />
         </div>
-      ) : isConfigurationCenter ? (
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <button
-            type="button"
-            onClick={() => onNavigate('element-identity')}
-            className="rounded-2xl border border-slate-200/70 bg-white/70 p-4 text-left transition hover:bg-white dark:border-slate-700/70 dark:bg-slate-900/40 dark:hover:bg-slate-900/60"
-          >
-            <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{t('definitions.hub.elementIdentityTitle')}</p>
-            <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{t('definitions.hub.elementIdentityDesc')}</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => onNavigate('material-catalog')}
-            className="rounded-2xl border border-slate-200/70 bg-white/70 p-4 text-left transition hover:bg-white dark:border-slate-700/70 dark:bg-slate-900/40 dark:hover:bg-slate-900/60"
-          >
-            <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{t('definitions.hub.materialCatalogTitle')}</p>
-            <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{t('definitions.hub.materialCatalogDesc')}</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => onNavigate('standard-series-catalog')}
-            className="rounded-2xl border border-slate-200/70 bg-white/70 p-4 text-left transition hover:bg-white dark:border-slate-700/70 dark:bg-slate-900/40 dark:hover:bg-slate-900/60"
-          >
-            <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{t('definitions.hub.standardSeriesTitle')}</p>
-            <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{t('definitions.hub.standardSeriesDesc')}</p>
-          </button>
-        </div>
       ) : isElementIdentity ? (
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <ElementIdentityModuleView />
         </div>
       ) : isElementIdentityAdmin ? (
-        <AdminElementIdentityModuleView />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <AdminElementIdentityModuleView />
+        </div>
       ) : isMaterialCatalog ? (
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <MaterialCatalogProvider>
@@ -217,9 +177,13 @@ export function MainCanvas({ activeId, onNavigate }: Props) {
           <DispatchPlanningView />
         </PlanningModulesShell>
       ) : isApprovalFlow ? (
-        <ApprovalFlowDesignerView />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <ApprovalFlowDesignerView />
+        </div>
       ) : isRolesPermissions ? (
-        <RolesAndPermissionsView />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <RolesAndPermissionsView />
+        </div>
       ) : isUserManagement ? (
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <UserManagementView />

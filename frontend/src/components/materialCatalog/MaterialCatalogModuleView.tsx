@@ -1,7 +1,6 @@
-import { ChevronRight, Plus, Trash2, X } from 'lucide-react'
-import { createPortal } from 'react-dom'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Plus, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import type { FieldDef, FieldType, MaterialCategory, MaterialDef } from '../../materialCatalog/types'
 import { activeModuleIdFromPathname } from '../../data/navigation'
 import { useI18n } from '../../i18n/I18nProvider'
@@ -17,6 +16,8 @@ import { SplitListPaginationNav } from '../shared/SplitListPaginationNav'
 import { eiSplitListRowButton, eiTabPill } from '../elementIdentity/elementIdentitySplitUi'
 import { useMaterialCatalog } from './MaterialCatalogContext'
 import { FilterToolbarSearch } from '../shared/FilterToolbarSearch'
+import { ManagementModuleShell } from '../shared/splitModuleStyles'
+import { AppDialog, AppDialogButton, appDialogFieldClass, appDialogLabelClass } from '../shared/AppDialog'
 
 const CATEGORIES: MaterialCategory[] = [
   'concrete',
@@ -82,8 +83,6 @@ export function MaterialCatalogModuleView() {
   const [draft, setDraft] = useState<MaterialDef | null>(null)
   const [newOpen, setNewOpen] = useState(false)
   const [newDraft, setNewDraft] = useState({ name: '', code: '', category: 'custom' as MaterialCategory })
-  const newTriggerRef = useRef<HTMLButtonElement | null>(null)
-  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number; width: number } | null>(null)
   const listScrollRef = useRef<HTMLUListElement | null>(null)
 
   const selected = useMemo(() => materials.find((m) => m.id === selectedId) ?? null, [materials, selectedId])
@@ -138,49 +137,10 @@ export function MaterialCatalogModuleView() {
     requestAnimationFrame(() => listScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' }))
   }, [safeListPage])
 
-  const measureNewPopover = useCallback(() => {
-    const btn = newTriggerRef.current
-    if (!btn || !newOpen) return
-    const rect = btn.getBoundingClientRect()
-    const width = Math.min(360, Math.max(280, window.innerWidth - 16))
-    const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))
-    setPopoverPos({ top: rect.top, left, width })
-  }, [newOpen])
-
-  useLayoutEffect(() => {
-    if (!newOpen) {
-      setPopoverPos(null)
-      return
-    }
-    measureNewPopover()
-    const on = () => measureNewPopover()
-    window.addEventListener('resize', on)
-    window.addEventListener('scroll', on, true)
-    return () => {
-      window.removeEventListener('resize', on)
-      window.removeEventListener('scroll', on, true)
-    }
-  }, [newOpen, measureNewPopover])
-
-  useEffect(() => {
-    if (!newOpen) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setNewOpen(false)
-    }
-    const onDown = (e: MouseEvent) => {
-      const node = e.target as Node
-      if (newTriggerRef.current?.contains(node)) return
-      const panel = document.getElementById('mc-new-material-popover')
-      if (panel?.contains(node)) return
-      setNewOpen(false)
-    }
-    document.addEventListener('keydown', onKey)
-    document.addEventListener('mousedown', onDown)
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.removeEventListener('mousedown', onDown)
-    }
-  }, [newOpen])
+  const closeNewMaterialDialog = useCallback(() => {
+    setNewOpen(false)
+    setNewDraft({ name: '', code: '', category: 'custom' })
+  }, [])
 
   const persistDraft = useCallback(() => {
     if (!draft) return
@@ -265,53 +225,22 @@ export function MaterialCatalogModuleView() {
     setSelectedId(m.id)
     setDetailTab('general')
     setListPage(1)
-    setNewOpen(false)
-    setNewDraft({ name: '', code: '', category: 'custom' })
+    closeNewMaterialDialog()
   }
 
   return (
-    <div
-      className="project-mgmt-glass-light flex min-h-0 min-w-0 flex-1 basis-0 flex-col gap-0 overflow-hidden rounded-3xl"
-      data-neutral-shell={neutralShell ? 'true' : undefined}
-    >
-      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-1">
-        <div className="px-[0.6875rem] pt-0 pb-0.5">
-          <nav aria-label={t('project.breadcrumbAria')} className="mb-0">
-            <ol className="flex flex-wrap items-center gap-1 text-xs text-black/60 dark:text-white/65">
-              <li>
-                <Link
-                  to="/tanimlar"
-                  className="font-medium text-black/75 underline-offset-2 transition hover:text-black hover:underline dark:text-white/75 dark:hover:text-white"
-                >
-                  {t('elementIdentity.detail.breadcrumbHub')}
-                </Link>
-              </li>
-              <li className="flex items-center gap-1" aria-hidden>
-                <ChevronRight className="size-3.5 shrink-0 opacity-70" />
-              </li>
-              <li className="font-semibold text-black dark:text-white" aria-current="page">
-                {t('nav.materialCatalog')}
-              </li>
-            </ol>
-          </nav>
-        </div>
-
-        <div
-          className={[
-            'min-h-0 flex min-h-0 flex-1 flex-col overflow-hidden',
-            gl
-              ? 'rounded-3xl bg-transparent p-0'
-              : 'rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5',
-          ].join(' ')}
-        >
+    <>
+    <ManagementModuleShell neutralShell={neutralShell} gl={gl}>
           <ElementIdentityPieceCodesLikeSplit
             persistKey="material-catalog"
+            splitPanePersistKey="material-catalog"
+            fillParentHeight
+            embedded
             visualVariant="project-mgmt"
             neutralChrome={neutralShell}
             listRef={listScrollRef}
             listIndentWhenFilterOpen="18.5rem"
             listTitle={t('materialCatalog.listTitle')}
-            defaultSplitRatio={38}
             filterToolbarSearch={
               <FilterToolbarSearch
                 id="material-catalog-list-search"
@@ -327,105 +256,15 @@ export function MaterialCatalogModuleView() {
               />
             }
             headerActions={
-              <div className="relative self-center sm:self-auto">
-                <button
-                  ref={newTriggerRef}
-                  type="button"
-                  onClick={() => setNewOpen((o) => !o)}
-                  className={eiSplitHeaderButtonPassive}
-                >
-                  <Plus className="size-3.5 shrink-0" aria-hidden />
-                  {t('materialCatalog.new')}
-                </button>
-            {newOpen && popoverPos
-              ? createPortal(
-                  <>
-                    <div
-                      className="fixed inset-0 z-[96] bg-slate-950/20 backdrop-blur-[1px] dark:bg-slate-950/35"
-                      aria-hidden
-                    />
-                    <div
-                      id="mc-new-material-popover"
-                      role="dialog"
-                      aria-modal="true"
-                      style={{
-                        top: popoverPos.top,
-                        left: popoverPos.left,
-                        width: popoverPos.width,
-                      }}
-                      className="fixed z-[100] -translate-y-[calc(100%+0.5rem)] rounded-2xl border border-white/20 bg-white/10 p-3 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-white/5"
-                    >
-                      <div className="flex items-start justify-between gap-2 border-b border-slate-200/40 pb-2 dark:border-white/10">
-                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-                          {t('materialCatalog.dialog.newTitle')}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setNewOpen(false)}
-                          className="rounded-lg p-1 text-slate-500 hover:bg-white/40 dark:hover:bg-white/10"
-                          aria-label="Kapat"
-                        >
-                          <X className="size-4" />
-                        </button>
-                      </div>
-                      <div className="mt-3 grid gap-2">
-                        <label className="block text-xs">
-                          <span className="font-medium text-slate-600 dark:text-slate-300">{t('materialCatalog.name')}</span>
-                          <input
-                            value={newDraft.name}
-                            onChange={(e) => setNewDraft((d) => ({ ...d, name: e.target.value }))}
-                            className="mt-1 w-full rounded-lg border border-slate-300/80 bg-white/90 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900/50"
-                          />
-                        </label>
-                        <label className="block text-xs">
-                          <span className="font-medium text-slate-600 dark:text-slate-300">{t('materialCatalog.code')}</span>
-                          <input
-                            value={newDraft.code}
-                            onChange={(e) => setNewDraft((d) => ({ ...d, code: e.target.value }))}
-                            className="mt-1 w-full rounded-lg border border-slate-300/80 bg-white/90 px-2 py-1.5 font-mono text-sm dark:border-slate-600 dark:bg-slate-900/50"
-                          />
-                        </label>
-                        <label className="block text-xs">
-                          <span className="font-medium text-slate-600 dark:text-slate-300">{t('materialCatalog.category')}</span>
-                          <select
-                            value={newDraft.category}
-                            onChange={(e) =>
-                              setNewDraft((d) => ({ ...d, category: e.target.value as MaterialCategory }))
-                            }
-                            className="mt-1 w-full rounded-lg border border-slate-300/80 bg-white/90 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900/50"
-                          >
-                            {CATEGORIES.map((c) => (
-                              <option key={c} value={c}>
-                                {t(categoryLabelKey(c))}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <div className="flex justify-end gap-2 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => setNewOpen(false)}
-                            className="okan-liquid-btn-secondary rounded-full px-3 py-1.5 text-xs font-semibold"
-                          >
-                            {t('elementIdentity.cancel')}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={!newDraft.name.trim() || !newDraft.code.trim()}
-                            onClick={createNewMaterial}
-                            className={`${eiSplitHeaderButtonPassive} rounded-full px-3 py-1.5 disabled:opacity-40`}
-                          >
-                            {t('materialCatalog.save')}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </>,
-                  document.body,
-                )
-              : null}
-          </div>
-        }
+              <button
+                type="button"
+                onClick={() => setNewOpen(true)}
+                className={eiSplitHeaderButtonPassive}
+              >
+                <Plus className="size-3.5 shrink-0" aria-hidden />
+                {t('materialCatalog.new')}
+              </button>
+            }
         isFilterOpen={filterOpen}
         onFilterOpenChange={setFilterOpen}
         filterAside={
@@ -870,8 +709,61 @@ export function MaterialCatalogModuleView() {
           </div>
         }
       />
-        </div>
+    </ManagementModuleShell>
+    <AppDialog
+      open={newOpen}
+      size="sm"
+      title={t('materialCatalog.dialog.newTitle')}
+      closeLabel={t('elementIdentity.cancel')}
+      onClose={closeNewMaterialDialog}
+      footer={
+        <>
+          <AppDialogButton variant="secondary" onClick={closeNewMaterialDialog}>
+            {t('elementIdentity.cancel')}
+          </AppDialogButton>
+          <AppDialogButton
+            variant="primary"
+            disabled={!newDraft.name.trim() || !newDraft.code.trim()}
+            onClick={createNewMaterial}
+          >
+            {t('materialCatalog.save')}
+          </AppDialogButton>
+        </>
+      }
+    >
+      <div className="grid gap-3">
+        <label className="block">
+          <span className={appDialogLabelClass}>{t('materialCatalog.name')}</span>
+          <input
+            value={newDraft.name}
+            onChange={(e) => setNewDraft((d) => ({ ...d, name: e.target.value }))}
+            className={appDialogFieldClass}
+          />
+        </label>
+        <label className="block">
+          <span className={appDialogLabelClass}>{t('materialCatalog.code')}</span>
+          <input
+            value={newDraft.code}
+            onChange={(e) => setNewDraft((d) => ({ ...d, code: e.target.value }))}
+            className={`${appDialogFieldClass} font-mono uppercase`}
+          />
+        </label>
+        <label className="block">
+          <span className={appDialogLabelClass}>{t('materialCatalog.category')}</span>
+          <select
+            value={newDraft.category}
+            onChange={(e) => setNewDraft((d) => ({ ...d, category: e.target.value as MaterialCategory }))}
+            className={appDialogFieldClass}
+          >
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {t(categoryLabelKey(c))}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
-    </div>
+    </AppDialog>
+    </>
   )
 }

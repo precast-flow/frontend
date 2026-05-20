@@ -53,9 +53,11 @@ function App() {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="glass-showcase" element={<GlassShowcasePage />} />
             <Route path="proje-detay/:projectId" element={<ProjectManagementDetailPage />} />
-            <Route path="konfigurasyon" element={<Navigate to="/tanimlar" replace />} />
-            <Route path="konfigurasyon/*" element={<Navigate to="/tanimlar" replace />} />
-            <Route path="muhendislik/*" element={<Navigate to="/tanimlar" replace />} />
+            <Route path="tanimlar" element={<Navigate to="/eleman-kimlik" replace />} />
+            <Route path="tanimlar/*" element={<Navigate to="/eleman-kimlik" replace />} />
+            <Route path="konfigurasyon" element={<Navigate to="/eleman-kimlik" replace />} />
+            <Route path="konfigurasyon/*" element={<Navigate to="/eleman-kimlik" replace />} />
+            <Route path="muhendislik/*" element={<Navigate to="/eleman-kimlik" replace />} />
             <Route path="eleman-kimlik/:projectId" element={<ElementIdentityProjectDetailPage />} />
             <Route path="teklif" element={<Navigate to="/crm" replace />} />
             <Route path="teklif-detay/:quoteId" element={<QuoteDetailPage />} />
@@ -68,8 +70,8 @@ function App() {
               path="gunluk-uretim-raporu/:reportId"
               element={<DailyProductionReportDetailPage />}
             />
-            <Route path="muhendislik-okan" element={<Navigate to="/tanimlar" replace />} />
-            <Route path="parca-sablon-studyosu/*" element={<Navigate to="/tanimlar" replace />} />
+            <Route path="muhendislik-okan" element={<Navigate to="/eleman-kimlik" replace />} />
+            <Route path="parca-sablon-studyosu/*" element={<Navigate to="/eleman-kimlik" replace />} />
             <Route path=":moduleSlug/*" element={<MainCanvasOutlet />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />

@@ -10,7 +10,7 @@ import {
   type ResponsibleUnit,
 } from '../../../data/productionQualityControl'
 import type { WorkQueueItem } from '../../../data/workQueueMock'
-import { PmStyleDialog } from '../../shared/PmStyleDialog'
+import { appDialogInputClass, PmStyleDialog, AppDialogButton } from '../../shared/PmStyleDialog'
 
 type Props = {
   open: boolean
@@ -38,7 +38,7 @@ export function NonconformanceDialog({
   item,
   marker,
   pendingPlacement,
-  gl,
+  gl: _gl,
   onClose,
   onSave,
 }: Props) {
@@ -74,9 +74,7 @@ export function NonconformanceDialog({
 
   if (!open || !displayMarker) return null
 
-  const inputCls = gl
-    ? 'w-full rounded-lg border border-black/15 bg-white/80 px-3 py-2 text-sm text-black dark:border-white/15 dark:bg-slate-900/60 dark:text-white'
-    : 'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900/50'
+  const inputCls = appDialogInputClass
 
   const addFiles = (files: FileList | null) => {
     if (!files?.length) return
@@ -110,33 +108,21 @@ export function NonconformanceDialog({
 
   return (
     <PmStyleDialog
+      open={open}
       title={t(dialogTitleKey(displayMarker.kind))}
       subtitle={`${item.orderNo} · ${item.productName ?? item.title}`}
       closeLabel={t('unitWorkQueue.close')}
       onClose={onClose}
-      variant={gl ? 'glass' : 'default'}
-      maxWidthClass="max-w-lg"
+      size="sm"
       footer={
-        <div className="flex flex-wrap justify-end gap-2">
-          <button
-            type="button"
-            className="rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold dark:border-white/15"
-            onClick={onClose}
-          >
+        <>
+          <AppDialogButton variant="secondary" onClick={onClose}>
             {t('unitWorkQueue.nonconformance.cancel')}
-          </button>
-          <button
-            type="button"
-            className={
-              isWarning
-                ? 'rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700'
-                : 'rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700'
-            }
-            onClick={handleSave}
-          >
+          </AppDialogButton>
+          <AppDialogButton variant="primary" onClick={handleSave}>
             {t('unitWorkQueue.nonconformance.save')}
-          </button>
-        </div>
+          </AppDialogButton>
+        </>
       }
     >
       <div className="space-y-4 text-left">
