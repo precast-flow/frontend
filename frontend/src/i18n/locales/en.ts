@@ -120,6 +120,7 @@ const shell: Record<string, string> = {
   'nav.group.system': 'System & Approvals',
   'nav.group.account': 'Account',
   'nav.sidebar.section.production': 'Production',
+  'nav.home': 'Home',
   'nav.sidebar.section.planning': 'Planning',
   'nav.planningHub': 'Planning home',
   'nav.sidebar.section.quality': 'Quality',

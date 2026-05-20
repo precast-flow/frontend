@@ -120,6 +120,7 @@ const shell: Record<string, string> = {
   'nav.group.system': 'Sistem & Onay',
   'nav.group.account': 'Hesap',
   'nav.sidebar.section.production': 'Üretim',
+  'nav.home': 'Ana sayfa',
   'nav.sidebar.section.planning': 'Planlama',
   'nav.planningHub': 'Planlama özeti',
   'nav.sidebar.section.quality': 'Kalite',

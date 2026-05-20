@@ -76,6 +76,14 @@ html[data-ui-template='glass'].dark .gm-topnav-brand-mark {
   color: rgb(226 232 240);
 }
 
+html[data-ui-template='glass']:not(.dark) .gm-topnav-brand-btn--active {
+  background-color: rgb(14 165 233 / 0.08);
+}
+
+html[data-ui-template='glass'].dark .gm-topnav-brand-btn--active {
+  background-color: rgb(255 255 255 / 0.08);
+}
+
 /* —— Nav tetikleyici (dropdown başlığı) —— düz metin; kutu / cam zemin yok */
 html[data-ui-template='glass']:not(.dark) .gm-topnav-trigger {
   border-color: transparent;
