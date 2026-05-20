@@ -9,6 +9,7 @@ import {
 } from './planningDesignMock'
 import { buildExpandedGeneralPlanItems } from './generalPlanningMockItems'
 import type { DispatchVehicleType } from './dispatchVehicleStyles'
+import type { PlanningProductionStage } from './planningProductionStage'
 
 export type PlanningUnitKey = 'planning' | 'production' | 'dispatch' | 'assembly'
 
@@ -45,6 +46,9 @@ export type GeneralPlanItem = {
   tags: string[]
   warnings: string[]
   visualTone?: PlanVisualTone
+  /** Üretim birimi — mock/live aşama bilgisi (planlama kartı progress). */
+  productionStage?: PlanningProductionStage
+  productionStageProgress?: number
 }
 
 /** Aynı kamyon + gün hücresinde üst üste planlanabilecek ürün sayısı üst sınırı. */

@@ -39,7 +39,7 @@ export function PlanningSideDrawer({
       ].join(' ')}
       aria-hidden={!open}
     >
-      <div className="mb-3 flex items-start justify-between gap-2">
+      <div className="mb-3 flex items-start justify-between gap-2 px-3 pt-3">
         <div className="min-w-0 flex-1">
           <h4 className="text-sm font-semibold text-black dark:text-white">{title}</h4>
           {hint ? (
@@ -59,7 +59,7 @@ export function PlanningSideDrawer({
           <X className="size-3.5" aria-hidden />
         </button>
       </div>
-      {children}
+      <div className="px-3 pb-4">{children}</div>
     </aside>
   )
 }

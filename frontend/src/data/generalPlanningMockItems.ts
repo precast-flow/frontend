@@ -3,6 +3,7 @@
  * Tüm proje kartları için çok sayıda ürün + birim planı üretilir.
  */
 import { spanSlotsFromDurationForMode, type PlanStatusKey } from './planningDesignMock'
+import { assignMockProductionStage } from './planningProductionStage'
 import {
   DISPATCH_MAX_PRODUCTS_PER_TRIP,
   type GeneralPlanItem,
@@ -300,11 +301,12 @@ function fillShiftSlots(
   pushRow: (row: GeneralPlanItem) => void,
   build: (slot: ShiftAllocation, fillerIndex: number) => GeneralPlanItem,
   maxFillers: number,
+  slotDurationHours = 8,
 ): void {
   const target = Math.floor(alloc.totalCapacity() * targetRatio)
   let fillerIndex = 0
   while (alloc.occupiedSlotCount() < target && fillerIndex < maxFillers) {
-    const slot = alloc.allocate(8)
+    const slot = alloc.allocate(slotDurationHours)
     if (!slot) break
     pushRow(build(slot, fillerIndex++))
   }
@@ -327,7 +329,8 @@ function fillDaySlots(
 }
 
 function productionDurationHours(index: number): number {
-  return index % 8 === 0 ? 16 : 8
+  const options = [24, 32, 48, 56, 72]
+  return options[index % options.length]!
 }
 
 function dispatchDurationHours(index: number): number {
@@ -354,6 +357,8 @@ export function buildExpandedGeneralPlanItems(): GeneralPlanItem[] {
   PRODUCTS.forEach((p, pi) => {
     const slot = productionAlloc.allocate(productionDurationHours(pi))
     if (!slot) return
+    const status = PROD_STATUSES[pi % PROD_STATUSES.length]!
+    const stageInfo = assignMockProductionStage(status, pi)
     push(
       item({
         id: `GP-${seq++}-U`,
@@ -363,7 +368,7 @@ export function buildExpandedGeneralPlanItems(): GeneralPlanItem[] {
         title: p.title,
         productId: p.productId,
         ...shiftSlot(slot.dayOffset, slot.shift, slot.durationHours),
-        status: PROD_STATUSES[pi % PROD_STATUSES.length],
+        status,
         priority: (pi % 4) + 1,
         concreteRecipeId: p.recipe,
         estimatedVolumeM3: p.volume,
@@ -371,11 +376,13 @@ export function buildExpandedGeneralPlanItems(): GeneralPlanItem[] {
         projectId: p.projectId,
         orderId: p.orderId,
         warnings: pi % 11 === 0 ? ['Kalıp rezervasyonu onaylandı (mock)'] : [],
+        ...stageInfo,
       }),
     )
   })
-  fillShiftSlots(productionAlloc, FILL_RATIO_PRODUCTION, push, (slot, fi) =>
-    item({
+  fillShiftSlots(productionAlloc, FILL_RATIO_PRODUCTION, push, (slot, fi) => {
+    const stageInfo = assignMockProductionStage('PLANNED', fi)
+    return item({
       id: `GP-${seq++}-UF`,
       unit: 'production',
       resourceId: slot.resourceId,
@@ -391,9 +398,9 @@ export function buildExpandedGeneralPlanItems(): GeneralPlanItem[] {
       projectId: projectManagementCardsMock[fi % projectManagementCardsMock.length]?.code,
       orderId: `SO-FILL-${88000 + fi}`,
       tags: ['rezerve'],
-    }),
-    MAX_FILLER_PRODUCTION,
-  )
+      ...stageInfo,
+    })
+  }, MAX_FILLER_PRODUCTION, 24)
 
   PRODUCTS.forEach((p, pi) => {
     if (pi % SCHEDULE_EVERY_NTH_SECONDARY !== 0) return
