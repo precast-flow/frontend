@@ -398,7 +398,7 @@ export const INITIAL_PLAN_ITEMS: PlanItem[] = [
     durationHours: 32,
     status: 'ORDERED_DESIGN',
     priority: 1,
-    concreteRecipeId: 'RC-C35-02',
+    concreteRecipeId: 'RC-DRAFT-01',
     estimatedVolumeM3: 24.7,
     estimatedSteelKg: 1620,
     projectId: 'PRJ-2026-021',

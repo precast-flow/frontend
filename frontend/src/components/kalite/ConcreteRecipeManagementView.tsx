@@ -22,7 +22,7 @@ import {
   appDialogFieldClass,
   appDialogLabelClass,
 } from '../shared/AppDialog'
-import type { ConcreteRecipeStatus } from '../../data/quality/qualityManagementTypes'
+import type { ConcreteRecipe, ConcreteRecipeStatus } from '../../data/quality/qualityManagementTypes'
 import { RecipeStatusBadge } from './shared/RecipeStatusBadge'
 import {
   QualityDetailCard,
@@ -32,6 +32,7 @@ import {
   QualityDetailList,
   QualityDetailSection,
 } from './QualityDetailColumn'
+import { QualityExcelToolbar } from './shared/QualityExcelToolbar'
 import { QualitySplitPaneResizer } from './QualitySplitPaneResizer'
 import { useQualitySplitLayout } from './useQualitySplitLayout'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
@@ -40,6 +41,11 @@ import '../proje/projectManagementGlassLight.css'
 const LIST_PAGE_SIZE = 6
 
 type DetailTab = 'general' | 'trials' | 'approval'
+
+function recipeToDraft(r: ConcreteRecipe): ConcreteRecipeDraft {
+  const { trials: _t, version: _v, approvedAt: _a, approvedBy: _b, createdAt: _c, updatedAt: _u, ...rest } = r
+  return rest
+}
 
 function emptyRecipeDraft(): ConcreteRecipeDraft {
   return {
@@ -60,7 +66,7 @@ function emptyRecipeDraft(): ConcreteRecipeDraft {
 
 export function ConcreteRecipeManagementView() {
   const { t } = useI18n()
-  const { recipes, addRecipe, publishRecipe, submitRecipeForApproval, addRecipeTrial } =
+  const { recipes, addRecipe, updateRecipe, publishRecipe, submitRecipeForApproval, addRecipeTrial } =
     useQualityManagement()
   const layout = useQualitySplitLayout('quality-concrete-recipes', 'quality-concrete-recipes')
   const {
@@ -83,6 +89,7 @@ export function ConcreteRecipeManagementView() {
   const [selectedId, setSelectedId] = useState(recipes[0]?.id ?? '')
   const [detailTab, setDetailTab] = useState<DetailTab>('general')
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
   const [draft, setDraft] = useState<ConcreteRecipeDraft>(emptyRecipeDraft)
   const [trialOpen, setTrialOpen] = useState(false)
   const [trialSummary, setTrialSummary] = useState('')
@@ -135,9 +142,27 @@ export function ConcreteRecipeManagementView() {
     { id: 'approval', label: t('qualityRecipe.tab.approval') },
   ]
 
-  const saveNew = () => {
-    const row = addRecipe({ ...draft, recipeCode: draft.recipeCode || `RC-NEW-${Date.now()}` })
-    setSelectedId(row.id)
+  const openCreate = () => {
+    setEditId(null)
+    setDraft(emptyRecipeDraft())
+    setDialogOpen(true)
+  }
+
+  const openEdit = () => {
+    if (!selected || selected.status === 'published') return
+    setEditId(selected.id)
+    setDraft(recipeToDraft(selected))
+    setDialogOpen(true)
+  }
+
+  const saveForm = () => {
+    const code = draft.recipeCode || `RC-NEW-${Date.now()}`
+    if (editId) {
+      updateRecipe(editId, { ...draft, recipeCode: code })
+    } else {
+      const row = addRecipe({ ...draft, recipeCode: code })
+      setSelectedId(row.id)
+    }
     setDialogOpen(false)
   }
 
@@ -180,14 +205,8 @@ export function ConcreteRecipeManagementView() {
                       className={gl ? 'project-mgmt-toolbar-search' : ''}
                       inputClassName={gl ? 'glass-input' : ''}
                     />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDraft(emptyRecipeDraft())
-                        setDialogOpen(true)
-                      }}
-                      className={eiSplitHeaderButtonPassive}
-                    >
+                    <QualityExcelToolbar module="concrete_recipes" recipes={recipes} />
+                    <button type="button" onClick={openCreate} className={eiSplitHeaderButtonPassive}>
                       <Plus className="size-3.5 shrink-0" aria-hidden />
                       <span>{t('qualityRecipe.addNew')}</span>
                     </button>
@@ -287,7 +306,16 @@ export function ConcreteRecipeManagementView() {
                 selectedLabel={t('qualityShared.selectedRecord')}
                 title={selected.recipeCode}
                 subtitle={`${selected.strengthClass} · ${selected.usagePurpose}`}
-                headerActions={<RecipeStatusBadge status={selected.status} />}
+                headerActions={
+                  <div className="flex flex-wrap items-center gap-2">
+                    {selected.status !== 'published' ? (
+                      <button type="button" onClick={openEdit} className={eiSplitHeaderButtonPassive}>
+                        {t('qualityInput.edit')}
+                      </button>
+                    ) : null}
+                    <RecipeStatusBadge status={selected.status} />
+                  </div>
+                }
                 tabs={detailTabs}
                 activeTab={detailTab}
                 onTabChange={(id) => setDetailTab(id as DetailTab)}
@@ -295,6 +323,18 @@ export function ConcreteRecipeManagementView() {
                 {detailTab === 'general' ? (
                   <>
                     <QualityDetailFieldsGrid>
+                      <QualityDetailField
+                        label={t('qualityRecipe.field.recipeCode')}
+                        value={selected.recipeCode}
+                      />
+                      <QualityDetailField
+                        label={t('qualityRecipe.field.strengthClass')}
+                        value={selected.strengthClass}
+                      />
+                      <QualityDetailField
+                        label={t('qualityRecipe.field.usage')}
+                        value={selected.usagePurpose}
+                      />
                       <QualityDetailField
                         label={t('qualityRecipe.field.targetStrength')}
                         value={selected.targetStrength}
@@ -317,6 +357,24 @@ export function ConcreteRecipeManagementView() {
                         value={String(selected.waterCementRatio)}
                       />
                     </QualityDetailFieldsGrid>
+                    {selected.description ? (
+                      <QualityDetailSection title={t('qualityShared.section.notes')}>
+                        <p className="text-sm text-slate-700 dark:text-slate-300">{selected.description}</p>
+                      </QualityDetailSection>
+                    ) : null}
+                    <QualityDetailSection title={t('qualityRecipe.section.admixtures')}>
+                      {selected.admixtures.length > 0 ? (
+                        <QualityDetailList
+                          items={selected.admixtures.map((a) => ({
+                            id: a.id,
+                            title: a.name,
+                            meta: `${a.dosagePerM3} ${a.unit}`,
+                          }))}
+                        />
+                      ) : (
+                        <p className="text-sm text-slate-500 dark:text-slate-400">{t('qualityRecipe.admixturesEmpty')}</p>
+                      )}
+                    </QualityDetailSection>
                     <QualityDetailSection title={t('qualityRecipe.section.aggregates')}>
                       <QualityDetailList
                         items={selected.aggregates.map((a) => ({
@@ -393,7 +451,7 @@ export function ConcreteRecipeManagementView() {
       {dialogOpen ? (
         <AppDialog
           open
-          title={t('qualityRecipe.addNew')}
+          title={editId ? t('qualityInput.edit') : t('qualityRecipe.addNew')}
           closeLabel={t('qualityShared.close')}
           onClose={() => setDialogOpen(false)}
           size="lg"
@@ -402,7 +460,7 @@ export function ConcreteRecipeManagementView() {
               <AppDialogButton variant="secondary" onClick={() => setDialogOpen(false)}>
                 {t('qualityShared.cancel')}
               </AppDialogButton>
-              <AppDialogButton variant="primary" onClick={saveNew}>
+              <AppDialogButton variant="primary" onClick={saveForm}>
                 {t('qualityShared.save')}
               </AppDialogButton>
             </AppDialogFooter>
@@ -554,6 +612,97 @@ function RecipeFormFields({
           <option value="pending_approval">{t('qualityRecipe.status.pending')}</option>
         </select>
       </label>
+      <label className={`${appDialogLabelClass} sm:col-span-2`}>
+        {t('qualityRecipe.field.description')}
+        <textarea
+          className={appDialogFieldClass}
+          rows={3}
+          value={draft.description ?? ''}
+          onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
+        />
+      </label>
+      <div className={`${appDialogLabelClass} sm:col-span-2`}>
+        <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+          {t('qualityRecipe.section.admixtures')}
+        </span>
+        <ul className="space-y-2">
+          {(draft.admixtures ?? []).map((ad, idx) => (
+            <li
+              key={ad.id}
+              className="grid gap-2 rounded-lg border border-slate-200/80 p-2 sm:grid-cols-[1fr_6rem_5rem_auto] dark:border-slate-600/60"
+            >
+              <input
+                className={appDialogFieldClass}
+                placeholder={t('qualityRecipe.field.admixtureName')}
+                value={ad.name}
+                onChange={(e) =>
+                  setDraft((d) => ({
+                    ...d,
+                    admixtures: d.admixtures.map((row, i) =>
+                      i === idx ? { ...row, name: e.target.value } : row,
+                    ),
+                  }))
+                }
+              />
+              <input
+                type="number"
+                step="0.1"
+                className={appDialogFieldClass}
+                placeholder={t('qualityRecipe.field.admixtureDosage')}
+                value={ad.dosagePerM3}
+                onChange={(e) =>
+                  setDraft((d) => ({
+                    ...d,
+                    admixtures: d.admixtures.map((row, i) =>
+                      i === idx ? { ...row, dosagePerM3: Number(e.target.value) || 0 } : row,
+                    ),
+                  }))
+                }
+              />
+              <input
+                className={appDialogFieldClass}
+                placeholder={t('qualityRecipe.field.admixtureUnit')}
+                value={ad.unit}
+                onChange={(e) =>
+                  setDraft((d) => ({
+                    ...d,
+                    admixtures: d.admixtures.map((row, i) =>
+                      i === idx ? { ...row, unit: e.target.value } : row,
+                    ),
+                  }))
+                }
+              />
+              <button
+                type="button"
+                className="rounded-lg border border-rose-200 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300 dark:hover:bg-rose-950/40"
+                onClick={() =>
+                  setDraft((d) => ({
+                    ...d,
+                    admixtures: d.admixtures.filter((_, i) => i !== idx),
+                  }))
+                }
+              >
+                {t('qualityQrScan.remove')}
+              </button>
+            </li>
+          ))}
+        </ul>
+        <button
+          type="button"
+          className="mt-2 text-xs font-medium text-sky-700 hover:underline dark:text-sky-300"
+          onClick={() =>
+            setDraft((d) => ({
+              ...d,
+              admixtures: [
+                ...d.admixtures,
+                { id: `ad-${Date.now()}`, name: '', dosagePerM3: 0, unit: 'L/m³' },
+              ],
+            }))
+          }
+        >
+          + {t('qualityRecipe.addAdmixture')}
+        </button>
+      </div>
     </div>
   )
 }

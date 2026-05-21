@@ -33,6 +33,7 @@ import {
   QualityDetailResultsTable,
   QualityDetailSection,
 } from './QualityDetailColumn'
+import { QualityExcelToolbar } from './shared/QualityExcelToolbar'
 import { QualitySplitPaneResizer } from './QualitySplitPaneResizer'
 import { useQualitySplitLayout } from './useQualitySplitLayout'
 import '../muhendislikOkan/engineeringOkanLiquid.css'
@@ -41,6 +42,11 @@ import '../proje/projectManagementGlassLight.css'
 const LIST_PAGE_SIZE = 6
 
 type DetailTab = 'general' | 'results' | 'links'
+
+function labToDraft(lt: LabTest): LabTestDraft {
+  const { id: _id, testCode: _c, createdAt: _ca, updatedAt: _ua, ...rest } = lt
+  return rest
+}
 
 function emptyLabDraft(): LabTestDraft {
   const today = new Date().toISOString().slice(0, 10)
@@ -91,6 +97,7 @@ export function LabTestsManagementView() {
   const [selectedId, setSelectedId] = useState(labTests[0]?.id ?? '')
   const [detailTab, setDetailTab] = useState<DetailTab>('general')
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
   const [draft, setDraft] = useState<LabTestDraft>(emptyLabDraft)
 
   const list = useMemo(() => {
@@ -145,7 +152,20 @@ export function LabTestsManagementView() {
     { id: 'links', label: t('qualityLab.field.links') },
   ]
 
-  const saveNew = () => {
+  const openCreate = () => {
+    setEditId(null)
+    setDraft(emptyLabDraft())
+    setDialogOpen(true)
+  }
+
+  const openEdit = () => {
+    if (!selected) return
+    setEditId(selected.id)
+    setDraft(labToDraft(selected))
+    setDialogOpen(true)
+  }
+
+  const saveForm = () => {
     const cat = QUALITY_TEST_CATALOG.find((c) => c.id === draft.testTypeId)
     const results =
       draft.results.length > 0
@@ -156,8 +176,12 @@ export function LabTestsManagementView() {
             value: f.demoValue,
             unit: f.unitKey ? t(f.unitKey) : undefined,
           })) ?? [])
-    const row = addLabTest({ ...draft, results })
-    setSelectedId(row.id)
+    if (editId) {
+      updateLabTest(editId, { ...draft, results })
+    } else {
+      const row = addLabTest({ ...draft, results })
+      setSelectedId(row.id)
+    }
     setDialogOpen(false)
   }
 
@@ -202,14 +226,8 @@ export function LabTestsManagementView() {
                       className={gl ? 'project-mgmt-toolbar-search' : ''}
                       inputClassName={gl ? 'glass-input' : ''}
                     />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDraft(emptyLabDraft())
-                        setDialogOpen(true)
-                      }}
-                      className={eiSplitHeaderButtonPassive}
-                    >
+                    <QualityExcelToolbar module="lab_tests" tests={labTests} />
+                    <button type="button" onClick={openCreate} className={eiSplitHeaderButtonPassive}>
                       <Plus className="size-3.5 shrink-0" aria-hidden />
                       <span>{t('qualityLab.addNew')}</span>
                     </button>
@@ -310,10 +328,15 @@ export function LabTestsManagementView() {
                 title={selected.testCode}
                 subtitle={catalogLabel(selected.testTypeId)}
                 headerActions={
-                  <ValidityStatusBadge
-                    startDate={selected.validityStartDate}
-                    endDate={selected.validityEndDate}
-                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button type="button" onClick={openEdit} className={eiSplitHeaderButtonPassive}>
+                      {t('qualityInput.edit')}
+                    </button>
+                    <ValidityStatusBadge
+                      startDate={selected.validityStartDate}
+                      endDate={selected.validityEndDate}
+                    />
+                  </div>
                 }
                 tabs={detailTabs}
                 activeTab={detailTab}
@@ -379,7 +402,7 @@ export function LabTestsManagementView() {
       {dialogOpen ? (
         <AppDialog
           open
-          title={t('qualityLab.addNew')}
+          title={editId ? t('qualityInput.edit') : t('qualityLab.addNew')}
           closeLabel={t('qualityShared.close')}
           onClose={() => setDialogOpen(false)}
           size="lg"
@@ -388,7 +411,7 @@ export function LabTestsManagementView() {
               <AppDialogButton variant="secondary" onClick={() => setDialogOpen(false)}>
                 {t('qualityShared.cancel')}
               </AppDialogButton>
-              <AppDialogButton variant="primary" onClick={saveNew}>
+              <AppDialogButton variant="primary" onClick={saveForm}>
                 {t('qualityShared.save')}
               </AppDialogButton>
             </AppDialogFooter>
@@ -417,6 +440,7 @@ function buildLinkLabels(
   }
   if (test.links.sampleId) parts.push(`Numune: ${test.links.sampleId}`)
   if (test.links.workOrderId) parts.push(`Üretim emri: ${test.links.workOrderId}`)
+  if (test.links.projectId) parts.push(`Proje: ${test.links.projectId}`)
   return parts
 }
 
@@ -545,6 +569,34 @@ function LabTestForm({
             </option>
           ))}
         </select>
+      </label>
+      <label className={appDialogLabelClass}>
+        {t('qualityLab.field.workOrderId')}
+        <input
+          className={appDialogFieldClass}
+          value={draft.links.workOrderId ?? ''}
+          onChange={(e) =>
+            setDraft({
+              ...draft,
+              links: { ...draft.links, workOrderId: e.target.value.trim() || undefined },
+            })
+          }
+          placeholder="UE-2026-0142"
+        />
+      </label>
+      <label className={appDialogLabelClass}>
+        {t('qualityLab.field.projectId')}
+        <input
+          className={appDialogFieldClass}
+          value={draft.links.projectId ?? ''}
+          onChange={(e) =>
+            setDraft({
+              ...draft,
+              links: { ...draft.links, projectId: e.target.value.trim() || undefined },
+            })
+          }
+          placeholder="PRJ-ANK-01"
+        />
       </label>
       <label className={`${appDialogLabelClass} sm:col-span-2`}>
         Numune id (mock)

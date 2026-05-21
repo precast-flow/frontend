@@ -1,8 +1,32 @@
 /** Kalite yönetimi — girdi malzeme, beton reçete, laboratuvar testleri (mock / backend-ready). */
 
-export type InputMaterialType = 'rebar' | 'mesh' | 'prestress' | 'accessory' | 'other'
+/** KK-PL-01 malzeme grupları ile hizalı */
+export type QualityPlanMaterialCategory =
+  | 'rebar'
+  | 'aggregate'
+  | 'cement'
+  | 'powder_paint'
+  | 'mesh'
+  | 'form_oil'
+  | 'chemical_admixture'
+  | 'prestress_steel'
+  | 'steel_form'
+  | 'auxiliary'
 
-export type InputMaterialStatus = 'active' | 'quarantine' | 'consumed' | 'rejected'
+export type InputMaterialType =
+  | 'rebar'
+  | 'mesh'
+  | 'prestress'
+  | 'accessory'
+  | 'cement'
+  | 'aggregate'
+  | 'powder_paint'
+  | 'form_oil'
+  | 'chemical_admixture'
+  | 'steel_form'
+  | 'other'
+
+export type InputMaterialStatus = 'active' | 'inactive' | 'quarantine' | 'consumed' | 'rejected'
 
 export type QualityInputMaterial = {
   id: string
@@ -10,7 +34,7 @@ export type QualityInputMaterial = {
   name: string
   systemMaterialCode: string
   supplierId: string
-  /** Firmanın malzemeye özel ürün kodu — zorunlu */
+  /** Tedarikçi firmanın malzemeye özel ürün kodu — zorunlu */
   supplierMaterialCode: string
   diameterOrSize: string
   qualityClass: string
@@ -21,7 +45,9 @@ export type QualityInputMaterial = {
   unit: string
   description?: string
   status: InputMaterialStatus
+  /** KK-PL-01 plan satırı id’leri veya ölçüm değerleri (Excel import) */
   specValues?: Record<string, string>
+  qualityPlanRef?: string
   createdAt: string
   updatedAt: string
 }
@@ -128,9 +154,11 @@ export type RebarMaterialScan = {
   manualEntry?: boolean
 }
 
+/** Tedarikçi firma (CRM müşteri kaydı değil). */
 export type QualitySupplierOption = {
   id: string
   name: string
+  /** Tedarikçi kısa kodu — Excel içe aktarmada eşleşir */
   code: string
 }
 
@@ -147,3 +175,4 @@ export function computeValidityStatus(
 export function isRebarMaterialType(type: InputMaterialType): boolean {
   return type === 'rebar' || type === 'mesh' || type === 'prestress'
 }
+

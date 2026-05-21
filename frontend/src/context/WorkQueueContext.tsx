@@ -31,6 +31,7 @@ import {
   type PrePourCheckId,
   type ProductionWorkOrderFlowState,
   type RebarMaterialScan,
+  type RebarScanTraceRow,
   type SampleOrderFlowState,
 } from '../data/productionWorkOrderFlow'
 import { useQualityManagement } from './QualityManagementContext'
@@ -96,6 +97,13 @@ type WorkQueueContextValue = {
     item?: WorkQueueItem,
   ) => { ok: boolean; errorKey?: string }
   removeRebarScan: (workQueueId: string, scanId: string) => void
+  replaceRebarScan: (
+    workQueueId: string,
+    scanId: string,
+    rawOrMaterialId: string,
+    item?: WorkQueueItem,
+  ) => { ok: boolean; errorKey?: string }
+  getRebarScansForProductCode: (productCode: string) => RebarScanTraceRow[]
   approvePourSpawn: (parent: WorkQueueItem) => boolean
   togglePostPourLabeling: (workQueueId: string) => void
   togglePostPourSurfaceCleaning: (workQueueId: string) => void
@@ -211,7 +219,7 @@ const DAILY_REPORT_DEMO_SEED = buildDailyProductionReportDemoSeed()
 
 function WorkQueueProviderInner({ children }: { children: ReactNode }) {
   const { prependNotification } = useNotificationFeed()
-  const { findInputMaterialByQr } = useQualityManagement()
+  const { findInputMaterialByQr, isRecipePublished } = useQualityManagement()
   const [items, setItems] = useState<WorkQueueItem[]>(() => [
     BLANK_PRODUCTION_WORK_ORDER,
     QUALITY_CONTROL_DEMO_SEED.productionItem,
@@ -513,6 +521,68 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
     [updateFlow],
   )
 
+  const replaceRebarScan = useCallback(
+    (
+      workQueueId: string,
+      scanId: string,
+      rawOrMaterialId: string,
+      item?: WorkQueueItem,
+    ): { ok: boolean; errorKey?: string } => {
+      const material = findInputMaterialByQr(rawOrMaterialId)
+      if (!material) return { ok: false, errorKey: 'qualityQrScan.errorNotFound' }
+      if (material.status !== 'active') {
+        return { ok: false, errorKey: 'qualityQrScan.errorInactive' }
+      }
+      let replaced = false
+      updateFlow(workQueueId, (current) => {
+        if (alreadyPourApproved(current)) return current
+        if (!current.rebarScans.some((s) => s.scanId === scanId)) return current
+        if (current.rebarScans.some((s) => s.inputMaterialId === material.id && s.scanId !== scanId)) {
+          return current
+        }
+        const scan: RebarMaterialScan = {
+          scanId: `scan-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          inputMaterialId: material.id,
+          workQueueId,
+          productCode: item?.productCode,
+          elementLabel: item?.productName ?? item?.title,
+          scannedAt: new Date().toISOString(),
+          scannedByUserId: MOCK_WORK_QUEUE_VIEWER_ID,
+          manualEntry: !rawOrMaterialId.includes('pf://'),
+        }
+        replaced = true
+        const rebarScans = current.rebarScans.map((s) => (s.scanId === scanId ? scan : s))
+        return {
+          ...current,
+          rebarScans,
+          checklist: { ...current.checklist, reinforcement: true },
+        }
+      })
+      return replaced ? { ok: true } : { ok: false, errorKey: 'qualityQrScan.errorDuplicate' }
+    },
+    [findInputMaterialByQr, updateFlow],
+  )
+
+  const getRebarScansForProductCode = useCallback(
+    (productCode: string): RebarScanTraceRow[] => {
+      const code = productCode.trim()
+      if (!code) return []
+      const rows: RebarScanTraceRow[] = []
+      for (const [workQueueId, flow] of Object.entries(flowById)) {
+        for (const scan of flow.rebarScans) {
+          if (scan.productCode?.trim() !== code) continue
+          const item = items.find((i) => i.id === workQueueId)
+          rows.push({
+            ...scan,
+            productionOrderNo: item?.orderNo ?? item?.title,
+          })
+        }
+      }
+      return rows.sort((a, b) => b.scannedAt.localeCompare(a.scannedAt))
+    },
+    [flowById, items],
+  )
+
   const approvePourSpawn = useCallback(
     (parent: WorkQueueItem): boolean => {
       const current = normalizeFlowState(flowById[parent.id] ?? createInitialProductionFlowState())
@@ -694,6 +764,7 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
 
   const approvePourOrder = useCallback((pourItem: WorkQueueItem): boolean => {
     if (pourItem.kind !== 'pour_order') return false
+    if (pourItem.recipeId && !isRecipePublished(pourItem.recipeId)) return false
     setPourById((prev) => ({
       ...prev,
       [pourItem.id]: { status: 'onaylandi', actionAt: Date.now() },
@@ -704,7 +775,7 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       ),
     )
     return true
-  }, [])
+  }, [isRecipePublished])
 
   const reportPourDelay = useCallback((pourItem: WorkQueueItem, note: string): boolean => {
     const trimmed = note.trim()
@@ -1346,6 +1417,8 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       togglePrePourCheck,
       scanRebarMaterial,
       removeRebarScan,
+      replaceRebarScan,
+      getRebarScansForProductCode,
       approvePourSpawn,
       togglePostPourLabeling,
       togglePostPourSurfaceCleaning,
@@ -1406,6 +1479,8 @@ function WorkQueueProviderInner({ children }: { children: ReactNode }) {
       togglePrePourCheck,
       scanRebarMaterial,
       removeRebarScan,
+      replaceRebarScan,
+      getRebarScansForProductCode,
       approvePourSpawn,
       togglePostPourLabeling,
       togglePostPourSurfaceCleaning,

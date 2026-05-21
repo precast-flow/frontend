@@ -13,12 +13,16 @@ import {
   type DailyProductionReportLine,
 } from '../../data/dailyProductionReport'
 import { dailyProductionReportDetailPath } from '../../data/dailyProductionReportPaths'
-import { PmStyleDialog } from '../shared/PmStyleDialog'
+import {
+  AppDialog,
+  AppDialogButton,
+  AppDialogFooter,
+  appDialogFieldClass,
+  appDialogLabelClass,
+} from '../shared/AppDialog'
 import { DailyProductionReportView } from './DailyProductionReportView'
 
-const DATE_PANEL = 'rounded-xl border border-slate-200/50 p-3 dark:border-slate-600/45'
-const GLASS_INPUT =
-  'rounded-lg border border-slate-200/50 bg-transparent px-3 py-2 backdrop-blur-sm dark:border-slate-600/50'
+const DATE_PANEL = 'rounded-xl border border-slate-200 bg-slate-50/60 p-3'
 
 type Step = 'list' | 'preview'
 
@@ -115,54 +119,39 @@ export function DailyProductionReportDialog({
     })
   }
 
-  if (!open) return null
-
   return (
-    <PmStyleDialog
+    <AppDialog
+      open={open}
       title={t('productionPlanning.dailyReport.title')}
       subtitle={t('productionPlanning.dailyReport.subtitle')}
       closeLabel={t('productionPlanning.dailyReport.cancel')}
       onClose={onClose}
-      size={step === 'preview' ? 'lg' : 'md'}
+      size="lg"
       footer={
-        <footer className="flex flex-wrap items-center justify-end gap-2">
+        <AppDialogFooter>
           {step === 'preview' ? (
-            <button
-              type="button"
-              onClick={() => setStep('list')}
-              className="rounded-lg border border-slate-200/60 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-black/[0.04] dark:border-slate-600/50 dark:text-slate-200 dark:hover:bg-white/[0.06]"
-            >
+            <AppDialogButton variant="secondary" onClick={() => setStep('list')}>
               {t('productionPlanning.dailyReport.back')}
-            </button>
+            </AppDialogButton>
           ) : (
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-slate-200/60 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-black/[0.04] dark:border-slate-600/50 dark:text-slate-200 dark:hover:bg-white/[0.06]"
-            >
+            <AppDialogButton variant="secondary" onClick={onClose}>
               {t('productionPlanning.dailyReport.cancel')}
-            </button>
+            </AppDialogButton>
           )}
           {step === 'list' ? (
-            <button
-              type="button"
+            <AppDialogButton
+              variant="primary"
               disabled={eligible.length === 0 || Boolean(existingReport)}
               onClick={() => setStep('preview')}
-              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-40 dark:bg-sky-500 dark:hover:bg-sky-600"
             >
               {t('productionPlanning.dailyReport.nextPreview')}
-            </button>
+            </AppDialogButton>
           ) : (
-            <button
-              type="button"
-              disabled={confirming}
-              onClick={handleConfirm}
-              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-40 dark:bg-sky-500 dark:hover:bg-sky-600"
-            >
+            <AppDialogButton variant="primary" disabled={confirming} onClick={handleConfirm}>
               {t('productionPlanning.dailyReport.confirm')}
-            </button>
+            </AppDialogButton>
           )}
-        </footer>
+        </AppDialogFooter>
       }
     >
       {step === 'list' ? (
@@ -189,12 +178,11 @@ export function DailyProductionReportDialog({
           />
         </Block>
       ) : null}
-    </PmStyleDialog>
+    </AppDialog>
   )
 }
 
-const SUMMARY_PANEL =
-  'rounded-xl border border-slate-200/50 bg-black/[0.03] p-3 dark:border-slate-600/45 dark:bg-white/[0.04]'
+const SUMMARY_PANEL = 'rounded-xl border border-slate-200 bg-slate-50/80 p-3'
 
 function ListStep({
   dateInputId,
@@ -226,25 +214,22 @@ function ListStep({
   return (
     <div className="space-y-4">
       <Block className={DATE_PANEL}>
-        <label
-          htmlFor={dateInputId}
-          className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400"
-        >
-          <CalendarDays className="size-3.5 shrink-0" aria-hidden />
-          {t('productionPlanning.dailyReport.dayLabel')}
+        <label htmlFor={dateInputId} className={appDialogLabelClass}>
+          <span className="inline-flex items-center gap-2 font-semibold uppercase tracking-wide text-slate-600">
+            <CalendarDays className="size-3.5 shrink-0" aria-hidden />
+            {t('productionPlanning.dailyReport.dayLabel')}
+          </span>
+          <input
+            id={dateInputId}
+            type="date"
+            value={selectedDay}
+            min={visibleDayRange?.min}
+            max={visibleDayRange?.max}
+            onChange={(e) => setSelectedDay(e.target.value)}
+            className={`${appDialogFieldClass} max-w-xs`}
+          />
         </label>
-        <input
-          id={dateInputId}
-          type="date"
-          value={selectedDay}
-          min={visibleDayRange?.min}
-          max={visibleDayRange?.max}
-          onChange={(e) => setSelectedDay(e.target.value)}
-          className={`mt-2 w-full max-w-xs text-sm font-medium text-slate-900 outline-none focus:border-sky-400/60 focus:ring-2 focus:ring-sky-400/25 dark:text-slate-50 ${GLASS_INPUT}`}
-        />
-        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-          {t('productionPlanning.dailyReport.dayHint')}
-        </p>
+        <p className="mt-2 text-xs text-slate-500">{t('productionPlanning.dailyReport.dayHint')}</p>
       </Block>
 
       {existingReport ? (

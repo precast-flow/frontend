@@ -1,5 +1,6 @@
-import { useLayoutEffect, useState } from 'react'
+import { useLayoutEffect, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
+import { X } from 'lucide-react'
 import { useI18n } from '../../../i18n/I18nProvider'
 import { STATUS_META } from '../../../data/planningDesignMock'
 import {
@@ -9,9 +10,13 @@ import {
 import type { PlanningItemHoverPayload } from './planningItemDetail'
 
 type Props = {
-  anchorRef: React.RefObject<HTMLElement | null>
+  anchorRef: RefObject<HTMLElement | null>
+  panelRef?: RefObject<HTMLDivElement | null>
   open: boolean
   payload: PlanningItemHoverPayload | null
+  onClose?: () => void
+  /** Click-opened detail: panel receives pointer events and shows close control. */
+  interactive?: boolean
 }
 
 function stageLabel(t: (k: string) => string, stage?: PlanningProductionStage): string | null {
@@ -19,7 +24,14 @@ function stageLabel(t: (k: string) => string, stage?: PlanningProductionStage): 
   return t(PLANNING_PRODUCTION_STAGE_META[stage].labelKey)
 }
 
-export function PlanningItemHoverDetail({ anchorRef, open, payload }: Props) {
+export function PlanningItemHoverDetail({
+  anchorRef,
+  panelRef,
+  open,
+  payload,
+  onClose,
+  interactive = false,
+}: Props) {
   const { t } = useI18n()
   const [style, setStyle] = useState<React.CSSProperties>({ visibility: 'hidden' })
 
@@ -97,10 +109,27 @@ export function PlanningItemHoverDetail({ anchorRef, open, payload }: Props) {
 
   return createPortal(
     <div
-      className="pointer-events-none rounded-xl border border-slate-200/90 bg-white/95 p-3 text-xs shadow-lg backdrop-blur-sm dark:border-slate-600/70 dark:bg-slate-900/95"
+      ref={panelRef}
+      className={[
+        'rounded-xl border border-slate-200/90 bg-white/95 p-3 text-xs shadow-lg backdrop-blur-sm dark:border-slate-600/70 dark:bg-slate-900/95',
+        interactive ? 'pointer-events-auto' : 'pointer-events-none',
+      ].join(' ')}
       style={style}
-      role="tooltip"
+      role={interactive ? 'dialog' : 'tooltip'}
+      aria-modal={interactive ? true : undefined}
     >
+      {interactive && onClose ? (
+        <div className="mb-2 flex items-start justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex size-6 items-center justify-center rounded-md border border-slate-200/80 text-slate-500 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-800"
+            aria-label={t('planning.hover.close')}
+          >
+            <X className="size-3.5" aria-hidden />
+          </button>
+        </div>
+      ) : null}
       {payload.groupProducts && payload.groupProducts.length > 1 ? (
         <>
           <p className="mb-2 font-semibold text-slate-900 dark:text-slate-50">

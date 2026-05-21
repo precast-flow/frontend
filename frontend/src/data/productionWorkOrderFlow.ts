@@ -44,6 +44,11 @@ export type RebarMaterialScan = {
   manualEntry?: boolean
 }
 
+/** Üretim emri + parça kodu bazında izlenebilirlik listesi. */
+export type RebarScanTraceRow = RebarMaterialScan & {
+  productionOrderNo?: string
+}
+
 export type ProductionWorkOrderFlowState = {
   checklist: Record<PrePourCheckId, boolean>
   rebarScans: RebarMaterialScan[]

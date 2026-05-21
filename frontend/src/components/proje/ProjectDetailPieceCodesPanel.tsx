@@ -26,6 +26,7 @@ import {
   useSplitPaneDrag,
   useSplitPaneRatio,
 } from '../shared/splitModuleStyles'
+import { RebarMaterialTraceSection } from '../workQueue/productionControl/RebarMaterialTraceSection'
 
 export type ProjectDetailPieceCodesProjectContext = {
   name: string
@@ -1028,6 +1029,8 @@ export function ProjectDetailPieceCodesPanel({ project }: ProjectDetailPieceCode
                         : `Düz parça sayısı: ${selected.rebarSummary.straightBarCount} · Şekilli parça sayısı: ${selected.rebarSummary.shapedBarCount}`}
                     </p>
                   </div>
+
+                  <RebarMaterialTraceSection gl={gl} productCode={selected.code} />
                 </div>
               ) : null}
 

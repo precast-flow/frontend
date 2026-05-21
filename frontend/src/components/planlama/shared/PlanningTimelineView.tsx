@@ -38,7 +38,11 @@ import {
   usePlanningWizardOptional,
 } from '../PlanningWizardContext'
 import { PlanningActionsHost } from './actions/PlanningActionsHost'
-import { PlanningItemProgress } from './PlanningItemProgress'
+import {
+  PlanningItemProgress,
+  type PlanningItemProgressDensity,
+} from './PlanningItemProgress'
+import { PlanningRightDrawer } from './PlanningRightDrawer'
 import { PlanningTimelineCardWrapper } from './PlanningTimelineCardWrapper'
 import {
   planCardToneClasses,
@@ -75,7 +79,6 @@ import {
   type PlanningToolbarActionId,
 } from '../../../data/generalPlanningUnitConfig'
 import {
-  CONCRETE_RECIPES_MOCK,
   INITIAL_PLAN_ITEMS,
   PLANNING_MOLDS,
   PLANNING_SHIFTS,
@@ -96,6 +99,7 @@ import {
   type PlanStatusKey,
 } from '../../../data/planningDesignMock'
 import { projectManagementByCode } from '../../../data/projectManagementCardsMock'
+import { useQualityManagement } from '../../../context/QualityManagementContext'
 import {
   DISPATCH_VEHICLE_TONES,
   type DispatchVehicleType,
@@ -172,6 +176,20 @@ const PRODUCT_SAMPLE_THUMBS = [
   makeThumbDataUri('PL', '#111827', '#6b7280'),
   makeThumbDataUri('OS', '#7c3aed', '#06b6d4'),
 ] as const
+
+const CARD_GRIP_PX = 20
+const CARD_RESIZE_PX = 6
+
+function progressDensityForCard(
+  span: number,
+  colW: number,
+  hasGrip: boolean,
+): PlanningItemProgressDensity {
+  const contentW = span * colW - (hasGrip ? CARD_GRIP_PX : 0) - CARD_RESIZE_PX
+  if (contentW < 36) return 'minimal'
+  if (contentW < 72 || span < 2) return 'compact'
+  return 'full'
+}
 
 function statusIcon(key: PlanStatusKey) {
   const meta = STATUS_META[key]
@@ -289,6 +307,12 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   const access = useGeneralPlanningAccess()
   const { selectedFactory } = useFactoryContext()
   const workQueue = useWorkQueue()
+  const { getPublishedRecipes, findRecipe } = useQualityManagement()
+  const publishedRecipes = useMemo(() => getPublishedRecipes(), [getPublishedRecipes])
+  const publishedRecipeIdSet = useMemo(
+    () => new Set(publishedRecipes.map((r) => r.id)),
+    [publishedRecipes],
+  )
   const planningWizard = usePlanningWizardOptional()
 
   const crossUnitPlanItems: GeneralPlanItem[] = gp?.items ?? []
@@ -469,6 +493,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   const [shiftSubmenuPos, setShiftSubmenuPos] = useState<{ left: number; top: number } | null>(null)
   const contextShiftAnchorRef = useRef<HTMLDivElement>(null)
   const shiftCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [detailPopupId, setDetailPopupId] = useState<string | null>(null)
   const [assignOpen, setAssignOpen] = useState<{ moldId: string; slot: number } | null>(null)
   const [truckLoadOpen, setTruckLoadOpen] = useState<{ moldId: string; slotStart: number } | null>(
     null,
@@ -1232,6 +1257,45 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
   const rightInsightOpen =
     historyDrawerOpen || Boolean(dayDetailDate && dayDetailData) || Boolean(selected)
 
+  const closeInsightDrawers = useCallback(() => {
+    setSelectedId(null)
+    setDayDetailDate(null)
+    setHistoryDrawerOpen(false)
+    setDetailPopupId(null)
+  }, [])
+
+  const openAssignDrawer = useCallback(
+    (payload: { moldId: string; slot: number }) => {
+      closeInsightDrawers()
+      setAssignOpen(payload)
+    },
+    [closeInsightDrawers],
+  )
+
+  const assignContext = useMemo(() => {
+    if (!assignOpen) return null
+    const dayIdx = Math.floor(assignOpen.slot / slotsPerDay)
+    const day = visibleDays[dayIdx]
+    const shiftIdx = timelineUsesShifts ? assignOpen.slot % slotsPerDay : 0
+    const shift = timelineUsesShifts ? PLANNING_SHIFTS[shiftIdx] : null
+    const unitLabel =
+      isGeneral && gp
+        ? t(PLANNING_UNIT_LABEL_KEYS[gp.activeUnit])
+        : lockedPageMeta
+          ? t(lockedPageMeta.sectionLabelKey)
+          : null
+    return { day, shift, shiftIdx, unitLabel }
+  }, [
+    assignOpen,
+    visibleDays,
+    slotsPerDay,
+    timelineUsesShifts,
+    isGeneral,
+    gp,
+    lockedPageMeta,
+    t,
+  ])
+
   return (
     <>
     <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-[1.25rem]">
@@ -1441,7 +1505,11 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                     <>
                       <button
                         type="button"
-                        onClick={() => setDailyWorkOrderOpen(true)}
+                        onClick={() => {
+                          closeInsightDrawers()
+                          setAssignOpen(null)
+                          setDailyWorkOrderOpen(true)
+                        }}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/70 bg-white/80 px-2 py-1.5 text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:border-slate-600/60 dark:bg-slate-900/50 dark:text-slate-100 dark:hover:bg-slate-800/80 md:py-2 md:text-sm"
                       >
                         <ClipboardList className="size-3.5 shrink-0 text-sky-600 dark:text-sky-400" aria-hidden />
@@ -1450,7 +1518,11 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setDailyReportOpen(true)}
+                        onClick={() => {
+                          closeInsightDrawers()
+                          setAssignOpen(null)
+                          setDailyReportOpen(true)
+                        }}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/70 bg-white/80 px-2 py-1.5 text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:border-slate-600/60 dark:bg-slate-900/50 dark:text-slate-100 dark:hover:bg-slate-800/80 md:py-2 md:text-sm"
                       >
                         <FileText className="size-3.5 shrink-0 text-sky-600 dark:text-sky-400" aria-hidden />
@@ -2171,8 +2243,23 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                               </div>
                               <div className="flex justify-between gap-2">
                                 <dt className="text-slate-500 dark:text-slate-400">Reçete</dt>
-                                <dd className="font-mono text-xs">{selected.concreteRecipeId}</dd>
+                                <dd className="flex flex-wrap items-center justify-end gap-1.5 font-mono text-xs">
+                                  <span>{selected.concreteRecipeId}</span>
+                                  {!publishedRecipeIdSet.has(selected.concreteRecipeId) ? (
+                                    <span
+                                      className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-900 dark:text-amber-100"
+                                      title={t('qualityRecipe.notPublishedWarning')}
+                                    >
+                                      {t('qualityRecipe.status.draft')}
+                                    </span>
+                                  ) : null}
+                                </dd>
                               </div>
+                              {!publishedRecipeIdSet.has(selected.concreteRecipeId) ? (
+                                <p className="text-[11px] font-medium text-amber-800 dark:text-amber-200">
+                                  {t('qualityRecipe.notPublishedWarning')}
+                                </p>
+                              ) : null}
                               <div className="flex justify-between gap-2">
                                 <dt className="text-slate-500 dark:text-slate-400">Hacim</dt>
                                 <dd>{selected.estimatedVolumeM3} m³</dd>
@@ -2222,14 +2309,21 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                             </div>
                           ) : null}
                           <div className="rounded-lg border border-slate-200/70 p-3 dark:border-slate-700/60">
-                            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Reçete havuzu (mock)</h3>
+                            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                              {t('qualityRecipe.publishedPoolTitle')}
+                            </h3>
                             <ul className="mt-2 space-y-1 text-xs text-slate-700 dark:text-slate-300">
-                              {CONCRETE_RECIPES_MOCK.map((r) => (
-                                <li key={r.recipeId}>
-                                  {r.recipeId} — {r.label} ({r.strengthClass})
+                              {publishedRecipes.map((r) => (
+                                <li key={r.id}>
+                                  {r.recipeCode} — {r.usagePurpose} ({r.strengthClass})
                                 </li>
                               ))}
                             </ul>
+                            {findRecipe(selected.concreteRecipeId)?.status !== 'published' ? (
+                              <p className="mt-2 text-[11px] font-medium text-amber-800 dark:text-amber-200">
+                                {t('qualityRecipe.notPublishedWarning')}
+                              </p>
+                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -2251,13 +2345,13 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
             {/* Üst: tarih başlığı — sol kalıp köşesi yatayda sabit + opak */}
             <div className="flex w-max min-w-full">
               <div
-                className="gm-planning-corner-cell sticky left-0 top-0 z-[60] flex shrink-0 flex-col justify-center border-b border-r border-slate-200/70 px-2 py-2 text-xs font-medium text-slate-600 dark:border-slate-600/50 dark:text-slate-400"
+                className="gm-planning-corner-cell gm-planning-sticky-header-corner sticky left-0 top-0 z-[60] flex shrink-0 flex-col justify-center border-b border-r border-slate-200/70 bg-white/95 px-2 py-2 text-xs font-medium text-slate-600 shadow-sm backdrop-blur-md dark:border-slate-600/50 dark:bg-slate-950/95 dark:text-slate-400"
                 style={{ width: MOLD_COL_PX, minWidth: MOLD_COL_PX }}
               >
                 {resourceColumnLabel}
               </div>
               <div
-                className="gm-planning-timeline-canvas sticky top-0 z-40 grid shrink-0 border-b border-slate-200/70 bg-transparent dark:border-slate-600/45"
+                className="gm-planning-timeline-canvas gm-planning-timeline-header sticky top-0 z-40 grid shrink-0 border-b border-slate-200/70 bg-white/95 shadow-sm backdrop-blur-md dark:border-slate-600/45 dark:bg-slate-950/95"
                 style={{
                   width: totalSlots * colW,
                   minWidth: totalSlots * colW,
@@ -2366,7 +2460,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                             type="button"
                             onClick={() => {
                               if (!canEdit) return
-                              setAssignOpen({
+                              openAssignDrawer({
                                 moldId: mold.moldId,
                                 slot: snapTimelineSlot(slot, timelineUsesShifts),
                               })
@@ -2472,6 +2566,11 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                           ? DISPATCH_VEHICLE_TONES[mold.vehicleType]
                           : null
                       const cardZIndex = 20 + stackLayer
+                      const progressDensity =
+                        showProductionProgress && it.productionStage
+                          ? progressDensityForCard(p.span, colW, canEdit)
+                          : null
+                      const hideCardMetaLine = progressDensity === 'minimal'
                       return (
                         <PlanningTimelineCardWrapper
                           key={it.id}
@@ -2480,7 +2579,11 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                           unit={gp?.activeUnit}
                           groupItems={tripCount > 1 ? (tripGroup ?? undefined) : undefined}
                           moldName={mold.name}
-                          className={`relative flex h-full min-h-0 flex-col rounded-xl border border-slate-200/70 ${
+                          detailOpen={detailPopupId === it.id}
+                          onDetailOpenChange={(open) =>
+                            setDetailPopupId(open ? it.id : null)
+                          }
+                          className={`relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200/70 ${
                             groupTone
                               ? groupTone.card
                               : `${st.borderClass} border-l-4 ${st.bgClass}`
@@ -2499,6 +2602,7 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                             e.stopPropagation()
                             setDayDetailDate(null)
                             setHistoryDrawerOpen(false)
+                            setDetailPopupId(null)
                             setSelectedId(it.id)
                           }}
                           onContextMenu={(e) => {
@@ -2523,16 +2627,23 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                             setDropTarget(null)
                           }}
                         >
-                          <div className="flex min-h-0 flex-1 items-stretch gap-0">
+                          <div className="flex min-h-0 flex-1 items-stretch gap-0 overflow-hidden">
                             {canEdit ? (
                               <span className="flex w-5 shrink-0 cursor-grab items-center justify-center text-gray-400">
                                 <GripVertical className="h-4 w-4" />
                               </span>
                             ) : null}
-                            <div className="min-w-0 flex-1 py-1 pr-1">
-                              <div className="flex items-center gap-1">
-                                {!it.isPreview ? statusIcon(it.status) : null}
-                                <span className="truncate text-[11px] font-semibold leading-tight text-gray-900 dark:text-gray-50">
+                            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden py-1 pr-1">
+                              <div className="flex shrink-0 items-center gap-1">
+                                {!it.isPreview ? (
+                                  <span data-planning-card-status className="inline-flex shrink-0">
+                                    {statusIcon(it.status)}
+                                  </span>
+                                ) : null}
+                                <span
+                                  data-planning-card-title
+                                  className="min-w-0 flex-1 cursor-pointer truncate text-[11px] font-semibold leading-tight text-gray-900 hover:text-sky-800 dark:text-gray-50 dark:hover:text-sky-200"
+                                >
                                   {it.title}
                                 </span>
                                 {it.isPreview ? (
@@ -2553,20 +2664,21 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                                   </span>
                                 ) : null}
                               </div>
-                              {cardDisplayMode === 'ops' && it.orderId ? (
-                                <div className="truncate text-[10px] text-gray-500 dark:text-gray-400">
+                              {hideCardMetaLine ? null : cardDisplayMode === 'ops' && it.orderId ? (
+                                <div className="shrink-0 truncate text-[10px] text-gray-500 dark:text-gray-400">
                                   {it.orderId}
                                 </div>
                               ) : cardDisplayMode === 'coordinator' && it.projectId ? (
-                                <div className="truncate text-[10px] text-gray-500 dark:text-gray-400">
+                                <div className="shrink-0 truncate text-[10px] text-gray-500 dark:text-gray-400">
                                   {it.projectId}
                                 </div>
                               ) : null}
-                              {showProductionProgress && it.productionStage ? (
-                                <div className="mt-0.5">
+                              {progressDensity && it.productionStage ? (
+                                <div className="mt-auto shrink-0 pt-0.5">
                                   <PlanningItemProgress
                                     stage={it.productionStage}
                                     stageProgress={it.productionStageProgress}
+                                    density={progressDensity}
                                   />
                                 </div>
                               ) : null}
@@ -2777,26 +2889,49 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
       ) : null}
 
       {assignOpen && canEdit ? (
-        <AppDialog
+        <PlanningRightDrawer
           open
-          size="sm"
+          size="md"
           title="Buraya ata (mock)"
+          subtitle={
+            assignContext?.day
+              ? [
+                  assignContext.day.date,
+                  assignContext.day.weekdayShort,
+                  assignContext.shift?.label,
+                  assignContext.unitLabel,
+                  `${resourceColumnLabel} ${assignOpen.moldId}`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
+              : undefined
+          }
           closeLabel="Kapat"
           onClose={() => setAssignOpen(null)}
           ariaLabel={planningAssignMockTitleId}
           footer={
-            <AppDialogButton variant="secondary" onClick={() => setAssignOpen(null)}>
+            <button
+              type="button"
+              onClick={() => setAssignOpen(null)}
+              className="rounded-lg border border-slate-200/60 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-600/50 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
               Kapat
-            </AppDialogButton>
+            </button>
           }
         >
-            <p className="text-sm text-slate-700">
+          <div className="space-y-3">
+            {assignContext?.day?.isNonProduction ? (
+              <p className="rounded-lg border border-amber-300/60 bg-amber-50/80 px-3 py-2 text-xs text-amber-950 dark:border-amber-600/40 dark:bg-amber-950/30 dark:text-amber-100">
+                Üretim dışı gün — atama sonrası onay istenebilir (mock).
+              </p>
+            ) : null}
+            <p className="text-sm text-slate-700 dark:text-slate-300">
               {isDispatchTimeline
                 ? `${resourceColumnLabel} ${assignOpen.moldId}`
                 : `Kalıp ${assignOpen.moldId}, slot ${assignOpen.slot}.`}
             </p>
             {isDispatchTimeline && assignTruckLoad.length > 0 ? (
-              <div className="mt-2 rounded-lg border border-sky-200/70 bg-sky-50/50 px-2 py-2 text-xs dark:border-sky-800/50 dark:bg-sky-950/30">
+              <div className="rounded-lg border border-sky-200/70 bg-sky-50/50 px-2 py-2 text-xs dark:border-sky-800/50 dark:bg-sky-950/30">
                 <p className="font-semibold text-sky-900 dark:text-sky-100">
                   {t('dispatchPlanning.assign.existingLoad', {
                     count: String(assignTruckLoad.length),
@@ -2811,17 +2946,17 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                 </ul>
               </div>
             ) : null}
-            <p className="mt-2 text-xs font-semibold text-gray-700 dark:text-gray-200">
+            <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
               {isDispatchTimeline
                 ? t('dispatchPlanning.assign.addProduct')
                 : 'Kuyruktan ata (mock)'}
             </p>
-            <ul className="mt-2 max-h-48 space-y-1 overflow-auto text-sm">
+            <ul className="max-h-[min(50vh,20rem)] space-y-1 overflow-auto text-sm">
               {queueItems.map((q) => (
                 <li key={q.queueId}>
                   <button
                     type="button"
-                    className="gm-glass-card-inset w-full px-2 py-2 text-left text-sm text-gray-800 transition hover:opacity-95 dark:text-gray-100"
+                    className="gm-glass-card-inset w-full rounded-lg px-2 py-2 text-left text-sm text-gray-800 transition hover:opacity-95 dark:text-gray-100"
                     onClick={() => {
                       const mfgKey = parseManufacturedQueueId(q.queueId)
                       if (mfgKey) {
@@ -2841,7 +2976,8 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                         timelineUsesShifts,
                       )
                       const span = spanSlotsFromDurationForMode(durationHours, timelineUsesShifts)
-                      if (wouldViolateMaxConcurrent(null, assignOpen.moldId, assignOpen.slot, span)) return
+                      if (wouldViolateMaxConcurrent(null, assignOpen.moldId, assignOpen.slot, span))
+                        return
                       const day = visibleDays[Math.floor(assignOpen.slot / slotsPerDay)]
                       const np = day?.isNonProduction
                       const newId = `P-${Date.now()}`
@@ -2864,7 +3000,12 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                         warnings: np ? ['Üretim dışı güne yerleşim (mock)'] : [],
                       }
                       appendCheckpoint([...itemsRef.current, newRow], 'Hücreye atandı (mock)')
-                      if (np) setNonProdModal({ moldId: assignOpen.moldId, slot: assignOpen.slot, itemId: newId })
+                      if (np)
+                        setNonProdModal({
+                          moldId: assignOpen.moldId,
+                          slot: assignOpen.slot,
+                          itemId: newId,
+                        })
                       setAssignOpen(null)
                     }}
                   >
@@ -2873,7 +3014,8 @@ export function PlanningTimelineView({ variant }: PlanningTimelineProps) {
                 </li>
               ))}
             </ul>
-        </AppDialog>
+          </div>
+        </PlanningRightDrawer>
       ) : null}
 
       {nonProdModal ? (
