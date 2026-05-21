@@ -33,7 +33,7 @@ export function PourOrderDetailPanel({ item, gl }: Props) {
   const primaryBtn =
     'rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-45'
 
-  const canAct = flow.status === 'beklemede'
+  const canAct = flow.status === 'beklemede' && recipePublished
 
   return (
     <div className={`${splitDetailPanelBodyClass} space-y-4 pb-4`}>
@@ -81,6 +81,12 @@ export function PourOrderDetailPanel({ item, gl }: Props) {
       {flow.note ? (
         <p className="rounded-lg bg-amber-500/12 px-3 py-2 text-xs font-medium text-amber-950 dark:text-amber-100">
           {flow.note}
+        </p>
+      ) : null}
+
+      {flow.status === 'beklemede' && !recipePublished && item.recipeId ? (
+        <p className="rounded-lg bg-rose-500/12 px-3 py-2 text-xs font-medium text-rose-950 dark:text-rose-100">
+          {t('qualityRecipe.approveBlocked')}
         </p>
       ) : null}
 

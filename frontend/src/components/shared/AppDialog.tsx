@@ -14,8 +14,9 @@ const SIZE_CLASS: Record<AppDialogSize, string> = {
 
 const Z_INDEX = 110
 
-/** Bulanık arka plan; panel üzerinde blur uygulanmaz. */
-const BACKDROP_CLASS = 'absolute inset-0 z-0 bg-slate-900/40 backdrop-blur-md'
+/** Tam ekran scrim — cam temada glassmorphism.css ile blur korunur (`gm-app-dialog-backdrop`). */
+const BACKDROP_CLASS =
+  'gm-app-dialog-backdrop fixed inset-0 z-0 cursor-default border-0 bg-slate-900/40 p-0 backdrop-blur-md'
 
 /** Okunabilirlik için her zaman beyaz panel. */
 const PANEL_CLASS =
@@ -74,26 +75,36 @@ export function AppDialog({
 
   useEffect(() => {
     if (!open) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      document.removeEventListener('keydown', onKey)
+    }
   }, [onClose, open])
 
   if (!open) return null
 
   const dialog = (
     <div
-      className="fixed inset-0 flex items-end justify-center p-3 sm:items-center sm:p-6"
+      className="gm-glass-modal-shell pointer-events-none fixed inset-0 flex items-end justify-center p-3 sm:items-center sm:p-6"
       style={{ zIndex: Z_INDEX }}
     >
-      <button type="button" className={BACKDROP_CLASS} aria-label={closeLabel} onClick={onClose} />
+      <button
+        type="button"
+        className={`${BACKDROP_CLASS} pointer-events-auto`}
+        aria-label={closeLabel}
+        onClick={onClose}
+      />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel ?? title}
-        className={`${PANEL_CLASS} ${panelMaxH} ${widthClass}`}
+        className={`${PANEL_CLASS} pointer-events-auto relative z-10 ${panelMaxH} ${widthClass}`}
       >
         <DialogHeader title={title} subtitle={subtitle} closeLabel={closeLabel} onClose={onClose} />
         <div className={BODY_CLASS}>{children}</div>

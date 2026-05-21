@@ -1603,11 +1603,25 @@ html[data-ui-template='glass']:not(.dark) {
     color: var(--glass-text-muted) !important;
   }
 
-  /* Yatay kaydırmalı gün / slot alanı — güçlü buğulu cam (üst-alt metin karışmasın) */
+  /* Yatay kaydırmalı gün / slot alanı — gövde */
   html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-timeline-canvas {
     background-color: color-mix(in srgb, var(--glass-surface-panel) 36%, transparent) !important;
     backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.1);
     -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.1);
+  }
+
+  /* Sticky tarih / vardiya başlığı — opak (scroll’da kart metni karışmasın) */
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-timeline-header,
+  html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-header-corner {
+    background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 94%, rgb(248 250 252 / 0.98)) !important;
+    backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.12);
+    -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(1.12);
+    box-shadow: 0 1px 0 var(--glass-border-muted);
+  }
+
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-timeline-header,
+  html[data-ui-template='glass'].dark .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-sticky-header-corner {
+    background-color: color-mix(in srgb, var(--glass-surface-panel-strong) 92%, rgb(15 23 42 / 0.96)) !important;
   }
 
   html[data-ui-template='glass'] .gm-glass-outlet-scope .gm-planning-design-view .gm-planning-timeline-canvas .col-span-3.border-r {
@@ -1810,10 +1824,29 @@ html[data-ui-template='glass'] .gm-glass-modal-shell.fixed.inset-0 {
   -webkit-backdrop-filter: none !important;
 }
 
-html[data-ui-template='glass'] .gm-glass-modal-shell.fixed.inset-0 > .absolute.inset-0 {
+/* Eski absolute scrim (AppDialog dışı) — şeffaf kalsın */
+html[data-ui-template='glass'] .gm-glass-modal-shell.fixed.inset-0 > .absolute.inset-0:not(.gm-app-dialog-backdrop) {
   background-color: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+/* Ortalanmış AppDialog — Kalite / CRM ile aynı: hafif karartma + blur */
+html[data-ui-template='glass'] .gm-app-dialog-backdrop {
+  background-color: rgb(15 23 42 / 0.38) !important;
+  backdrop-filter: blur(12px) saturate(1.06) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.06) !important;
+}
+
+html[data-ui-template='glass'].dark .gm-app-dialog-backdrop {
+  background-color: rgb(0 0 0 / 0.48) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-ui-template='glass'] .gm-app-dialog-backdrop {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
 }
 
 /* Planlama — cetvel sol ray genişliği (TSX ile senkron) */

@@ -9,6 +9,7 @@ import {
 } from '../shared/printableReport/PrintableReport'
 import { PrintReportToolbar } from '../shared/printableReport/PrintReportToolbar'
 import { usePrintReport } from '../shared/printableReport/usePrintReport'
+import { RebarMaterialTraceSection } from './productionControl/RebarMaterialTraceSection'
 
 type Props = {
   item: WorkQueueItem
@@ -172,6 +173,8 @@ export function ProductionProjectDocumentView({ item, gl }: Props) {
           {screenField('unitWorkQueue.productionFlow.document.planDay', item.planDayIso ?? '—')}
         </dl>
       </section>
+
+      <RebarMaterialTraceSection item={item} gl={gl} />
 
       <section className={sectionCls}>
         <h5 className="mb-3 text-xs font-bold uppercase tracking-wide text-black/70 dark:text-white/75">

@@ -6,8 +6,8 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { crmCustomers } from '../data/crmCustomers'
 import { MOCK_CONCRETE_RECIPES } from '../data/quality/concreteRecipesMock'
+import { MOCK_QUALITY_SUPPLIERS } from '../data/quality/qualitySuppliersMock'
 import { MOCK_INPUT_MATERIALS } from '../data/quality/inputMaterialsMock'
 import { MOCK_LAB_TESTS } from '../data/quality/labTestsMock'
 import { parseInputMaterialQrPayload } from '../data/quality/qualityQrPayload'
@@ -41,6 +41,7 @@ type QualityManagementContextValue = {
   labTests: LabTest[]
   suppliers: QualitySupplierOption[]
   addInputMaterial: (draft: InputMaterialDraft) => QualityInputMaterial
+  bulkImportInputMaterials: (drafts: InputMaterialDraft[]) => QualityInputMaterial[]
   updateInputMaterial: (id: string, patch: Partial<InputMaterialDraft>) => void
   findInputMaterial: (id: string) => QualityInputMaterial | undefined
   findInputMaterialByQr: (raw: string) => QualityInputMaterial | undefined
@@ -67,10 +68,7 @@ export function QualityManagementProvider({ children }: { children: ReactNode })
   const [recipes, setRecipes] = useState<ConcreteRecipe[]>(MOCK_CONCRETE_RECIPES)
   const [labTests, setLabTests] = useState<LabTest[]>(MOCK_LAB_TESTS)
 
-  const suppliers = useMemo<QualitySupplierOption[]>(
-    () => crmCustomers.map((c) => ({ id: c.id, name: c.name, code: c.code })),
-    [],
-  )
+  const suppliers = MOCK_QUALITY_SUPPLIERS
 
   const supplierName = useCallback(
     (supplierId: string) => suppliers.find((s) => s.id === supplierId)?.name ?? supplierId,
@@ -101,6 +99,19 @@ export function QualityManagementProvider({ children }: { children: ReactNode })
     }
     setInputMaterials((prev) => [row, ...prev])
     return row
+  }, [])
+
+  const bulkImportInputMaterials = useCallback((drafts: InputMaterialDraft[]) => {
+    const now = new Date().toISOString()
+    const rows: QualityInputMaterial[] = drafts.map((draft) => ({
+      ...draft,
+      id: newId('im'),
+      qualityPlanRef: draft.qualityPlanRef ?? 'KK-PL-01',
+      createdAt: now,
+      updatedAt: now,
+    }))
+    setInputMaterials((prev) => [...rows, ...prev])
+    return rows
   }, [])
 
   const updateInputMaterial = useCallback((id: string, patch: Partial<InputMaterialDraft>) => {
@@ -243,6 +254,7 @@ export function QualityManagementProvider({ children }: { children: ReactNode })
       labTests,
       suppliers,
       addInputMaterial,
+      bulkImportInputMaterials,
       updateInputMaterial,
       findInputMaterial,
       findInputMaterialByQr,
@@ -267,6 +279,7 @@ export function QualityManagementProvider({ children }: { children: ReactNode })
       labTests,
       suppliers,
       addInputMaterial,
+      bulkImportInputMaterials,
       updateInputMaterial,
       findInputMaterial,
       findInputMaterialByQr,

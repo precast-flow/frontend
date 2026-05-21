@@ -26,7 +26,15 @@ import {
   appDialogFieldClass,
   appDialogLabelClass,
 } from '../shared/AppDialog'
+import {
+  INPUT_MATERIAL_QUALITY_PLAN_NO,
+  mapInputMaterialTypeToPlanCategory,
+  qualityPlanRowsForCategory,
+  specValuesForMaterialType,
+  type InputMaterialQualityPlanRow,
+} from '../../data/quality/inputMaterialQualityPlanKKPL01'
 import { isRebarMaterialType, type InputMaterialType, type QualityInputMaterial } from '../../data/quality/qualityManagementTypes'
+import { QualityExcelToolbar } from './shared/QualityExcelToolbar'
 import { PrintCopyCountDialog } from './shared/PrintCopyCountDialog'
 import { RebarRegistryCardPrintSheet } from './RebarRegistryCardPrintSheet'
 import {
@@ -43,10 +51,22 @@ import '../muhendislikOkan/engineeringOkanLiquid.css'
 import '../proje/projectManagementGlassLight.css'
 
 const LIST_PAGE_SIZE = 6
-const MATERIAL_TYPES: InputMaterialType[] = ['rebar', 'mesh', 'prestress', 'accessory', 'other']
-const STATUSES = ['active', 'quarantine', 'consumed', 'rejected'] as const
+const MATERIAL_TYPES: InputMaterialType[] = [
+  'rebar',
+  'mesh',
+  'prestress',
+  'cement',
+  'aggregate',
+  'powder_paint',
+  'form_oil',
+  'chemical_admixture',
+  'steel_form',
+  'accessory',
+  'other',
+]
+const STATUSES = ['active', 'inactive', 'quarantine', 'consumed', 'rejected'] as const
 
-type DetailTab = 'general' | 'actions'
+type DetailTab = 'general' | 'plan' | 'actions'
 
 function emptyDraft(): InputMaterialDraft {
   const today = new Date().toISOString().slice(0, 10)
@@ -65,6 +85,8 @@ function emptyDraft(): InputMaterialDraft {
     unit: 'ton',
     description: '',
     status: 'active',
+    qualityPlanRef: INPUT_MATERIAL_QUALITY_PLAN_NO,
+    specValues: {},
   }
 }
 
@@ -79,9 +101,11 @@ export function InputMaterialManagementView() {
     inputMaterials,
     suppliers,
     addInputMaterial,
+    bulkImportInputMaterials,
     updateInputMaterial,
     supplierName,
   } = useQualityManagement()
+  const [importToast, setImportToast] = useState<string | null>(null)
   const layout = useQualitySplitLayout('quality-input-materials', 'quality-input-materials')
   const {
     gl,
@@ -179,7 +203,7 @@ export function InputMaterialManagementView() {
       return
     }
     if (!draft.name.trim() || !draft.systemMaterialCode.trim() || !draft.supplierId) {
-      setFormError(t('qualityShared.selectEmpty'))
+      setFormError(t('qualityInput.field.supplierSelect'))
       return
     }
     if (editId) {
@@ -199,14 +223,25 @@ export function InputMaterialManagementView() {
     window.setTimeout(() => printReportInIframe(id), 120)
   }
 
+  const planRowsForSelected = useMemo(() => {
+    if (!selected) return []
+    return qualityPlanRowsForCategory(mapInputMaterialTypeToPlanCategory(selected.materialType))
+  }, [selected])
+
   const detailTabs = [
     { id: 'general', label: t('qualityShared.tab.general') },
+    { id: 'plan', label: t('qualityInput.tab.plan') },
     { id: 'actions', label: t('qualityShared.tab.actions') },
   ]
 
   return (
     <>
       <ManagementModuleShell neutralShell={neutralShell} gl={gl}>
+        {importToast ? (
+          <p className="mb-2 rounded-lg border border-sky-200/70 bg-sky-50/80 px-3 py-2 text-sm text-sky-950 dark:border-sky-800/50 dark:bg-sky-950/30 dark:text-sky-100">
+            {importToast}
+          </p>
+        ) : null}
         <div
           ref={splitRef}
           data-split-dragging={isResizing ? 'true' : undefined}
@@ -235,6 +270,19 @@ export function InputMaterialManagementView() {
                       ariaLabel={t('qualityInput.searchAria')}
                       className={gl ? 'project-mgmt-toolbar-search' : ''}
                       inputClassName={gl ? 'glass-input' : ''}
+                    />
+                    <QualityExcelToolbar
+                      module="input_materials"
+                      materials={inputMaterials}
+                      suppliers={suppliers}
+                      onImportMaterials={(valid) => {
+                        if (valid.length === 0) return
+                        const rows = bulkImportInputMaterials(valid.map((v) => v.draft))
+                        setSelectedId(rows[0]!.id)
+                        setImportToast(
+                          t('qualityExcel.importDone', { count: String(rows.length) }),
+                        )
+                      }}
                     />
                     <button type="button" onClick={openCreate} className={eiSplitHeaderButtonPassive}>
                       <Plus className="size-3.5 shrink-0" aria-hidden />
@@ -353,41 +401,77 @@ export function InputMaterialManagementView() {
                 onTabChange={(id) => setDetailTab(id as DetailTab)}
               >
                 {detailTab === 'general' ? (
-                  <QualityDetailFieldsGrid>
-                    <QualityDetailField
-                      label={t('qualityInput.field.materialType')}
-                      value={t(`qualityInput.type.${selected.materialType}`)}
+                  <>
+                    <QualityDetailSection title={t('qualityInput.section.registration')}>
+                      <QualityDetailFieldsGrid>
+                        <QualityDetailField
+                          label={t('qualityInput.field.materialType')}
+                          value={t(`qualityInput.type.${selected.materialType}`)}
+                        />
+                        <QualityDetailField
+                          label={t('qualityInput.field.status')}
+                          value={t(`qualityInput.status.${selected.status}`)}
+                        />
+                        <QualityDetailField
+                          label={t('qualityInput.field.name')}
+                          value={selected.name}
+                        />
+                        <QualityDetailField
+                          label={t('qualityInput.field.systemCode')}
+                          value={selected.systemMaterialCode}
+                        />
+                        <QualityDetailField
+                          label={t('qualityInput.field.supplierName')}
+                          value={supplierName(selected.supplierId)}
+                        />
+                        <QualityDetailField
+                          label={t('qualityInput.field.supplierCode')}
+                          value={selected.supplierMaterialCode}
+                        />
+                        <QualityDetailField
+                          label={t('qualityInput.field.diameter')}
+                          value={selected.diameterOrSize}
+                        />
+                        <QualityDetailField
+                          label={t('qualityInput.field.qualityClass')}
+                          value={selected.qualityClass}
+                        />
+                        <QualityDetailField
+                          label={t('qualityInput.field.lot')}
+                          value={selected.lotNo}
+                        />
+                        <QualityDetailField
+                          label={t('qualityInput.field.certificate')}
+                          value={selected.certificateNo}
+                        />
+                        <QualityDetailField
+                          label={t('qualityInput.field.entryDate')}
+                          value={selected.entryDate}
+                        />
+                        <QualityDetailField
+                          label={t('qualityInput.field.quantity')}
+                          value={`${selected.quantity} ${selected.unit}`}
+                        />
+                        <QualityDetailField
+                          label={t('qualityInput.field.qualityPlanRef')}
+                          value={selected.qualityPlanRef ?? INPUT_MATERIAL_QUALITY_PLAN_NO}
+                        />
+                      </QualityDetailFieldsGrid>
+                      {selected.description ? (
+                        <div className="mt-3">
+                          <QualityDetailNote>{selected.description}</QualityDetailNote>
+                        </div>
+                      ) : null}
+                    </QualityDetailSection>
+                    <InputMaterialPlanSpecDetail
+                      rows={planRowsForSelected}
+                      specValues={selected.specValues}
+                      t={t}
                     />
-                    <QualityDetailField
-                      label={t('qualityInput.field.status')}
-                      value={t(`qualityInput.status.${selected.status}`)}
-                    />
-                    <QualityDetailField
-                      label={t('qualityInput.field.supplierCode')}
-                      value={selected.supplierMaterialCode}
-                    />
-                    <QualityDetailField
-                      label={t('qualityInput.field.diameter')}
-                      value={selected.diameterOrSize}
-                    />
-                    <QualityDetailField
-                      label={t('qualityInput.field.qualityClass')}
-                      value={selected.qualityClass}
-                    />
-                    <QualityDetailField label={t('qualityInput.field.lot')} value={selected.lotNo} />
-                    <QualityDetailField
-                      label={t('qualityInput.field.certificate')}
-                      value={selected.certificateNo}
-                    />
-                    <QualityDetailField
-                      label={t('qualityInput.field.entryDate')}
-                      value={selected.entryDate}
-                    />
-                    <QualityDetailField
-                      label={t('qualityInput.field.quantity')}
-                      value={`${selected.quantity} ${selected.unit}`}
-                    />
-                  </QualityDetailFieldsGrid>
+                  </>
+                ) : null}
+                {detailTab === 'plan' ? (
+                  <InputMaterialPlanReferenceTable rows={planRowsForSelected} t={t} />
                 ) : null}
                 {detailTab === 'actions' ? (
                   <>
@@ -409,11 +493,7 @@ export function InputMaterialManagementView() {
                         )}
                       </QualityDetailActions>
                     </QualityDetailSection>
-                    {selected.description ? (
-                      <QualityDetailSection title={t('qualityShared.section.notes')}>
-                        <QualityDetailNote>{selected.description}</QualityDetailNote>
-                      </QualityDetailSection>
-                    ) : null}
+
                   </>
                 ) : null}
               </QualityDetailColumn>
@@ -453,7 +533,13 @@ export function InputMaterialManagementView() {
             </AppDialogFooter>
           }
         >
-          <InputMaterialForm draft={draft} setDraft={setDraft} suppliers={suppliers} t={t} />
+          <InputMaterialForm
+            draft={draft}
+            setDraft={setDraft}
+            suppliers={suppliers}
+            supplierName={supplierName}
+            t={t}
+          />
           {formError ? (
             <p className="mt-2 text-sm text-rose-600" role="alert">
               {formError}
@@ -476,21 +562,38 @@ function InputMaterialForm({
   draft,
   setDraft,
   suppliers,
+  supplierName,
   t,
 }: {
   draft: InputMaterialDraft
   setDraft: (d: InputMaterialDraft) => void
   suppliers: { id: string; name: string; code: string }[]
+  supplierName: (id: string) => string
   t: (k: string) => string
 }) {
+  const planRows = qualityPlanRowsForCategory(mapInputMaterialTypeToPlanCategory(draft.materialType))
+
+  const setMaterialType = (materialType: InputMaterialType) => {
+    setDraft({
+      ...draft,
+      materialType,
+      specValues: specValuesForMaterialType(materialType, draft.specValues),
+      qualityPlanRef: INPUT_MATERIAL_QUALITY_PLAN_NO,
+    })
+  }
+
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="space-y-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        {t('qualityInput.section.registration')}
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
       <label className={appDialogLabelClass}>
         {t('qualityInput.field.materialType')}
         <select
           className={appDialogFieldClass}
           value={draft.materialType}
-          onChange={(e) => setDraft({ ...draft, materialType: e.target.value as InputMaterialType })}
+          onChange={(e) => setMaterialType(e.target.value as InputMaterialType)}
         >
           {MATERIAL_TYPES.map((mt) => (
             <option key={mt} value={mt}>
@@ -536,13 +639,21 @@ function InputMaterialForm({
           value={draft.supplierId}
           onChange={(e) => setDraft({ ...draft, supplierId: e.target.value })}
         >
-          <option value="">{t('qualityShared.selectEmpty')}</option>
+          <option value="">{t('qualityInput.field.supplierSelect')}</option>
           {suppliers.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name} ({s.code})
             </option>
           ))}
         </select>
+        {draft.supplierId ? (
+          <p className="mt-1 text-[11px] text-slate-600 dark:text-slate-400">
+            {t('qualityInput.field.supplierName')}:{' '}
+            <span className="font-medium text-slate-800 dark:text-slate-200">
+              {supplierName(draft.supplierId)}
+            </span>
+          </p>
+        ) : null}
       </label>
       <label className={`${appDialogLabelClass} sm:col-span-2`}>
         {t('qualityInput.field.supplierCode')} *
@@ -619,6 +730,130 @@ function InputMaterialForm({
           onChange={(e) => setDraft({ ...draft, description: e.target.value })}
         />
       </label>
+      </div>
+
+      <InputMaterialPlanSpecForm
+        rows={planRows}
+        specValues={draft.specValues ?? {}}
+        onSpecChange={(rowId, value) =>
+          setDraft({
+            ...draft,
+            specValues: { ...draft.specValues, [rowId]: value },
+          })
+        }
+        t={t}
+      />
     </div>
+  )
+}
+
+function InputMaterialPlanSpecForm({
+  rows,
+  specValues,
+  onSpecChange,
+  t,
+}: {
+  rows: InputMaterialQualityPlanRow[]
+  specValues: Record<string, string>
+  onSpecChange: (rowId: string, value: string) => void
+  t: (k: string) => string
+}) {
+  if (rows.length === 0) return null
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        {t('qualityInput.section.planSpec')}
+      </p>
+      <div className="mt-2 space-y-2">
+        {rows.map((row) => (
+          <label key={row.id} className={appDialogLabelClass}>
+            {row.characteristic}
+            <span className="ml-1 font-normal text-slate-500 dark:text-slate-400">
+              ({row.controlFrequency})
+            </span>
+            <input
+              className={appDialogFieldClass}
+              value={specValues[row.id] ?? ''}
+              onChange={(e) => onSpecChange(row.id, e.target.value)}
+              placeholder={row.acceptanceCriteria}
+            />
+          </label>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function InputMaterialPlanSpecDetail({
+  rows,
+  specValues,
+  t,
+}: {
+  rows: InputMaterialQualityPlanRow[]
+  specValues?: Record<string, string>
+  t: (k: string) => string
+}) {
+  const filled = rows.filter((r) => (specValues?.[r.id] ?? '').trim())
+  if (filled.length === 0) return null
+  return (
+    <div className="mt-4">
+    <QualityDetailSection title={t('qualityInput.section.planSpec')}>
+      <QualityDetailFieldsGrid>
+        {filled.map((row) => (
+          <QualityDetailField
+            key={row.id}
+            label={row.characteristic}
+            value={specValues?.[row.id] ?? '—'}
+          />
+        ))}
+      </QualityDetailFieldsGrid>
+    </QualityDetailSection>
+    </div>
+  )
+}
+
+function InputMaterialPlanReferenceTable({
+  rows,
+  t,
+}: {
+  rows: InputMaterialQualityPlanRow[]
+  t: (k: string) => string
+}) {
+  return (
+    <QualityDetailSection title={t('qualityInput.planTitle')}>
+      <QualityDetailNote>{t('qualityInput.planHint')}</QualityDetailNote>
+      <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200/60 dark:border-slate-600/45">
+        <table className="w-full min-w-[960px] text-left text-xs">
+          <thead className="bg-slate-100/80 text-[10px] font-bold uppercase tracking-wide text-slate-600 dark:bg-slate-800/60 dark:text-slate-400">
+            <tr>
+              <th className="px-2 py-2">{t('qualityInput.plan.col.characteristic')}</th>
+              <th className="px-2 py-2">{t('qualityInput.plan.col.inspection')}</th>
+              <th className="px-2 py-2">{t('qualityInput.plan.col.document')}</th>
+              <th className="px-2 py-2">{t('qualityInput.plan.col.equipment')}</th>
+              <th className="px-2 py-2">{t('qualityInput.plan.col.frequency')}</th>
+              <th className="px-2 py-2">{t('qualityInput.plan.col.acceptance')}</th>
+              <th className="px-2 py-2">{t('qualityInput.plan.col.inspector')}</th>
+              <th className="px-2 py-2">{t('qualityInput.plan.col.records')}</th>
+              <th className="px-2 py-2">{t('qualityInput.plan.col.onProblem')}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200/50 dark:divide-slate-700/40">
+            {rows.map((row) => (
+              <tr key={row.id} className="text-slate-800 dark:text-slate-100">
+                <td className="px-2 py-2 font-medium">{row.characteristic}</td>
+                <td className="px-2 py-2">{row.inspectionType}</td>
+                <td className="px-2 py-2">{row.documentRef}</td>
+                <td className="px-2 py-2">{row.equipmentMethod}</td>
+                <td className="px-2 py-2">{row.controlFrequency}</td>
+                <td className="px-2 py-2">{row.acceptanceCriteria}</td>
+                <td className="px-2 py-2">{row.inspectorRole}</td>
+                <td className="px-2 py-2">{row.qualityRecords}</td>
+                <td className="px-2 py-2">{row.onProblem ?? '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </QualityDetailSection>
   )
 }
